@@ -26,9 +26,12 @@ echo "==> Building dzzzr and dzzzr-mock..."
 
 # VHS `Require` and the tapes both look the binaries up on PATH.
 export PATH="$BIN_DIR:$PATH"
-# A clean HOME so `dzzzr login` inside a tape never clashes with a real session.
+# A clean HOME so `dzzzr login` inside a tape never clashes with a real
+# session, and the configuration directory named outright on top of it:
+# XDG_CONFIG_HOME is set on the GitHub runners and outranks HOME.
 export HOME
 HOME="$(mktemp -d)"
+export DZZZR_CONFIG_DIR="$HOME/.config/dzzzr"
 trap 'rm -rf "$HOME"' EXIT
 
 TAPES=(

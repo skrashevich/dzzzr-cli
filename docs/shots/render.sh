@@ -43,6 +43,10 @@ done
 export PATH="$BIN_DIR:$PATH"
 
 export HOME="$HOME_DIR"
+# A throwaway HOME is not enough to keep the run off the real session:
+# XDG_CONFIG_HOME is set on the GitHub runners and outranks it, so the
+# configuration directory is named outright.
+export DZZZR_CONFIG_DIR="$HOME_DIR/.config/dzzzr"
 export DZZZR_CITY="moscow"
 export DZZZR_BASE_URL="http://127.0.0.1:${PORT_MOCK}/moscow/"
 
@@ -58,7 +62,7 @@ echo "==> Signing in a throwaway session against the mock..."
 "$BIN_DIR/dzzzr" login -login demo -password demo -captain demo -pin 1234 >/dev/null
 
 echo "==> Seeding web chat fixtures..."
-CHATS_DIR="$HOME/.config/dzzzr/web/chats"
+CHATS_DIR="$DZZZR_CONFIG_DIR/web/chats"
 mkdir -p "$CHATS_DIR"
 cp "$SHOTS_DIR"/fixtures/chats/*.json "$CHATS_DIR"/
 

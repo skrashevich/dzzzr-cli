@@ -117,11 +117,38 @@ func newAdminEngine(t *testing.T) (*adminEngine, string) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=windows-1251")
-		_, _ = w.Write(e.applyEdits(fixture(e.t, name)))
+		_, _ = w.Write(e.applyEdits(retargetForm(fixture(e.t, name), r.URL.Query())))
 	})
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return e, srv.URL + "/moscow/"
+}
+
+// adminHiddenRow matches the hidden fields naming the row an edit form acts
+// on. The values are bare and numeric in the engine's own markup.
+var adminHiddenRow = regexp.MustCompile(`<input type=hidden name=(id|categoryValue|category) value=[0-9]+>`)
+
+// retargetForm points a fixture's edit form at the row the query asked for.
+// Each fixture holds one game and one level, while the real engine serves the
+// form of whatever id it is given; a scenario export reads several levels in
+// turn and refuses a page that answers with a different one. Every other test
+// asks for the row the fixture already names, so this rewrites those values
+// to themselves.
+func retargetForm(page []byte, q url.Values) []byte {
+	return adminHiddenRow.ReplaceAllFunc(page, func(field []byte) []byte {
+		name := string(adminHiddenRow.FindSubmatch(field)[1])
+		// The level form spells the game "category" too, but the page that
+		// serves it is addressed by "categoryValue" alone.
+		query := name
+		if name == "category" {
+			query = "categoryValue"
+		}
+		want := q.Get(query)
+		if want == "" {
+			return field
+		}
+		return []byte("<input type=hidden name=" + name + " value=" + want + ">")
+	})
 }
 
 // applyEdits replays the writes the fake engine accepted onto the level list
