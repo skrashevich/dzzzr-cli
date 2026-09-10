@@ -48,7 +48,7 @@ type ConfirmRequest struct {
 }
 
 // Confirmer approves or declines a mutating tool call. Implementations block
-// until the user answers or ctx is cancelled.
+// until the user answers or ctx is canceled.
 type Confirmer interface {
 	ConfirmToolCall(ctx context.Context, req ConfirmRequest) (bool, error)
 }

@@ -70,7 +70,7 @@ func (g *approvalGate) respond(action approvalAction) error {
 	}
 }
 
-// wait blocks until an answer arrives or the run is cancelled.
+// wait blocks until an answer arrives or the run is canceled.
 func (g *approvalGate) wait(ctx context.Context) (approvalAction, error) {
 	select {
 	case <-ctx.Done():

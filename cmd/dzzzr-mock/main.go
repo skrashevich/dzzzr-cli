@@ -5,7 +5,7 @@
 // with one fixed game, one team and one captain, so the dzzzr client library
 // and the dzzzr CLI can be exercised end to end without touching the network.
 //
-// The engine's behaviour is reproduced from the sources of Dozor Classic:
+// The engine's behavior is reproduced from the sources of Dozor Classic:
 // go/go2.php for the actions and their result codes, API/*.php for the JSON
 // shapes, templates/JSON/go.tpl and go_level.tpl for the game state.
 package main

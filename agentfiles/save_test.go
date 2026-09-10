@@ -114,11 +114,11 @@ func TestSaveLocalJSONCancelledBeforeCall(t *testing.T) {
 	root := t.TempDir()
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	result := toolsFor(t, root)["save_local_json"].Execute(ctx, map[string]any{"path": "cancelled.json", "content": "{}"})
+	result := toolsFor(t, root)["save_local_json"].Execute(ctx, map[string]any{"path": "canceled.json", "content": "{}"})
 	if !result.IsError {
 		t.Fatal("canceled call saved a file")
 	}
-	if _, err := os.Lstat(filepath.Join(root, "cancelled.json")); !os.IsNotExist(err) {
+	if _, err := os.Lstat(filepath.Join(root, "canceled.json")); !os.IsNotExist(err) {
 		t.Fatalf("canceled call left a file: %v", err)
 	}
 }

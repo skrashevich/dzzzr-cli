@@ -46,7 +46,7 @@ func isolate(t *testing.T) string {
 
 // checkFileMode asserts the permissions of a path where the filesystem keeps
 // any: on Windows a file carries access rules instead of mode bits, nothing
-// there honours the 0600 the code asks for, and os.Stat reports a mode no
+// there honors the 0600 the code asks for, and os.Stat reports a mode no
 // chmod ever set. Everything else about the file is still checked there.
 func checkFileMode(t *testing.T, path string, want fs.FileMode) {
 	t.Helper()

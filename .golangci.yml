@@ -11,6 +11,10 @@ linters:
       locale: US
       ignore-rules:
         - "dozor"
+        # A deliberately misspelled game parameter: the admin tools must
+        # reject a field the engine does not have, and the tests spell one
+        # wrong on purpose to check that.
+        - "publsih"
 formatters:
   enable:
     - gofmt

@@ -331,7 +331,7 @@ func TestGetGameStillRejectsHTMLPages(t *testing.T) {
 }
 
 // The game page answers with a numeric "error" and an "errorText" when it has
-// no game to show. Without recognising that shape the reply decodes as an
+// no game to show. Without recognizing that shape the reply decodes as an
 // empty game and the caller reports a success.
 func TestGetGameReportsAccessStates(t *testing.T) {
 	for _, tc := range []struct {

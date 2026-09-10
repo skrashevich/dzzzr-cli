@@ -26,7 +26,7 @@ func adminClient(t *testing.T) (*dzzzr.Client, *server) {
 }
 
 // TestAdminMoveLevelReorders checks reordering against the mock's own state:
-// the engine swaps a level with its neighbour and keeps both database ids, so
+// the engine swaps a level with its neighbor and keeps both database ids, so
 // only the order changes, and a move past either end is accepted silently.
 func TestAdminMoveLevelReorders(t *testing.T) {
 	c, s := adminClient(t)

@@ -156,7 +156,7 @@ func retargetForm(page []byte, q url.Values) []byte {
 // engine writes one level per line and marks each with "<tr valign=top", so
 // the rows can be reordered without parsing the page.
 //
-// Modelling this matters: before it, the list came back unchanged whatever
+// Modeling this matters: before it, the list came back unchanged whatever
 // was posted, so a refused delete and a successful one — and a move and a
 // no-op — were indistinguishable to a test.
 func (e *adminEngine) applyEdits(page []byte) []byte {
@@ -462,7 +462,7 @@ func TestAdminUpdateAndDeleteLevel(t *testing.T) {
 }
 
 // TestAdminDeleteLevelReportsASilentRefusal covers the engine's real
-// behaviour, measured against classic.dzzzr.ru on 2026-09-09: with the game's
+// behavior, measured against classic.dzzzr.ru on 2026-09-09: with the game's
 // date left at 00.00.0000 it answers del_zadanie with the same clean redirect
 // as a success — no err= anywhere — and keeps the level. The command used to
 // print "Задание удалено." on top of that.

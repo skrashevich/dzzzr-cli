@@ -56,7 +56,7 @@ func cmdMCP(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) er
 // endedByClient reports whether the server stopped because the client went
 // away: it closed stdin, or the user interrupted the process. The MCP SDK
 // formats the transport's io.EOF into its own message with %v instead of %w,
-// so the end of a session cannot be recognised by errors.Is alone.
+// so the end of a session cannot be recognized by errors.Is alone.
 func endedByClient(err error) bool {
 	return errors.Is(err, context.Canceled) || errors.Is(err, io.EOF) || strings.HasSuffix(err.Error(), "EOF")
 }

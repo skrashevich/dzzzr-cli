@@ -539,7 +539,7 @@ func silentRefusal(what string, args ...any) error {
 }
 
 // levelOrder returns a level's position and whether it is already at the end
-// the move points at. The edge is read from the neighbours rather than from
+// the move points at. The edge is read from the neighbors rather than from
 // the number of levels, because the engine's positions are not necessarily
 // consecutive: measured on 2026-09-09, moving the last level down leaves it
 // last but bumps its number, so a list of 51 levels can end at 52.
@@ -1517,7 +1517,7 @@ func gameParamsFromArgs(args []string) (dzzzr.GameParams, error) {
 // gameParamsFromKV turns parsed pairs into the library's game settings.
 //
 // An explicitly empty text value (greeting=) means "blank this field", which
-// the engine does honour, so it goes into Clear rather than being dropped as
+// the engine does honor, so it goes into Clear rather than being dropped as
 // an unset value. A numeric zero is not treated that way: the engine ignores
 // a zero for these fields, measured against classic.dzzzr.ru on 2026-09-09.
 func gameParamsFromKV(kv map[string]string) (dzzzr.GameParams, error) {

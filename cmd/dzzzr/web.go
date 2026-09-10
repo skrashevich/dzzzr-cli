@@ -178,7 +178,7 @@ func cmdWeb(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) er
 	return serveWeb(ctx, hub, cfg.webAddr)
 }
 
-// serveWeb runs the HTTP server until ctx is cancelled, announcing the address
+// serveWeb runs the HTTP server until ctx is canceled, announcing the address
 // and opening a browser on it.
 func serveWeb(ctx context.Context, hub *webHub, addr string) error {
 	if strings.TrimSpace(addr) == "" {

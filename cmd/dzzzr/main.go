@@ -174,7 +174,7 @@ func envOr(key, def string) string {
 	return def
 }
 
-// envBool reads a boolean environment variable; anything but a recognised
+// envBool reads a boolean environment variable; anything but a recognized
 // truthy word is false.
 func envBool(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {

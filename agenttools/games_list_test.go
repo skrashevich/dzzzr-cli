@@ -155,7 +155,7 @@ func TestGamesListFindsArchiveTeamByResultsTable(t *testing.T) {
 	}
 }
 
-// archivePagerEngine is a full archive: it honours Limit, so the multi-page
+// archivePagerEngine is a full archive: it honors Limit, so the multi-page
 // scan, the stat cap and the match limit are all reachable.
 type archivePagerEngine struct {
 	agenttools.Engine

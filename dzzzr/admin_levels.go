@@ -155,7 +155,7 @@ func (c *Client) AdminListLevels(ctx context.Context, gameID int) ([]AdminLevel,
 			out = append(out, l)
 		}
 	}
-	// A position the editor's form did not state is read off the neighbours
+	// A position the editor's form did not state is read off the neighbors
 	// instead. Measured against classic.dzzzr.ru on 2026-09-09: the list
 	// prints "0." for the level open in the editor, and before this the
 	// level was dropped from the list altogether.
@@ -209,7 +209,7 @@ func parseLevelRow(row htmlRow, idx map[string]int, selectedID int) (AdminLevel,
 	// A level whose id is known stays in the list even without a number: the
 	// engine prints "0." for the level currently open in the editor, and
 	// dropping it silently hid one level of the game from every caller.
-	// AdminListLevels fills the position in from the neighbours. A row with
+	// AdminListLevels fills the position in from the neighbors. A row with
 	// neither id nor number is not a level row at all.
 	if l.Order == 0 && l.ID == 0 {
 		return AdminLevel{}, false

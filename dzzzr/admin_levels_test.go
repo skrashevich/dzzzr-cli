@@ -55,17 +55,17 @@ func TestAdminListLevels(t *testing.T) {
 // Measured against classic.dzzzr.ru on 2026-09-09 with level 23563 selected.
 //
 // The position comes from the editor's own order_p, which is exact even when
-// the printed numbers have gaps; the neighbours are only the fallback.
+// the printed numbers have gaps; the neighbors are only the fallback.
 func TestAdminListLevelsKeepsTheSelectedLevel(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
 		fixture   string
 		wantOrder int
 	}{
-		// order_p wins: the neighbours would say 1.
+		// order_p wins: the neighbors would say 1.
 		{"order_p", "admin_levels_selected_order_p.html", 42},
 		// Without it, the position is derived from the next level.
-		{"neighbours", "admin_levels_selected_no_order.html", 1},
+		{"neighbors", "admin_levels_selected_no_order.html", 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := newAdminServer(t, map[string]string{"zadanie": tc.fixture})

@@ -14,7 +14,7 @@ import (
 // HARRecorder captures HTTP traffic in HAR 1.2 form. It is a RoundTripper
 // wrapper; every request through the wrapped transport becomes one entry.
 //
-// Secrets are redacted where the recorder can recognise them: the session
+// Secrets are redacted where the recorder can recognize them: the session
 // token and the PIN in URLs, the Authorization header, and the userToken a
 // sign-in reply carries. A capture is still the team's game in full — task
 // texts, codes it has found, the organizer's messages — so read one before

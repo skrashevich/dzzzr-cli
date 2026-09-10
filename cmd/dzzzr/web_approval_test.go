@@ -137,7 +137,7 @@ func TestApprovalGateAnswersOnce(t *testing.T) {
 	}
 }
 
-// A cancelled run must release the agent rather than leave it waiting.
+// A canceled run must release the agent rather than leave it waiting.
 func TestApprovalGateReleasesOnCancel(t *testing.T) {
 	gate := newApprovalGate()
 	ctx, cancel := context.WithCancel(context.Background())

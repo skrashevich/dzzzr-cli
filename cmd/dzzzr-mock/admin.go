@@ -274,7 +274,7 @@ func (s *server) applyAdminWrite(form url.Values) string {
 		target = fmt.Sprintf("?action=zadanie&categoryValue=%d&edit=1&ofset=0&Project=", gameID)
 	case "move_up", "move_down":
 		// The engine's generic row mover: it swaps a level with its
-		// neighbour and keeps both ids, so only the order changes. Moving
+		// neighbor and keeps both ids, so only the order changes. Moving
 		// past either end is accepted and changes nothing.
 		id := parseInt(form.Get("id"))
 		for i, l := range g.Levels {
