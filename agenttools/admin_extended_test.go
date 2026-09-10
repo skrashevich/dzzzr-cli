@@ -3,13 +3,14 @@ package agenttools_test
 import (
 	"context"
 	"errors"
-	"github.com/skrashevich/dzzzr-cli/agenttools"
-	"github.com/skrashevich/dzzzr-cli/dzzzr"
 	"maps"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/skrashevich/dzzzr-cli/agenttools"
+	"github.com/skrashevich/dzzzr-cli/dzzzr"
 )
 
 func TestExtendedAdminCatalogVisibility(t *testing.T) {

@@ -1,10 +1,11 @@
 package dzzzr_test
 
 import (
-	"github.com/skrashevich/dzzzr-cli/dzzzr"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/skrashevich/dzzzr-cli/dzzzr"
 )
 
 func TestSiteCookieRedactedFromHAR(t *testing.T) {

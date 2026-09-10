@@ -3,9 +3,10 @@ package agenttools_test
 import (
 	"context"
 	"encoding/json/v2"
+	"testing"
+
 	"github.com/skrashevich/dzzzr-cli/agenttools"
 	"github.com/skrashevich/dzzzr-cli/dzzzr"
-	"testing"
 )
 
 type teamGamesEngine struct {
