@@ -142,7 +142,7 @@ func (c *Client) AdminListLevels(ctx context.Context, gameID int) ([]AdminLevel,
 		}
 	}
 	rows := doc.rows()
-	idx, _ := headerIndex(rows)
+	idx := headerIndex(rows)
 	var out []AdminLevel
 	for _, row := range rows {
 		if l, ok := parseLevelRow(row, idx, selectedID); ok {

@@ -14,12 +14,12 @@ import (
 )
 
 // newTestClient points a client at an httptest server under the "moscow" city.
-func newTestClient(t *testing.T, h http.Handler, opts ...dzzzr.Option) (*dzzzr.Client, *httptest.Server) {
+func newTestClient(t *testing.T, h http.Handler, opts ...dzzzr.Option) *dzzzr.Client {
 	t.Helper()
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 	opts = append([]dzzzr.Option{dzzzr.WithBaseURL(srv.URL + "/moscow/"), dzzzr.WithAdminDelay(0)}, opts...)
-	return dzzzr.New("moscow", opts...), srv
+	return dzzzr.New("moscow", opts...)
 }
 
 func wantBasic(t *testing.T, r *http.Request, user, pass string) {
@@ -53,7 +53,7 @@ func TestNewDefaultBaseURL(t *testing.T) {
 
 func TestLoginSendsBasicAndQuery(t *testing.T) {
 	var seen *http.Request
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = r
 		if r.URL.Path != "/moscow/API/login.php" {
 			http.NotFound(w, r)
@@ -87,7 +87,7 @@ func TestLoginSendsBasicAndQuery(t *testing.T) {
 }
 
 func TestLoginErrorCode(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"error" : "Неверный пользователь или пароль. Проверьте личные данные.", "code" : "4"}`))
 	}), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1"}))
 	resp, err := c.Login(context.Background(), "u", "p")
@@ -103,7 +103,7 @@ func TestLoginUsesTheSiteLoginAsIdentity(t *testing.T) {
 	// The API wall only checks that a Basic header is present, and Classic
 	// teams have no PIN, so a player signs in with the site login alone.
 	var seen *http.Request
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = r
 		if r.Header.Get("Authorization") == "" {
 			w.Header().Set("WWW-Authenticate", `Basic realm="DozoR API"`)
@@ -133,7 +133,7 @@ func TestLoginUsesTheSiteLoginAsIdentity(t *testing.T) {
 func TestRequestWithoutAnyIdentity(t *testing.T) {
 	// With neither credentials nor a remembered login there is nothing to put
 	// in the header, and the call fails before it reaches the network.
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("no request should be sent without an identity")
 	}), dzzzr.WithSession("TOKEN"))
 	_, err := c.GetStat(context.Background())
@@ -144,7 +144,7 @@ func TestRequestWithoutAnyIdentity(t *testing.T) {
 
 func TestRememberedLoginIsUsedAsIdentity(t *testing.T) {
 	var seen *http.Request
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = r
 		switch r.URL.Path {
 		case "/moscow/API/login.php":
@@ -164,7 +164,7 @@ func TestRememberedLoginIsUsedAsIdentity(t *testing.T) {
 }
 
 func TestLoginAuthEnvelopeWithoutCode(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"error" : "Ошибка авторизации. Неверный идентификатор сессии"}`))
 	}), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1"}))
 	_, err := c.Login(context.Background(), "u", "p")
@@ -174,7 +174,7 @@ func TestLoginAuthEnvelopeWithoutCode(t *testing.T) {
 }
 
 func TestLoginHTMLIsUndecodable(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`<html><body>maintenance</body></html>`))
 	}), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1"}))
 	_, err := c.Login(context.Background(), "u", "p")
@@ -213,7 +213,7 @@ func TestExportImportSessionRoundTrip(t *testing.T) {
 }
 
 func TestNoRedirectFollow(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/moscow/API/login.php" {
 			http.Redirect(w, r, "/moscow/elsewhere?err=9", http.StatusFound)
 			return
@@ -229,7 +229,7 @@ func TestNoRedirectFollow(t *testing.T) {
 
 func TestDebugLoggerRedactsSecrets(t *testing.T) {
 	var lines []string
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"code":"2","userToken":"T"}`))
 	}), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1234"}), dzzzr.WithDebugLogger(func(f string, a ...any) {
 		lines = append(lines, sprintf(f, a...))
@@ -247,7 +247,7 @@ func TestDebugLoggerRedactsSecrets(t *testing.T) {
 }
 
 func TestHARRecording(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"code":"2","userToken":"T"}`))
 	}), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1234"}), dzzzr.WithHARRecording(true))
 	if _, err := c.Login(context.Background(), "u", "secretpass"); err != nil {
@@ -285,7 +285,7 @@ func TestHARRecording(t *testing.T) {
 }
 
 func TestTimeoutOption(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(300 * time.Millisecond)
 	}), dzzzr.WithTimeout(50*time.Millisecond), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "C", Pin: "1"}))
 	if _, err := c.Login(context.Background(), "u", "p"); err == nil {
@@ -294,7 +294,7 @@ func TestTimeoutOption(t *testing.T) {
 }
 
 func TestHARRedactsTheSessionToken(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"userName":"svk","error":"ok","userToken":"SUPERSECRETTOKEN12345678901234","code":"2"}`))
 	}), dzzzr.WithHARRecording(true))
 	if _, err := c.Login(context.Background(), "svk", "secret"); err != nil {

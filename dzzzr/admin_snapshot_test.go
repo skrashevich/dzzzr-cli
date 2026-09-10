@@ -23,7 +23,7 @@ func TestAdminReplaceGamePostsExplicitZeroAndEmpty(t *testing.T) {
 	}
 	page.WriteString(`<input type="checkbox" name="publish" checked><input type="checkbox" name="invitation" checked></form>`)
 	posts := make(chan url.Values, 1)
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			_, _ = io.WriteString(w, page.String())
 			return

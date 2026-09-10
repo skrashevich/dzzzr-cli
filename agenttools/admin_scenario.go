@@ -24,22 +24,22 @@ func scenarioLocalPath(root, name string) (string, error) {
 	return name, nil
 }
 
-func toolScenario(args arguments, root string) (*gamesource.Scenario, string, error) {
+func toolScenario(args arguments, root string) (*gamesource.Scenario, error) {
 	name, err := args.requireString("path")
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	name, err = scenarioLocalPath(root, name)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	data, err := readUploadLimited(root, name, gamesource.MaxScenarioBytes)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	s, err := gamesource.DecodeScenario(data)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	// Resolve package assets through the same capability root, not a newly
 	// opened subdirectory that could be redirected by a symlink.
@@ -48,19 +48,19 @@ func toolScenario(args arguments, root string) (*gamesource.Scenario, string, er
 		if a.Path != "" {
 			data, err := readUploadLimited(root, filepath.Join(filepath.Dir(name), filepath.FromSlash(a.Path)), 32<<20)
 			if err != nil {
-				return nil, "", fmt.Errorf("asset %s: %w", key, err)
+				return nil, fmt.Errorf("asset %s: %w", key, err)
 			}
 			// Keep validation and SHA checks in the common importer.
 			total += len(data)
 			if total > 64<<20 {
-				return nil, "", fmt.Errorf("scenario assets exceed 64 MiB")
+				return nil, fmt.Errorf("scenario assets exceed 64 MiB")
 			}
 			a.DataBase64 = new(base64.StdEncoding.EncodeToString(data))
 			a.Path = ""
 			s.Assets[key] = a
 		}
 	}
-	return s, name, nil
+	return s, nil
 }
 
 func adminScenarioTools(e Engine, g *gate, root string) []*Tool {
@@ -114,7 +114,7 @@ func adminScenarioTools(e Engine, g *gate, root string) []*Tool {
 			description: "Проверить полный JSON-сценарий из файла внутри DZZZR_FILES_ROOT. Без записи в движок; удалённые файлы не скачиваются.",
 			parameters:  schema(map[string]any{"path": strProp("Файл полного сценария")}, "path"), gate: g, noCache: true,
 			run: func(_ context.Context, args arguments) (any, error) {
-				s, _, err := toolScenario(args, root)
+				s, err := toolScenario(args, root)
 				if err != nil {
 					return nil, err
 				}
@@ -157,7 +157,7 @@ func adminScenarioTools(e Engine, g *gate, root string) []*Tool {
 						return nil, fmt.Errorf("level_ids must be an object")
 					}
 				}
-				s, _, err := toolScenario(args, root)
+				s, err := toolScenario(args, root)
 				if err != nil {
 					return nil, err
 				}

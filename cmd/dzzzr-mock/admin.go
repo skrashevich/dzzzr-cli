@@ -386,7 +386,9 @@ func page(body string) string {
 }
 
 // gamesPage renders the games list and, when a game is selected, its form.
-func (s *server) gamesPage(q url.Values) string {
+// The query selects nothing here: the mock hosts one game, so the form is
+// always that game's. The parameter stays for the shape the other pages have.
+func (s *server) gamesPage(_ url.Values) string {
 	g := s.state
 	var b strings.Builder
 	b.WriteString(`<table cellpadding=0 cellspacing=0 border=0 width=100%>`)
@@ -610,7 +612,7 @@ func checkbox(name string, checked bool) string {
 }
 
 // teamsPage renders the team list and the selected team's form.
-func (s *server) teamsPage(q url.Values) string {
+func (s *server) teamsPage(_ url.Values) string {
 	g := s.state
 	var b strings.Builder
 	b.WriteString(`<table cellpadding=0 cellspacing=0 border=0 width=100%>`)

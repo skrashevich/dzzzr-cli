@@ -8,11 +8,11 @@ import (
 	"github.com/skrashevich/dzzzr-cli/dzzzr"
 )
 
-func logClient(t *testing.T, status int, body string, seen **http.Request) *dzzzr.Client {
+func logClient(t *testing.T, body string, seen **http.Request) *dzzzr.Client {
 	t.Helper()
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		*seen = r
-		w.WriteHeader(status)
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(body))
 	}), dzzzr.WithSession("TOKEN"))
 	return c
@@ -30,7 +30,7 @@ func TestGetGameLogKeepsEngineFieldNames(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var seen *http.Request
-			c := logClient(t, http.StatusOK, tc.body, &seen)
+			c := logClient(t, tc.body, &seen)
 			log, err := c.GetGameLog(context.Background(), 1563)
 			if err != nil {
 				t.Fatal(err)
@@ -66,7 +66,7 @@ func TestGetGameLogEmptyBodyMeansNoRights(t *testing.T) {
 	// The handler prints nothing at all rather than an error when it will not
 	// show the log, which is how a visitor without the rights leaves.
 	var seen *http.Request
-	c := logClient(t, http.StatusOK, "", &seen)
+	c := logClient(t, "", &seen)
 	_, err := c.GetGameLog(context.Background(), 1563)
 	if !dzzzr.IsEngineError(err) {
 		t.Fatalf("err = %v", err)
@@ -79,7 +79,7 @@ func TestGetGameLogEmptyBodyMeansNoRights(t *testing.T) {
 
 func TestGetGameLogSitePageIsReportedAsRefusal(t *testing.T) {
 	var seen *http.Request
-	c := logClient(t, http.StatusOK,
+	c := logClient(t,
 		"<html><body><!-- CONTENT -->\n\t\tТребуется авторизация.\t\t<!-- CONTENT END --></body></html>", &seen)
 	_, err := c.GetGameLog(context.Background(), 1563)
 	if dzzzr.AuthErrorKindOf(err) != dzzzr.AuthSession {
@@ -89,7 +89,7 @@ func TestGetGameLogSitePageIsReportedAsRefusal(t *testing.T) {
 
 func TestGetGameLogWithoutSessionFails(t *testing.T) {
 	var seen *http.Request
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = r
 		_, _ = w.Write([]byte("[]"))
 	}))
@@ -103,7 +103,7 @@ func TestGetGameLogWithoutSessionFails(t *testing.T) {
 
 func TestGetGameLogRejectsUnexpectedPayload(t *testing.T) {
 	var seen *http.Request
-	c := logClient(t, http.StatusOK, `{"gmid":1563}`, &seen)
+	c := logClient(t, `{"gmid":1563}`, &seen)
 	if _, err := c.GetGameLog(context.Background(), 1563); !dzzzr.IsUndecodable(err) {
 		t.Fatalf("err = %v", err)
 	}
@@ -111,7 +111,7 @@ func TestGetGameLogRejectsUnexpectedPayload(t *testing.T) {
 
 func TestGameLogSpreadsheetRows(t *testing.T) {
 	var seen *http.Request
-	c := logClient(t, 200, `{"10":["later","event",null,"level","code","user"],"2":["earlier","event","team","level",null,null],"1":["Время","Действие","Команда","Уровень","Данные","Данные"]}`, &seen)
+	c := logClient(t, `{"10":["later","event",null,"level","code","user"],"2":["earlier","event","team","level",null,null],"1":["Время","Действие","Команда","Уровень","Данные","Данные"]}`, &seen)
 	log, err := c.GetGameLog(t.Context(), 1563)
 	if err != nil {
 		t.Fatal(err)
@@ -127,7 +127,7 @@ func TestGameLogSpreadsheetRows(t *testing.T) {
 
 func TestGameLogSpreadsheetRejectsWrongWidth(t *testing.T) {
 	var seen *http.Request
-	c := logClient(t, 200, `{"1":["Time","Data"],"2":["time","data","lost"]}`, &seen)
+	c := logClient(t, `{"1":["Time","Data"],"2":["time","data","lost"]}`, &seen)
 	if _, err := c.GetGameLog(t.Context(), 1); !dzzzr.IsUndecodable(err) {
 		t.Fatalf("error: %v", err)
 	}

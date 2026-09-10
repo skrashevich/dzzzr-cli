@@ -1224,7 +1224,7 @@ func (s *server) skvozList(g *gameState, now time.Time) []map[string]any {
 }
 
 // levelTitle renders the heading block API/game.php builds for a level.
-func (s *server) levelTitle(g *gameState, l *levelDef, p *levelProgress) string {
+func (s *server) levelTitle(_ *gameState, l *levelDef, p *levelProgress) string {
 	number := ""
 	if !l.Bonus {
 		number = strconv.Itoa(p.Number)

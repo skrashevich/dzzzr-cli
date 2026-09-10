@@ -20,10 +20,10 @@ func fixture(t *testing.T, name string) []byte {
 	return b
 }
 
-func authedClient(t *testing.T, h http.Handler, opts ...dzzzr.Option) *dzzzr.Client {
+func authedClient(t *testing.T, h http.Handler) *dzzzr.Client {
 	t.Helper()
-	opts = append(opts, dzzzr.WithSession("TOKEN"), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1234"}))
-	c, _ := newTestClient(t, h, opts...)
+	opts := []dzzzr.Option{dzzzr.WithSession("TOKEN"), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1234"})}
+	c := newTestClient(t, h, opts...)
 	return c
 }
 
@@ -92,7 +92,7 @@ func TestGetGameNotStarted(t *testing.T) {
 }
 
 func TestGetGameRequiresSession(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("request must not be sent without a session")
 	}), dzzzr.WithCredentials(dzzzr.Credentials{Captain: "Cap", Pin: "1"}))
 	_, err := c.GetGame(context.Background())

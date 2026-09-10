@@ -237,7 +237,7 @@ func TestAdminMessagesSectionAccessDenied(t *testing.T) {
 		w.Header().Set("Content-Type", "text/html; charset=windows-1251")
 		_, _ = w.Write(denied)
 	})
-	client, _ := newTestClient(t, h, dzzzr.WithAdminCredentials("org", "secret"))
+	client := newTestClient(t, h, dzzzr.WithAdminCredentials("org", "secret"))
 
 	if _, err := client.AdminListMessages(context.Background(), 1383, 0); dzzzr.AuthErrorKindOf(err) != dzzzr.AuthAdminScope {
 		t.Fatalf("AdminListMessages err = %v, want AuthAdminScope (not a silent empty list)", err)

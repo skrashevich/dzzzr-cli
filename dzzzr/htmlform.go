@@ -435,7 +435,7 @@ func parseRow(tr *html.Node) htmlRow {
 // headerIndex maps the text of a header row's cells to their positions, so a
 // data row can be read by column name instead of by counting spacers. The
 // engine renders both rows with the same cell layout.
-func headerIndex(rows []htmlRow) (map[string]int, bool) {
+func headerIndex(rows []htmlRow) map[string]int {
 	for _, r := range rows {
 		if !strings.EqualFold(r.Attrs["bgcolor"], "a1a1a1") {
 			continue
@@ -448,10 +448,10 @@ func headerIndex(rows []htmlRow) (map[string]int, bool) {
 			}
 		}
 		if len(idx) > 0 {
-			return idx, true
+			return idx
 		}
 	}
-	return nil, false
+	return nil
 }
 
 // cellByHeader returns the trimmed cell of the column whose header matches

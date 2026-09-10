@@ -101,7 +101,7 @@ func (c *Client) AdminListTeams(ctx context.Context, gameID int) ([]AdminTeam, e
 		selectedBlocked = f.Checkboxes["blocked"]
 	}
 	rows := doc.rows()
-	idx, _ := headerIndex(rows)
+	idx := headerIndex(rows)
 	var out []AdminTeam
 	for _, row := range rows {
 		if t, ok := parseTeamRow(row, idx, selectedID); ok {

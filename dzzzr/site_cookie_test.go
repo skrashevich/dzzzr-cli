@@ -9,7 +9,7 @@ import (
 )
 
 func TestSiteCookieRedactedFromHAR(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("dozorSiteSession")
 		if err != nil || cookie.Value != "PRIVATE_SITE_TOKEN" {
 			t.Error("missing site cookie")

@@ -80,7 +80,7 @@ func newAdminServer(t *testing.T, fixtures map[string]string) *adminServer {
 		w.Header().Set("Content-Type", "text/html; charset=windows-1251")
 		_, _ = w.Write(fixture(t, name))
 	})
-	s.client, _ = newTestClient(t, h, dzzzr.WithAdminCredentials("org", "secret"))
+	s.client = newTestClient(t, h, dzzzr.WithAdminCredentials("org", "secret"))
 	return s
 }
 
@@ -271,7 +271,7 @@ func TestAdminWindows1251Page(t *testing.T) {
 	enc := dzzzr.EncodeWindows1251ForTest(string(page))
 	s := newAdminServer(t, map[string]string{})
 	_ = s
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=windows-1251")
 		_, _ = w.Write(enc)
 	}), dzzzr.WithAdminCredentials("org", "secret"))

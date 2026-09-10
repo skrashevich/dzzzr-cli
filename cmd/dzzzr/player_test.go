@@ -251,26 +251,28 @@ func (e *engine) lastForm() url.Values {
 	return e.forms[len(e.forms)-1]
 }
 
-// writeSession puts a ready-to-use session file into the isolated HOME.
-func writeSession(t *testing.T, city string) string {
+// writeSession puts a ready-to-use session for Moscow, the city every test
+// plays, into the isolated configuration directory.
+func writeSession(t *testing.T) {
 	t.Helper()
-	dir := filepath.Join(os.Getenv("HOME"), ".config", "dzzzr")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	dir, err := sessionDir()
+	if err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(dir, city+".json")
+	if err := os.MkdirAll(dir, sessionDirPerm); err != nil {
+		t.Fatal(err)
+	}
 	body := `{"token":"TOK","login":"demo","captain":"demo","pin":"1234"}`
-	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "moscow.json"), []byte(body), sessionFilePerm); err != nil {
 		t.Fatal(err)
 	}
-	return path
 }
 
 // playing sets up an isolated HOME with a session and a running engine.
 func playing(t *testing.T) (*engine, []string) {
 	t.Helper()
 	isolate(t)
-	writeSession(t, "moscow")
+	writeSession(t)
 	e, base := newEngine(t)
 	return e, []string{"-base-url", base}
 }

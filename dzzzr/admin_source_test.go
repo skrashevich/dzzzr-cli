@@ -55,7 +55,7 @@ func sourceLevelClient(t *testing.T, fields url.Values) (*dzzzr.Client, <-chan u
 	page.WriteString(`<input type="checkbox" name="bonus" checked><input type="checkbox" name="publish" checked></form>`)
 	posts := make(chan url.Values, 2)
 	requests := new(atomic.Int32)
-	client, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
 		wantBasic(t, r, "org", "secret")
 		if r.Method == http.MethodGet {

@@ -294,7 +294,7 @@ func (c *Client) AdminListGames(ctx context.Context) ([]AdminGame, error) {
 		}
 	}
 	rows := doc.rows()
-	idx, _ := headerIndex(rows)
+	idx := headerIndex(rows)
 	var out []AdminGame
 	for _, row := range rows {
 		g, ok := parseGameRow(row, idx, selectedID)

@@ -122,7 +122,7 @@ func TestGameDescPrintsScenario(t *testing.T) {
 
 func TestGameLogPrintsEngineColumns(t *testing.T) {
 	isolate(t)
-	writeSession(t, "moscow")
+	writeSession(t)
 	var seen string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = r.URL.RequestURI()
@@ -146,7 +146,7 @@ func TestGameLogPrintsEngineColumns(t *testing.T) {
 
 func TestGameLogWithoutRightsExplainsWhy(t *testing.T) {
 	isolate(t)
-	writeSession(t, "moscow")
+	writeSession(t)
 	// The engine answers a visitor it will not show the log with nothing at
 	// all, which must not read as an empty log.
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
@@ -160,7 +160,7 @@ func TestGameLogWithoutRightsExplainsWhy(t *testing.T) {
 
 func TestArchiveCommandsRejectBadGameID(t *testing.T) {
 	isolate(t)
-	writeSession(t, "moscow")
+	writeSession(t)
 	for _, name := range []string{"game-stat", "game-desc", "game-log"} {
 		t.Run(name, func(t *testing.T) {
 			if code, _, _ := runCLI(t, "-base-url", "http://127.0.0.1:1/moscow/", name); code == 0 {

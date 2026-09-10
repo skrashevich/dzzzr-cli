@@ -13,7 +13,7 @@ import (
 // for it.
 func archiveClient(t *testing.T, page []byte, seen **http.Request) *dzzzr.Client {
 	t.Helper()
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		*seen = r
 		w.Header().Set("Content-Type", "text/html; charset=windows-1251")
 		_, _ = w.Write(page)
