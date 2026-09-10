@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>dzzzr-cli — демонстрация</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 24px 96px;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1120px; margin: 0 auto; }
+  h1 { font-size: 1.9rem; margin: 0 0 .25em; }
+  h2 { font-size: 1.3rem; margin: 2.5em 0 .2em; color: #f5c2e7; }
+  a { color: #89b4fa; }
+  p.lead { color: #a6adc8; margin-top: 0; }
+  figure { margin: 1.5em 0 0; }
+  figure img {
+    width: 100%; height: auto; display: block;
+    border-radius: 10px; border: 1px solid #313244;
+    background: #181825;
+  }
+  figcaption { margin-top: .5em; color: #a6adc8; font-size: .95rem; }
+  .grid { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+  footer { margin-top: 4em; color: #6c7086; font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>dzzzr-cli — демонстрация</h1>
+  <p class="lead">
+    Автоматически собранные скриншоты веб-интерфейса и GIF-записи CLI.
+    Исходники — <a href="https://github.com/skrashevich/dzzzr-cli">skrashevich/dzzzr-cli</a>
+    (<code>docs/vhs/</code>, <code>docs/shots/</code>).
+  </p>
+
+  <h2>CLI</h2>
+  <div class="grid">
+    <figure>
+      <img src="gifs/dzzzr-quickstart.gif" alt="dzzzr quickstart" loading="lazy" />
+      <figcaption>Вход, список игр, статус, задание и отправка кода.</figcaption>
+    </figure>
+    <figure>
+      <img src="gifs/dzzzr-gameplay.gif" alt="dzzzr gameplay" loading="lazy" />
+      <figcaption>Прохождение первого уровня, статистика и журнал команды.</figcaption>
+    </figure>
+    <figure>
+      <img src="gifs/dzzzr-mock.gif" alt="dzzzr-mock" loading="lazy" />
+      <figcaption>Mock-сервер движка для разработки и его лог запросов.</figcaption>
+    </figure>
+    <figure>
+      <img src="gifs/dzzzr-admin.gif" alt="dzzzr organizer commands" loading="lazy" />
+      <figcaption>Организаторская часть: игры, уровни и команды.</figcaption>
+    </figure>
+  </div>
+
+  <h2>Веб-интерфейс (<code>dzzzr web</code>)</h2>
+  <div class="grid">
+    <figure>
+      <img src="screenshots/overview.png" alt="web interface overview" loading="lazy" />
+      <figcaption>Диалог с агентом: переписка, инструменты, права доступа.</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/overview-dark.png" alt="web interface, dark theme" loading="lazy" />
+      <figcaption>Тёмная тема.</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/agent-run.png" alt="agent turn in flight" loading="lazy" />
+      <figcaption>Ход агента: статус, вызовы инструментов, потоковый ответ.</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/approval.png" alt="approval gate" loading="lazy" />
+      <figcaption>Согласование действия под политикой «с согласованием».</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/session-files.png" alt="session files" loading="lazy" />
+      <figcaption>Файлы, сохранённые агентом за время чата.</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/games.png" alt="city games" loading="lazy" />
+      <figcaption>Игры города, подтянутые с движка.</figcaption>
+    </figure>
+    <figure>
+      <img src="screenshots/login.png" alt="signed-out state" loading="lazy" />
+      <figcaption>Вход на сайт одного города.</figcaption>
+    </figure>
+  </div>
+
+  <footer>Страница пересобирается workflow <code>.github/workflows/media.yml</code> при каждом push в main.</footer>
+</main>
+</body>
+</html>

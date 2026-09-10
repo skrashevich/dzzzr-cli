@@ -83,6 +83,13 @@ if dzzzr send-code "$code"; then echo принят; else echo мимо; fi
 Полный список команд игрока и организатора, флагов и переменных окружения —
 в [docs/cli.md](docs/cli.md).
 
+![dzzzr quickstart](https://skrashevich.github.io/dzzzr-cli/gifs/dzzzr-quickstart.gif)
+
+Ещё записи — прохождение уровня, mock-сервер, организаторская часть — на
+[GitHub Pages](https://skrashevich.github.io/dzzzr-cli/). Тапки VHS лежат в
+[`docs/vhs/`](docs/vhs), собрать локально: `./docs/vhs/render.sh` (нужны `vhs`,
+`ttyd`, `ffmpeg`).
+
 ## Авторизация
 
 1. **Аккаунт сайта** — логин и пароль. `API/login.php` меняет их на токен сессии.
@@ -105,12 +112,34 @@ if dzzzr send-code "$code"; then echo принят; else echo мимо; fi
 dzzzr mcp                                    # MCP-сервер, только чтение
 export DZZR_LLM_API_KEY=sk-…
 dzzzr agent "на каком мы уровне и сколько кодов осталось"
-dzzzr chat                                   # полноэкранный диалог
+dzzzr chat                                   # полноэкранный диалог в терминале
+dzzzr web                                    # тот же агент в браузере
 ```
 
 Политика доступа (`readonly` / `approve` / `full`) задаётся флагом `-security`.
 Агент умеет импортировать сценарий игры из PDF. Подробно — в
 [docs/agent.md](docs/agent.md).
+
+### Веб-интерфейс
+
+`dzzzr web` поднимает локальный сервер (по умолчанию `127.0.0.1:8788`) с тем же
+агентом, что и `dzzzr chat`: переписка нескольких чатов, потоковый ответ,
+согласование действий, вход на сайт города и файлы, которые агент сохранил за
+время чата. Наружу ничего не публикуется, слушает только петлю.
+
+| | |
+| --- | --- |
+| [![Диалог с агентом](https://skrashevich.github.io/dzzzr-cli/screenshots/overview.png)](https://skrashevich.github.io/dzzzr-cli/screenshots/overview.png) | [![Тёмная тема](https://skrashevich.github.io/dzzzr-cli/screenshots/overview-dark.png)](https://skrashevich.github.io/dzzzr-cli/screenshots/overview-dark.png) |
+| Переписка, вызовы инструментов, выбор прав агента | Тёмная тема |
+| [![Ход агента](https://skrashevich.github.io/dzzzr-cli/screenshots/agent-run.png)](https://skrashevich.github.io/dzzzr-cli/screenshots/agent-run.png) | [![Согласование действия](https://skrashevich.github.io/dzzzr-cli/screenshots/approval.png)](https://skrashevich.github.io/dzzzr-cli/screenshots/approval.png) |
+| Статус хода, инструменты, потоковый ответ | Согласование действия под политикой `approve` |
+| [![Файлы сессии](https://skrashevich.github.io/dzzzr-cli/screenshots/session-files.png)](https://skrashevich.github.io/dzzzr-cli/screenshots/session-files.png) | [![Вход на сайт](https://skrashevich.github.io/dzzzr-cli/screenshots/login.png)](https://skrashevich.github.io/dzzzr-cli/screenshots/login.png) |
+| Файлы, сохранённые агентом за чат | Вход на сайт одного города |
+
+Скриншоты и GIF ниже пересобираются в CI
+([`.github/workflows/media.yml`](.github/workflows/media.yml)) из
+[`docs/shots/`](docs/shots) и [`docs/vhs/`](docs/vhs) и публикуются на
+[GitHub Pages](https://skrashevich.github.io/dzzzr-cli/).
 
 ## Мобильные биндинги
 
@@ -136,6 +165,19 @@ golangci-lint run ./...              # нужен golangci-lint v2
 Живые тесты против боевого движка включаются переменными `DZZR_INTEGRATION=1`,
 `DZZR_E2E_CITY`, `DZZR_E2E_LOGIN`, `DZZR_E2E_PASSWORD`, `DZZR_E2E_CAPTAIN`,
 `DZZR_E2E_PIN`. Без них они пропускаются.
+
+Демо-медиа для README собираются локально теми же скриптами, что и в CI:
+
+```sh
+./docs/vhs/render.sh      # GIF CLI → docs/gifs/   (нужны vhs, ttyd, ffmpeg)
+./docs/shots/render.sh    # скриншоты web-ui → docs/screenshots/   (нужен Node)
+```
+
+Оба каталога в `.gitignore`: workflow
+[`media.yml`](.github/workflows/media.yml) пересобирает их при изменениях в
+`docs/vhs/`, `docs/shots/`, `cmd/dzzzr/` или `cmd/dzzzr-mock/` и публикует на
+GitHub Pages. Скриншоты снимаются с настоящего `dzzzr web` поверх `dzzzr-mock`;
+переписка в чатах — фикстуры из [`docs/shots/fixtures/`](docs/shots/fixtures).
 
 ## Документация
 

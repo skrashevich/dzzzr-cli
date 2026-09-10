@@ -13,6 +13,13 @@ coverage.*
 # OMC runtime state
 .omc/
 
+# Generated demo media (rebuilt by .github/workflows/media.yml, published to Pages)
+/docs/gifs/
+/docs/screenshots/
+/docs/vhs/bin/
+/docs/shots/bin/
+/docs/shots/node_modules/
+
 # Built binaries. There is deliberately no "/dzzzr" entry: it would match the
 # library package directory, and an ignored directory is never scanned, so the
 # library itself would stay untracked. A binary of that name cannot be built at
