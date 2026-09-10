@@ -170,18 +170,8 @@ func TestChatStorePersistRoundTrip(t *testing.T) {
 	}
 
 	path := filepath.Join(dir, snap.ID+".json")
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatalf("файл чата не создан: %v", err)
-	}
-	if perm := info.Mode().Perm(); perm != sessionFilePerm {
-		t.Errorf("права файла %v, ожидались %v", perm, sessionFilePerm)
-	}
-	if dirInfo, err := os.Stat(dir); err != nil {
-		t.Fatalf("каталог чатов не создан: %v", err)
-	} else if perm := dirInfo.Mode().Perm(); perm != sessionDirPerm {
-		t.Errorf("права каталога %v, ожидались %v", perm, sessionDirPerm)
-	}
+	checkFileMode(t, path, sessionFilePerm)
+	checkFileMode(t, dir, sessionDirPerm)
 
 	restored := newChatStore(dir)
 	if err := restored.loadFromDisk(quietf); err != nil {
@@ -318,11 +308,7 @@ func TestRedirectDebugMovesConfigStderr(t *testing.T) {
 	if !strings.Contains(string(logged), "GET /go/") {
 		t.Errorf("журнал пуст или без записи: %q", logged)
 	}
-	if info, err := os.Stat(path); err != nil {
-		t.Fatal(err)
-	} else if perm := info.Mode().Perm(); perm != sessionFilePerm {
-		t.Errorf("права журнала %v, ожидались %v", perm, sessionFilePerm)
-	}
+	checkFileMode(t, path, sessionFilePerm)
 
 	// After the restore, diagnostics go back to the stream the run owns.
 	cfg.debugf("снова на экран")

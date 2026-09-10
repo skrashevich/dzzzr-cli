@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -37,7 +38,9 @@ func TestSaveLocalJSON(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if info.Mode().Perm() != 0o600 {
+		// Windows keeps access rules instead of mode bits, so the 0600 the
+		// save asks for is not what os.Stat reports back there.
+		if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 			t.Errorf("mode=%o", info.Mode().Perm())
 		}
 		if _, ok := out["content"]; ok {

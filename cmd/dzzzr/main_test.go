@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -21,14 +22,17 @@ var dzzrEnv = []string{
 	"DZZZR_ADMIN_LOGIN", "DZZZR_ADMIN_PASSWORD", "DZZZR_BASE_URL",
 	"DZZZR_INSECURE", "DZZZR_DEBUG", "DZZZR_HAR", "DZZZR_HAR_OUT",
 	"DZZZR_LLM_API_KEY", "DZZZR_LLM_BASE_URL", "DZZZR_LLM_MODEL", "DZZZR_FILES_ROOT",
-	"DZZZR_LLM_PROVIDER", "DZZZR_CODEX_AUTH_FILE",
+	"DZZZR_LLM_PROVIDER", "DZZZR_CODEX_AUTH_FILE", "DZZZR_CONFIG_DIR",
 	"DZZZR_LLM_SOURCE_CONTEXT_BYTES",
 	"DZZZR_LLM_REQUEST_TIMEOUT_SECONDS",
 	"LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL",
 	"OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "OPENROUTER_MODEL",
 }
 
-// isolate gives the test its own HOME and an empty DZZZR_* environment.
+// isolate gives the test its own HOME and an empty DZZZR_* environment, and
+// returns that home. DZZZR_CONFIG_DIR pins the configuration under it: HOME
+// alone would not, because os.UserHomeDir reads %USERPROFILE% on Windows and
+// the test would write into the real profile there.
 func isolate(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
@@ -36,7 +40,26 @@ func isolate(t *testing.T) string {
 	for _, k := range dzzrEnv {
 		t.Setenv(k, "")
 	}
+	t.Setenv("DZZZR_CONFIG_DIR", filepath.Join(home, ".config", "dzzzr"))
 	return home
+}
+
+// checkFileMode asserts the permissions of a path where the filesystem keeps
+// any: on Windows a file carries access rules instead of mode bits, nothing
+// there honours the 0600 the code asks for, and os.Stat reports a mode no
+// chmod ever set. Everything else about the file is still checked there.
+func checkFileMode(t *testing.T, path string, want fs.FileMode) {
+	t.Helper()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if runtime.GOOS == "windows" {
+		return
+	}
+	if perm := info.Mode().Perm(); perm != want {
+		t.Errorf("права %s = %04o, ожидались %04o", path, perm, want)
+	}
 }
 
 // runCLI executes one invocation and captures both streams.
@@ -211,6 +234,57 @@ func TestSessionFilePath(t *testing.T) {
 	}
 }
 
+func TestSessionDirHonoursOverride(t *testing.T) {
+	isolate(t)
+	custom := filepath.Join(t.TempDir(), "настройки")
+	t.Setenv("DZZZR_CONFIG_DIR", custom)
+	dir, err := sessionDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dir != custom {
+		t.Fatalf("каталог настроек = %q, ожидался %q", dir, custom)
+	}
+}
+
+// Without the override the platform decides. Unix follows XDG_CONFIG_HOME
+// and ignores it when it is relative, as the specification requires.
+func TestSessionDirFollowsXDGOnUnix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("на Windows настройки лежат в %AppData%")
+	}
+	home := isolate(t)
+	t.Setenv("DZZZR_CONFIG_DIR", "")
+
+	xdg := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", xdg)
+	dir, err := sessionDir()
+	if want := filepath.Join(xdg, "dzzzr"); err != nil || dir != want {
+		t.Fatalf("каталог настроек = %q (%v), ожидался %q", dir, err, want)
+	}
+
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join("относительный", "путь"))
+	dir, err = sessionDir()
+	if want := filepath.Join(home, ".config", "dzzzr"); err != nil || dir != want {
+		t.Fatalf("относительный XDG_CONFIG_HOME не проигнорирован: %q (%v)", dir, err)
+	}
+}
+
+// Windows has no ~/.config: the configuration belongs under %AppData%.
+func TestSessionDirUsesAppDataOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("проверяется только на Windows")
+	}
+	isolate(t)
+	t.Setenv("DZZZR_CONFIG_DIR", "")
+	appData := t.TempDir()
+	t.Setenv("AppData", appData)
+	dir, err := sessionDir()
+	if want := filepath.Join(appData, "dzzzr"); err != nil || dir != want {
+		t.Fatalf("каталог настроек = %q (%v), ожидался %q", dir, err, want)
+	}
+}
+
 func TestSanitizeCity(t *testing.T) {
 	tests := map[string]string{
 		"moscow":                  "moscow",
@@ -219,6 +293,7 @@ func TestSanitizeCity(t *testing.T) {
 		"http://host:8080/moscow": "http___host_8080_moscow",
 		"../../etc/passwd":        ".._.._etc_passwd",
 		`a\b`:                     "a_b",
+		`a*b?c"d<e>f|g`:           "a_b_c_d_e_f_g",
 	}
 	for in, want := range tests {
 		if got := sanitizeCity(in); got != want {
@@ -241,20 +316,8 @@ func TestSessionFilePermissions(t *testing.T) {
 	if want := filepath.Join(home, ".config", "dzzzr", "moscow.json"); path != want {
 		t.Fatalf("сессия записана в %q, ожидалось %q", path, want)
 	}
-	fi, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if perm := fi.Mode().Perm(); perm != fs.FileMode(0o600) {
-		t.Errorf("права файла сессии = %04o, ожидались 0600", perm)
-	}
-	di, err := os.Stat(filepath.Dir(path))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if perm := di.Mode().Perm(); perm != fs.FileMode(0o700) {
-		t.Errorf("права каталога сессий = %04o, ожидались 0700", perm)
-	}
+	checkFileMode(t, path, sessionFilePerm)
+	checkFileMode(t, filepath.Dir(path), sessionDirPerm)
 
 	// A restored client sees the same credentials.
 	restored := newClient(cfg)

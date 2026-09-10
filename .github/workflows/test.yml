@@ -11,7 +11,12 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # nightly.yml publishes a windows/amd64 binary, so the tests run there too.
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v5
 
@@ -32,6 +37,7 @@ jobs:
         run: go test -tags e2e ./e2e -count=1 -v
 
       - name: Check formatting
+        if: matrix.runner == 'ubuntu-latest'
         run: |
           unformatted="$(gofmt -l .)"
           if [ -n "$unformatted" ]; then

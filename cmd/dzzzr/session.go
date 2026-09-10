@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/skrashevich/dzzzr-cli/dzzzr"
@@ -19,8 +20,32 @@ const (
 	sessionFilePerm fs.FileMode = 0o600
 )
 
-// sessionDir returns ~/.config/dzzzr.
+// sessionDir returns the per-user directory the client keeps everything in:
+// the session files, the chat history and the web UI's own transcripts.
+//
+// DZZZR_CONFIG_DIR overrides it outright, which is how the tests stay out of
+// the developer's real profile on every platform.
+//
+// Otherwise the platform decides. Windows has no ~/.config — configuration
+// belongs under %AppData%, which is what os.UserConfigDir reports there.
+// Unix keeps $XDG_CONFIG_HOME/dzzzr and falls back to ~/.config/dzzzr, the
+// path this program has always used: os.UserConfigDir would move macOS to
+// ~/Library/Application Support and orphan the sessions already on disk.
 func sessionDir() (string, error) {
+	if dir := strings.TrimSpace(os.Getenv("DZZZR_CONFIG_DIR")); dir != "" {
+		return dir, nil
+	}
+	if runtime.GOOS == "windows" {
+		dir, err := os.UserConfigDir()
+		if err != nil {
+			return "", fatal("не удалось определить каталог настроек: %v", err)
+		}
+		return filepath.Join(dir, "dzzzr"), nil
+	}
+	// The XDG specification says a relative base directory is to be ignored.
+	if dir := strings.TrimSpace(os.Getenv("XDG_CONFIG_HOME")); filepath.IsAbs(dir) {
+		return filepath.Join(dir, "dzzzr"), nil
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fatal("не удалось определить домашний каталог: %v", err)
@@ -30,13 +55,18 @@ func sessionDir() (string, error) {
 
 // sanitizeCity turns a city into a file name: the engine accepts a path
 // segment there, and a URL-shaped -city must not escape the session
-// directory.
+// directory. The characters Windows forbids in a name go too, so that one
+// city yields the same file on every platform; the reserved device names
+// (con, nul, …) are left alone, no city is called that.
 func sanitizeCity(city string) string {
 	city = strings.TrimSpace(city)
 	if city == "" {
 		return "default"
 	}
-	return strings.NewReplacer("/", "_", ":", "_", `\`, "_").Replace(city)
+	return strings.NewReplacer(
+		"/", "_", ":", "_", `\`, "_",
+		"*", "_", "?", "_", `"`, "_", "<", "_", ">", "_", "|", "_",
+	).Replace(city)
 }
 
 // sessionPath returns the session file of one city.

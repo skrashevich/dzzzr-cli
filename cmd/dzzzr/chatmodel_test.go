@@ -737,13 +737,7 @@ func TestChatModelExportResetsFilePermissions(t *testing.T) {
 	}
 	m.submit("/export")
 
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatalf("выгрузка не записана: %v", err)
-	}
-	if perm := info.Mode().Perm(); perm != sessionFilePerm {
-		t.Errorf("права выгрузки %v, ожидались %v", perm, sessionFilePerm)
-	}
+	checkFileMode(t, path, sessionFilePerm)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

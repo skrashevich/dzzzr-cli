@@ -14,6 +14,8 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"text/tabwriter"
@@ -230,7 +232,17 @@ func printUsage(w io.Writer, fs *flag.FlagSet) {
 	fmt.Fprintln(w, "\nФлаги:")
 	fs.SetOutput(w)
 	fs.PrintDefaults()
-	fmt.Fprintln(w, "\nСессия хранится в ~/.config/dzzzr/<город>.json с правами 0600.")
+	// The file mode is a promise only where the filesystem keeps it: on
+	// Windows the session inherits the profile's access rules instead.
+	name := "<город>.json"
+	if dir, err := sessionDir(); err == nil {
+		name = filepath.Join(dir, name)
+	}
+	if runtime.GOOS == "windows" {
+		fmt.Fprintf(w, "\nСессия хранится в %s.\n", name)
+	} else {
+		fmt.Fprintf(w, "\nСессия хранится в %s с правами 0600.\n", name)
+	}
 }
 
 // printGroup writes the commands whose names satisfy keep, skipping the

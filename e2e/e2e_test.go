@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -29,9 +30,19 @@ type harness struct {
 	home    string
 }
 
+// configDir is where the CLI under test keeps its session, pinned by
+// DZZZR_CONFIG_DIR: HOME alone would not pin it, because os.UserHomeDir
+// reads %USERPROFILE% on Windows and the run would land in the real profile.
+func (h *harness) configDir() string {
+	return filepath.Join(h.home, ".config", "dzzzr")
+}
+
 // build compiles a command into dir and returns its path.
 func build(t *testing.T, dir, pkg, name string) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
 	bin := filepath.Join(dir, name)
 	cmd := exec.Command("go", "build", "-o", bin, pkg)
 	cmd.Dir = ".."
@@ -94,7 +105,7 @@ func (h *harness) run(args ...string) (string, string, int) {
 	h.t.Helper()
 	args = append([]string{"-base-url", h.baseURL}, args...)
 	cmd := exec.Command(h.cli, args...)
-	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZZR_CITY=moscow")
+	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZZR_CONFIG_DIR="+h.configDir(), "DZZZR_CITY=moscow")
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -226,12 +237,14 @@ func TestSessionSurvivesBetweenRuns(t *testing.T) {
 	if out := h.mustRun("status"); !strings.Contains(out, "MockTeam") {
 		t.Fatalf("status without credentials:\n%s", out)
 	}
-	sessionFile := filepath.Join(h.home, ".config", "dzzzr", "moscow.json")
+	sessionFile := filepath.Join(h.configDir(), "moscow.json")
 	info, err := os.Stat(sessionFile)
 	if err != nil {
 		t.Fatalf("session file: %v", err)
 	}
-	if perm := info.Mode().Perm(); perm != 0o600 {
+	// Windows keeps access rules instead of mode bits, and reports back a
+	// mode the CLI never set.
+	if perm := info.Mode().Perm(); runtime.GOOS != "windows" && perm != 0o600 {
 		t.Errorf("session file mode = %o, want 600", perm)
 	}
 	h.mustRun("logout")
@@ -392,7 +405,7 @@ func TestMCPServesTools(t *testing.T) {
 	// A real MCP client keeps the pipe open while it waits, so the test does
 	// too: closing stdin ends the server, and it would end before answering.
 	cmd := exec.Command(h.cli, "-base-url", h.baseURL, "mcp")
-	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZZR_CITY=moscow")
+	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZZR_CONFIG_DIR="+h.configDir(), "DZZZR_CITY=moscow")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		t.Fatal(err)
