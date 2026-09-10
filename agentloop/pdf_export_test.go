@@ -32,7 +32,7 @@ func exportPDFPages(pageCount int) ([]byte, []exportedPDFPage) {
 	expected := make([]exportedPDFPage, 0, pageCount)
 	for page := 1; page <= pageCount; page++ {
 		pageObject := len(objects) + 1
-		fmt.Fprintf(&kids, "%d 0 R ", pageObject)
+		_, _ = fmt.Fprintf(&kids, "%d 0 R ", pageObject)
 		var lines []string
 		var content strings.Builder
 		content.WriteString("BT /F1 10 Tf 72 740 Td 14 TL\n")
@@ -42,7 +42,7 @@ func exportPDFPages(pageCount int) ([]byte, []exportedPDFPage) {
 			if line > 1 {
 				content.WriteString("T*\n")
 			}
-			fmt.Fprintf(&content, "(%s) Tj\n", text)
+			_, _ = fmt.Fprintf(&content, "(%s) Tj\n", text)
 		}
 		content.WriteString("ET")
 		expected = append(expected, exportedPDFPage{Number: page, Text: strings.Join(lines, "\n")})
@@ -57,14 +57,14 @@ func exportPDFPages(pageCount int) ([]byte, []exportedPDFPage) {
 	offsets := make([]int, len(objects))
 	for i, object := range objects {
 		offsets[i] = result.Len()
-		fmt.Fprintf(&result, "%d 0 obj\n%s\nendobj\n", i+1, object)
+		_, _ = fmt.Fprintf(&result, "%d 0 obj\n%s\nendobj\n", i+1, object)
 	}
 	xref := result.Len()
-	fmt.Fprintf(&result, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
+	_, _ = fmt.Fprintf(&result, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
 	for _, offset := range offsets {
-		fmt.Fprintf(&result, "%010d 00000 n \n", offset)
+		_, _ = fmt.Fprintf(&result, "%010d 00000 n \n", offset)
 	}
-	fmt.Fprintf(&result, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
+	_, _ = fmt.Fprintf(&result, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
 	return result.Bytes(), expected
 }
 

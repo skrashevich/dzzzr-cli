@@ -383,7 +383,7 @@ func (c *Client) do(req *http.Request) (int, http.Header, []byte, error) {
 		c.debugf("✗ %s %s: %v", req.Method, redactURL(req.URL), err)
 		return 0, nil, nil, fmt.Errorf("dzzzr: %s %s: %w", req.Method, req.URL.Path, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBodyBytes))
 	if err != nil {
 		return resp.StatusCode, resp.Header.Clone(), nil, fmt.Errorf("dzzzr: read response: %w", err)

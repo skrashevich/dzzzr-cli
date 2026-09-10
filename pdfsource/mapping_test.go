@@ -17,7 +17,7 @@ func mappingPDF(lines ...string) []byte {
 		if i > 0 {
 			content.WriteString("0 -24 Td ")
 		}
-		fmt.Fprintf(&content, "<%x> Tj ", []byte(line))
+		_, _ = fmt.Fprintf(&content, "<%x> Tj ", []byte(line))
 	}
 	content.WriteString("ET")
 	return minimalPDF([]string{pdfStream([]byte(content.String()), ""), "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"}, "")
@@ -325,14 +325,14 @@ func mappingImageOnlyPDF() []byte {
 	offsets := make([]int, len(objects))
 	for i, object := range objects {
 		offsets[i] = b.Len()
-		fmt.Fprintf(&b, "%d 0 obj\n%s\nendobj\n", i+1, object)
+		_, _ = fmt.Fprintf(&b, "%d 0 obj\n%s\nendobj\n", i+1, object)
 	}
 	xref := b.Len()
-	fmt.Fprintf(&b, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
+	_, _ = fmt.Fprintf(&b, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
 	for _, offset := range offsets {
-		fmt.Fprintf(&b, "%010d 00000 n \n", offset)
+		_, _ = fmt.Fprintf(&b, "%010d 00000 n \n", offset)
 	}
-	fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
+	_, _ = fmt.Fprintf(&b, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
 	return b.Bytes()
 }
 

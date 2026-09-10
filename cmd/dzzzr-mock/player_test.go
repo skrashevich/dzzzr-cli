@@ -694,7 +694,7 @@ func TestGameAPIActionProxy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("post action: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var out struct {
 		Err int `json:"err"`
 	}
@@ -891,7 +891,7 @@ func TestLoginFailures(t *testing.T) {
 	if err != nil {
 		t.Fatalf("login without any header: %v", err)
 	}
-	defer resp0.Body.Close()
+	defer func() { _ = resp0.Body.Close() }()
 	if resp0.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("login without any header: status %d, want 401", resp0.StatusCode)
 	}
@@ -906,7 +906,7 @@ func TestLoginFailures(t *testing.T) {
 	if err != nil {
 		t.Fatalf("login without a password: %v", err)
 	}
-	defer httpResp.Body.Close()
+	defer func() { _ = httpResp.Body.Close() }()
 	body, _ := io.ReadAll(httpResp.Body)
 	if !strings.Contains(string(body), `"code" : "6"`) {
 		t.Fatalf("login without a password: %s", body)
@@ -942,7 +942,7 @@ func TestPostWithoutAPIOrRefererIsIgnored(t *testing.T) {
 	if err != nil {
 		t.Fatalf("post: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusFound {
 		t.Fatalf("status %d, want 302", resp.StatusCode)
 	}
@@ -976,7 +976,7 @@ func TestGoStateCarriesTheErrorFromTheRedirect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(resp.Body)
 
 	var st dzzzr.GameState

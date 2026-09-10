@@ -54,7 +54,7 @@ func webDo(t *testing.T, srv *httptest.Server, method, path, body string, out an
 	if err != nil {
 		t.Fatalf("%s %s: %v", method, path, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatalf("%s %s: не прочитан ответ: %v", method, path, err)
@@ -249,7 +249,7 @@ func TestWebExportFormats(t *testing.T) {
 			t.Fatalf("экспорт %q: %v", tc.format, err)
 		}
 		body, _ := io.ReadAll(res.Body)
-		res.Body.Close()
+		_ = res.Body.Close()
 		if res.StatusCode != http.StatusOK {
 			t.Fatalf("экспорт %q вернул %d", tc.format, res.StatusCode)
 		}
@@ -332,7 +332,7 @@ func TestWebServesEmbeddedInterface(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	body, _ := io.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("корень вернул %d", res.StatusCode)

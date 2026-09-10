@@ -43,7 +43,7 @@ func agentAuthorize(ctx context.Context, cfg *config, c *dzzzr.Client) error {
 		return err
 	}
 	applyCredentialOverrides(cfg, c)
-	fmt.Fprintf(cfg.stderr, "Сессия не найдена (%s): для доступа к API задайте -login и -password или выполните «dzzzr login».\n", path)
+	_, _ = fmt.Fprintf(cfg.stderr, "Сессия не найдена (%s): для доступа к API задайте -login и -password или выполните «dzzzr login».\n", path)
 	return nil
 }
 
@@ -190,8 +190,8 @@ func agentSystemPrompt(cfg *config, catalog *agenttools.Catalog, withFiles bool)
 	now := systemPromptNow()
 	var b strings.Builder
 	b.WriteString("You are an autonomous agent for dzzzr, a command-line client of the Dozor Classic city-game engine.\n")
-	fmt.Fprintf(&b, "The city segment of this session is: %s\n", cfg.city)
-	fmt.Fprintf(&b, "The current date and time is: %s (local, RFC3339; %s in UTC).\n",
+	_, _ = fmt.Fprintf(&b, "The city segment of this session is: %s\n", cfg.city)
+	_, _ = fmt.Fprintf(&b, "The current date and time is: %s (local, RFC3339; %s in UTC).\n",
 		now.Format(time.RFC3339), now.UTC().Format(time.RFC3339))
 	b.WriteString("\nRules:\n")
 	b.WriteString("- TIME: treat the date and time above as authoritative. Never infer today's date from memory. " +
@@ -206,7 +206,7 @@ func agentSystemPrompt(cfg *config, catalog *agenttools.Catalog, withFiles bool)
 	b.WriteString("- Read the game state again before acting on it: another player may have changed it.\n")
 	b.WriteString("- Finish the task you were given. Do not stop halfway and offer to continue.\n")
 	if withFiles {
-		fmt.Fprintf(&b, "- LOCAL FILES: read_local_file, list_local_dir and search_local_files reach the team's own "+
+		_, _ = fmt.Fprintf(&b, "- LOCAL FILES: read_local_file, list_local_dir and search_local_files reach the team's own "+
 			"notes under %s. You cannot read anything outside that directory.\n", agentfiles.RootEnv)
 		b.WriteString("- LOCAL JSON EXPORT: local artifacts can be created under the file root even with readonly engine access. For PDF scenarios alternate index_pdf and save_local_json for SMALL STRUCTURAL MAPPING PARTS (one level per response), then save a version:2 manifest listing part paths and use extract_pdf to create the final file. Save parts while reading, never wait until all pages are read to generate one huge mapping. Reuse saved parts after interruption. Never transcribe document text into save_local_json or assemble_local_json. Other non-PDF JSON can use save_local_json normally. Never overwrite existing files or invent a target game ID for local export. Report success only after a successful extraction result.\n")
 	}

@@ -68,7 +68,7 @@ func (h *webHub) httpUploadChatFile(w http.ResponseWriter, r *http.Request) {
 		webError(w, http.StatusBadRequest, "нужно поле формы «file»")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	root, err := chatUploadsRoot()
 	if err != nil {
@@ -95,7 +95,7 @@ func (h *webHub) httpUploadChatFile(w http.ResponseWriter, r *http.Request) {
 		webError(w, http.StatusInternalServerError, "не удалось создать %s: %v", dest, err)
 		return
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	n, err := io.Copy(out, file)
 	if err != nil {
@@ -138,7 +138,7 @@ func appendUploadedFilesNote(content string, files []uploadedFileRef) string {
 		if strings.EqualFold(filepath.Ext(f.Path), ".pdf") {
 			tool = "read_pdf"
 		}
-		fmt.Fprintf(&b, "- %s: %s (прочитай через %s)\n", name, f.Path, tool)
+		_, _ = fmt.Fprintf(&b, "- %s: %s (прочитай через %s)\n", name, f.Path, tool)
 	}
 	return b.String()
 }

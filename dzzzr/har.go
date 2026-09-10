@@ -120,7 +120,7 @@ func (t *harTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// The body is bounded like the client's own reads: a capture must not be
 	// able to hold more of a runaway response than the client itself would.
 	respBody, readErr := io.ReadAll(io.LimitReader(resp.Body, maxBodyBytes))
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if readErr != nil {
 		return nil, readErr
 	}

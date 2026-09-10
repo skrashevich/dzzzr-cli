@@ -49,7 +49,7 @@ func sourceLevelClient(t *testing.T, fields url.Values) (*dzzzr.Client, <-chan u
 	page.WriteString(`<form method="post">`)
 	for key, values := range fields {
 		for _, value := range values {
-			fmt.Fprintf(&page, `<input name="%s" value="%s">`, html.EscapeString(key), html.EscapeString(value))
+			_, _ = fmt.Fprintf(&page, `<input name="%s" value="%s">`, html.EscapeString(key), html.EscapeString(value))
 		}
 	}
 	page.WriteString(`<input type="checkbox" name="bonus" checked><input type="checkbox" name="publish" checked></form>`)

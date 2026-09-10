@@ -186,7 +186,7 @@ func main() {
 	logger := log.New(os.Stderr, "dzzzr-mock ", log.LstdFlags)
 	quirks, err := parseQuirks(*quirkList)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "dzzzr-mock:", err)
+		_, _ = fmt.Fprintln(os.Stderr, "dzzzr-mock:", err)
 		os.Exit(2)
 	}
 	srv := newServer(*city, logger, quirks...)

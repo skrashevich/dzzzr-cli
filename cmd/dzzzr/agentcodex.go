@@ -63,7 +63,7 @@ func (p *codexErrorProvider) Chat(ctx context.Context, messages []providers.Mess
 	if !ok || apiErr.Message != "" || apiErr.Response == nil || apiErr.Response.Body == nil {
 		return response, err
 	}
-	defer apiErr.Response.Body.Close()
+	defer func() { _ = apiErr.Response.Body.Close() }()
 	body, readErr := io.ReadAll(io.LimitReader(apiErr.Response.Body, 64<<10))
 	var detail struct {
 		Detail string `json:"detail"`

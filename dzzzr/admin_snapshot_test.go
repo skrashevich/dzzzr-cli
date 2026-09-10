@@ -18,7 +18,7 @@ func TestAdminReplaceGamePostsExplicitZeroAndEmpty(t *testing.T) {
 	page.WriteString("<form>")
 	for name, values := range fields {
 		for _, value := range values {
-			fmt.Fprintf(&page, `<input name="%s" value="%s">`, html.EscapeString(name), html.EscapeString(value))
+			_, _ = fmt.Fprintf(&page, `<input name="%s" value="%s">`, html.EscapeString(name), html.EscapeString(value))
 		}
 	}
 	page.WriteString(`<input type="checkbox" name="publish" checked><input type="checkbox" name="invitation" checked></form>`)

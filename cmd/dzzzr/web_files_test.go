@@ -86,7 +86,7 @@ func TestHarvestFindsFileAcrossRootResolutions(t *testing.T) {
 		t.Fatal(err)
 	}
 	body, _ := io.ReadAll(res.Body)
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("скачивание вернуло %d: %s", res.StatusCode, body)
 	}
@@ -102,7 +102,7 @@ func TestHarvestFindsFileAcrossRootResolutions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != http.StatusNotFound {
 		t.Fatalf("незаписанный файл вернул %d, ожидался 404", res.StatusCode)
 	}

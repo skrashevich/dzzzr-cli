@@ -40,17 +40,17 @@ func TestAgentAuthentication(t *testing.T) {
 						t.Error("credentials not forwarded")
 					}
 					if tc.rejectLogin {
-						fmt.Fprint(w, `{"code":4}`)
+						_, _ = fmt.Fprint(w, `{"code":4}`)
 						return
 					}
-					fmt.Fprint(w, `{"code":2,"userToken":"FRESH","userName":"Player"}`)
+					_, _ = fmt.Fprint(w, `{"code":2,"userToken":"FRESH","userName":"Player"}`)
 				case "/moscow/API/gamesList.php":
 					reads++
 					if r.URL.Query().Get("s") != "FRESH" || tc.rejectFresh {
-						fmt.Fprint(w, `{"error":"Ошибка авторизации. Неверный идентификатор сессии"}`)
+						_, _ = fmt.Fprint(w, `{"error":"Ошибка авторизации. Неверный идентификатор сессии"}`)
 						return
 					}
-					fmt.Fprint(w, `{"games":[]}`)
+					_, _ = fmt.Fprint(w, `{"games":[]}`)
 				default:
 					http.NotFound(w, r)
 				}

@@ -42,10 +42,10 @@ func cmdMCP(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) er
 		return fatal("не удалось запустить сервер MCP: %v", err)
 	}
 
-	fmt.Fprintf(cfg.stderr, "dzzzr mcp %s: инструментов %d, права %s, город %s\n",
+	_, _ = fmt.Fprintf(cfg.stderr, "dzzzr mcp %s: инструментов %d, права %s, город %s\n",
 		version, len(catalog.Tools()), catalog.Policy(), cfg.city)
 	if !c.HasAdminCredentials() {
-		fmt.Fprintln(cfg.stderr, "Инструменты организатора выключены: не заданы -admin-login и -admin-password.")
+		_, _ = fmt.Fprintln(cfg.stderr, "Инструменты организатора выключены: не заданы -admin-login и -admin-password.")
 	}
 	if err := agentmcp.ServeStdio(ctx, server); err != nil && !endedByClient(err) {
 		return fatal("сервер MCP завершился с ошибкой: %v", err)

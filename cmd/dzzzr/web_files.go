@@ -182,7 +182,7 @@ func (h *webHub) httpDownloadChatFile(w http.ResponseWriter, r *http.Request) {
 		webError(w, http.StatusGone, "файл больше недоступен: %v", err)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	info, err := file.Stat()
 	if err != nil || !info.Mode().IsRegular() {
 		webError(w, http.StatusGone, "файл больше недоступен")

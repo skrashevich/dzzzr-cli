@@ -163,7 +163,7 @@ func (cfg *config) debugf(format string, args ...any) {
 	if !cfg.debug {
 		return
 	}
-	fmt.Fprintf(cfg.stderr, "[%s] %s\n", time.Now().Format("15:04:05.000"), fmt.Sprintf(format, args...))
+	_, _ = fmt.Fprintf(cfg.stderr, "[%s] %s\n", time.Now().Format("15:04:05.000"), fmt.Sprintf(format, args...))
 }
 
 // envOr returns the environment variable or a fallback.
@@ -215,10 +215,10 @@ func splitArgs(fs *flag.FlagSet, args []string) ([]string, error) {
 // printUsage writes the program's help: the two accepted argument orders,
 // the command table split into player and organizer groups, and the flags.
 func printUsage(w io.Writer, fs *flag.FlagSet) {
-	fmt.Fprintf(w, "dzzzr %s — клиент движка «Дозор Классик»\n\n", version)
-	fmt.Fprintln(w, "Использование:")
-	fmt.Fprintln(w, "  dzzzr [флаги] <команда> [аргументы]")
-	fmt.Fprintln(w, "  dzzzr <команда> [флаги] [аргументы]")
+	_, _ = fmt.Fprintf(w, "dzzzr %s — клиент движка «Дозор Классик»\n\n", version)
+	_, _ = fmt.Fprintln(w, "Использование:")
+	_, _ = fmt.Fprintln(w, "  dzzzr [флаги] <команда> [аргументы]")
+	_, _ = fmt.Fprintln(w, "  dzzzr <команда> [флаги] [аргументы]")
 
 	names := make([]string, 0, len(commands))
 	for _, c := range commands {
@@ -229,7 +229,7 @@ func printUsage(w io.Writer, fs *flag.FlagSet) {
 	printGroup(w, "Команды игрока", names, func(n string) bool { return !isAdminCommand(n) })
 	printGroup(w, "Команды организатора", names, isAdminCommand)
 
-	fmt.Fprintln(w, "\nФлаги:")
+	_, _ = fmt.Fprintln(w, "\nФлаги:")
 	fs.SetOutput(w)
 	fs.PrintDefaults()
 	// The file mode is a promise only where the filesystem keeps it: on
@@ -239,9 +239,9 @@ func printUsage(w io.Writer, fs *flag.FlagSet) {
 		name = filepath.Join(dir, name)
 	}
 	if runtime.GOOS == "windows" {
-		fmt.Fprintf(w, "\nСессия хранится в %s.\n", name)
+		_, _ = fmt.Fprintf(w, "\nСессия хранится в %s.\n", name)
 	} else {
-		fmt.Fprintf(w, "\nСессия хранится в %s с правами 0600.\n", name)
+		_, _ = fmt.Fprintf(w, "\nСессия хранится в %s с правами 0600.\n", name)
 	}
 }
 
@@ -257,11 +257,11 @@ func printGroup(w io.Writer, title string, names []string, keep func(string) boo
 	if len(selected) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\n%s:\n", title)
+	_, _ = fmt.Fprintf(w, "\n%s:\n", title)
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	for _, n := range selected {
 		c := findCommand(n)
-		fmt.Fprintf(tw, "  %s\t%s\n", c.Usage, c.Help)
+		_, _ = fmt.Fprintf(tw, "  %s\t%s\n", c.Usage, c.Help)
 	}
 	_ = tw.Flush()
 }
@@ -272,17 +272,17 @@ func isAdminCommand(name string) bool { return strings.HasPrefix(name, "admin-")
 // printCommandHelp writes the help of a single command, as shown by
 // "dzzzr <command> -h".
 func printCommandHelp(w io.Writer, c *command, fs *flag.FlagSet) {
-	fmt.Fprintf(w, "Использование: dzzzr [флаги] %s\n\n%s\n", c.Usage, c.Help)
+	_, _ = fmt.Fprintf(w, "Использование: dzzzr [флаги] %s\n\n%s\n", c.Usage, c.Help)
 	switch c.Auth {
 	case authOptional:
-		fmt.Fprintln(w, "\nРаботает без входа; сохранённая сессия используется, если она есть.")
+		_, _ = fmt.Fprintln(w, "\nРаботает без входа; сохранённая сессия используется, если она есть.")
 	case authPlayer:
-		fmt.Fprintln(w, "\nТребуется сессия сайта и игровые логин капитана с PIN.")
+		_, _ = fmt.Fprintln(w, "\nТребуется сессия сайта и игровые логин капитана с PIN.")
 	case authAdmin:
-		fmt.Fprintln(w, "\nТребуются логин и пароль организатора.")
+		_, _ = fmt.Fprintln(w, "\nТребуются логин и пароль организатора.")
 	case authNone:
 	}
-	fmt.Fprintln(w, "\nФлаги:")
+	_, _ = fmt.Fprintln(w, "\nФлаги:")
 	fs.SetOutput(w)
 	fs.PrintDefaults()
 }
@@ -357,13 +357,13 @@ func run(args []string, stdout, stderr io.Writer) int {
 		printUsage(stdout, fs)
 		return 0
 	case err != nil:
-		fmt.Fprintf(stderr, "Ошибка: %v\n", err)
-		fmt.Fprintln(stderr, "Подсказка: «dzzzr -h» показывает список команд.")
+		_, _ = fmt.Fprintf(stderr, "Ошибка: %v\n", err)
+		_, _ = fmt.Fprintln(stderr, "Подсказка: «dzzzr -h» показывает список команд.")
 		return 2
 	}
 
 	if cfg.showVersion {
-		fmt.Fprintf(stdout, "dzzzr %s\n", version)
+		_, _ = fmt.Fprintf(stdout, "dzzzr %s\n", version)
 		return 0
 	}
 	if len(positional) == 0 {
@@ -374,8 +374,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 	name := positional[0]
 	cmd := findCommand(name)
 	if cmd == nil {
-		fmt.Fprintf(stderr, "Ошибка: неизвестная команда %q\n", name)
-		fmt.Fprintln(stderr, "Подсказка: «dzzzr -h» показывает список команд.")
+		_, _ = fmt.Fprintf(stderr, "Ошибка: неизвестная команда %q\n", name)
+		_, _ = fmt.Fprintln(stderr, "Подсказка: «dzzzr -h» показывает список команд.")
 		return 2
 	}
 

@@ -233,19 +233,19 @@ func (t *tuiConfirmer) ConfirmToolCall(ctx context.Context, req agenttools.Confi
 // exportChatMarkdown renders a conversation as a document a team can keep.
 func exportChatMarkdown(snap chatSnapshot) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# %s\n\n", snap.Title)
-	fmt.Fprintf(&b, "Город: %s  \nПрава: %s  \nНачат: %s\n\n",
+	_, _ = fmt.Fprintf(&b, "# %s\n\n", snap.Title)
+	_, _ = fmt.Fprintf(&b, "Город: %s  \nПрава: %s  \nНачат: %s\n\n",
 		snap.City, snap.Policy, snap.CreatedAt.Format("2006-01-02 15:04:05"))
 	for _, line := range snap.Lines {
 		switch line.Role {
 		case chatRoleUser:
-			fmt.Fprintf(&b, "## Вы\n\n%s\n\n", line.Content)
+			_, _ = fmt.Fprintf(&b, "## Вы\n\n%s\n\n", line.Content)
 		case chatRoleAssistant:
-			fmt.Fprintf(&b, "## Агент\n\n%s\n\n", line.Content)
+			_, _ = fmt.Fprintf(&b, "## Агент\n\n%s\n\n", line.Content)
 		case chatRoleTool:
-			fmt.Fprintf(&b, "> %s\n\n", line.Content)
+			_, _ = fmt.Fprintf(&b, "> %s\n\n", line.Content)
 		case chatRoleSystem:
-			fmt.Fprintf(&b, "_%s_\n\n", line.Content)
+			_, _ = fmt.Fprintf(&b, "_%s_\n\n", line.Content)
 		}
 	}
 	return b.String()

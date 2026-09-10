@@ -100,7 +100,7 @@ func webError(w http.ResponseWriter, code int, format string, args ...any) {
 // webReadJSON decodes a request body, answering the browser itself when it
 // cannot. A megabyte is far more than any of these requests carry.
 func webReadJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 	data, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
 		webError(w, http.StatusBadRequest, "тело запроса не прочитано")
@@ -187,7 +187,7 @@ func serveWeb(ctx context.Context, hub *webHub, addr string) error {
 	srv := &http.Server{Addr: addr, Handler: hub.newMux()}
 
 	url := "http://" + addr
-	fmt.Fprintf(hub.cfg.stderr, "dzzzr web: %s (Ctrl+C — выход)\n", url)
+	_, _ = fmt.Fprintf(hub.cfg.stderr, "dzzzr web: %s (Ctrl+C — выход)\n", url)
 	if err := openBrowser(url); err != nil {
 		hub.cfg.debugf("браузер не открыт: %v", err)
 	}

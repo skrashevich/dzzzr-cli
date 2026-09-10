@@ -52,7 +52,7 @@ func cmdAgent(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) 
 	}
 
 	files := agentFileTools(cfg)
-	fmt.Fprintf(cfg.stderr, "dzzzr agent %s: модель %s, инструментов %d, права %s, город %s\n",
+	_, _ = fmt.Fprintf(cfg.stderr, "dzzzr agent %s: модель %s, инструментов %d, права %s, город %s\n",
 		version, agentCfg.Model, len(catalog.Tools())+len(files), catalog.Policy(), cfg.city)
 
 	var answer string
@@ -67,19 +67,19 @@ func cmdAgent(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) 
 			case agentloop.EventAssistantText:
 				answer = ev.Text
 				if !cfg.jsonOut {
-					fmt.Fprintln(cfg.stdout, formatMarkdownForTerminal(ev.Text))
+					_, _ = fmt.Fprintln(cfg.stdout, formatMarkdownForTerminal(ev.Text))
 				}
 			case agentloop.EventToolStart:
-				fmt.Fprintf(cfg.stderr, "· %s %s\n", ev.ToolName, ev.ToolArgs)
+				_, _ = fmt.Fprintf(cfg.stderr, "· %s %s\n", ev.ToolName, ev.ToolArgs)
 			case agentloop.EventToolDone:
 				cfg.debugf("%s: результат %d байт, ошибка=%t", ev.ToolName, len(ev.ToolResult), ev.ToolError)
 				if ev.ToolError {
 					cfg.debugf("%s: %s", ev.ToolName, ev.ToolResult)
 				}
 			case agentloop.EventReport:
-				fmt.Fprintln(cfg.stderr, strings.TrimRight(ev.Report, "\n"))
+				_, _ = fmt.Fprintln(cfg.stderr, strings.TrimRight(ev.Report, "\n"))
 			case agentloop.EventWarning:
-				fmt.Fprintln(cfg.stderr, ev.Message)
+				_, _ = fmt.Fprintln(cfg.stderr, ev.Message)
 			}
 		},
 		OnStatus: func(phase, message string) {
@@ -89,7 +89,7 @@ func cmdAgent(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) 
 				cfg.debugf("%s", message)
 				return
 			}
-			fmt.Fprintln(cfg.stderr, message)
+			_, _ = fmt.Fprintln(cfg.stderr, message)
 		},
 	})
 	if err != nil {
@@ -108,7 +108,7 @@ type terminalConfirmer struct{ cfg *config }
 // ConfirmToolCall implements agenttools.Confirmer. Anything but an explicit
 // yes is a refusal: a submitted code cannot be taken back.
 func (t *terminalConfirmer) ConfirmToolCall(_ context.Context, req agenttools.ConfirmRequest) (bool, error) {
-	fmt.Fprintf(t.cfg.stderr, "\nАгент хочет выполнить %s%s\nРазрешить? [y/N] ",
+	_, _ = fmt.Fprintf(t.cfg.stderr, "\nАгент хочет выполнить %s%s\nРазрешить? [y/N] ",
 		req.Tool, encodeConfirmArgs(req.Args))
 	line, err := t.cfg.lineReader().ReadString('\n')
 	if err != nil && strings.TrimSpace(line) == "" {

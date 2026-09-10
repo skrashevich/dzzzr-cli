@@ -395,30 +395,30 @@ func (s *server) gamesPage(q url.Values) string {
 	if g.Finished {
 		status = "завершена"
 	}
-	fmt.Fprintf(&b, `<tr valign=top bgcolor=FFFEDE><td></td><td class=news nowrap><b>%s</b></td><td width=10></td><td nowrap class=news>%s</td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20></td><td width=10></td><td class=news width=400><b>%s</b></td></tr></table></td><td width=10></td><td class=news nowrap>%s</td><td class=news nowrap>сезон %d 2026</td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>`,
+	_, _ = fmt.Fprintf(&b, `<tr valign=top bgcolor=FFFEDE><td></td><td class=news nowrap><b>%s</b></td><td width=10></td><td nowrap class=news>%s</td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20></td><td width=10></td><td class=news width=400><b>%s</b></td></tr></table></td><td width=10></td><td class=news nowrap>%s</td><td class=news nowrap>сезон %d 2026</td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>`,
 		g.Start.Format("02.01.2006 15:04"), esc(g.Number), esc(g.GameName), status, g.Season)
 	b.WriteString(`</table>`)
 
 	b.WriteString(`<form method=post name=store>`)
-	fmt.Fprintf(&b, `<input type=hidden name=id value=%d>`, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=id value=%d>`, g.GameID)
 	b.WriteString(`<input type=hidden name=Project value=><input type=hidden name=ofset value=0><input type=hidden name=categoryValue value=>`)
 	b.WriteString(`<input type=hidden name=action value=update_game>`)
-	fmt.Fprintf(&b, `<input type=text name=name value='%s'>`, esc(g.GameName))
-	fmt.Fprintf(&b, `<input type=text name=number value="%s">`, esc(g.Number))
-	fmt.Fprintf(&b, `<input type=text name=date value="%s"><input type=text name=time value="%s">`,
+	_, _ = fmt.Fprintf(&b, `<input type=text name=name value='%s'>`, esc(g.GameName))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=number value="%s">`, esc(g.Number))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=date value="%s"><input type=text name=time value="%s">`,
 		g.Start.Format("02.01.2006"), g.Start.Format("15:04"))
-	fmt.Fprintf(&b, `<input type=text name=author value='%s'>`, esc(g.Authors))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=author value='%s'>`, esc(g.Authors))
 	b.WriteString(`<select name=league><option value=1 selected>Первая<option value=2>Вторая</select>`)
 	b.WriteString(`<input type=checkbox name=otherLeague> другая лига`)
-	fmt.Fprintf(&b, `<textarea name=legend>%s</textarea>`, esc(g.Legend))
+	_, _ = fmt.Fprintf(&b, `<textarea name=legend>%s</textarea>`, esc(g.Legend))
 	b.WriteString(`<textarea name=legendComment></textarea><textarea name=anons></textarea>`)
 	b.WriteString(`<input type=text name=clueMin value="30"><input type=text name=clueMin2 value="30"><input type=text name=clueMin3 value="30">`)
-	fmt.Fprintf(&b, `<input type=text name=masterCode value="%s"><input type=text name=masterCodeShtraf value="%d">`, esc(g.MasterCode), g.MasterCodePenalty)
-	fmt.Fprintf(&b, `<input type=text name=clueBeforeShtraf value="%d">`, g.ClueBeforePenalty)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=masterCode value="%s"><input type=text name=masterCodeShtraf value="%d">`, esc(g.MasterCode), g.MasterCodePenalty)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=clueBeforeShtraf value="%d">`, g.ClueBeforePenalty)
 	b.WriteString(`<input type=text name=penalty value="30"><input type=text name=price value="1500">`)
 	b.WriteString(`<textarea name=breafPlace>Парковка у ТЦ</textarea>`)
-	fmt.Fprintf(&b, `<input type=text name=greeting value="%s">`, esc(g.Greeting))
-	fmt.Fprintf(&b, `<input type=text name=bonusAfter value="%d">`, g.BonusAfter)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=greeting value="%s">`, esc(g.Greeting))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=bonusAfter value="%d">`, g.BonusAfter)
 	b.WriteString(`<input type=checkbox name=publish checked> опубликовать`)
 	if g.Finished {
 		b.WriteString(`<input type=checkbox name=finished checked> завершена`)
@@ -428,7 +428,7 @@ func (s *server) gamesPage(q url.Values) string {
 	b.WriteString(`<input type=submit value="Сохранить"></form>`)
 
 	b.WriteString(`<form method=post><input type=hidden name=Project value=><input type=hidden name=action value=copy_game>`)
-	fmt.Fprintf(&b, `<select name=game><option value=%d>%s</select>`, g.GameID, esc(g.GameName))
+	_, _ = fmt.Fprintf(&b, `<select name=game><option value=%d>%s</select>`, g.GameID, esc(g.GameName))
 	b.WriteString(`<input type=checkbox name=zadan> копировать с заданиями<input type=submit value="Копировать"></form>`)
 	return page(b.String())
 }
@@ -465,7 +465,7 @@ func (s *server) levelsPage(q url.Values) string {
 		var codes strings.Builder
 		codes.WriteString(`<select class=news>`)
 		for _, c := range l.Codes {
-			fmt.Fprintf(&codes, "<option>%s", esc(c))
+			_, _ = fmt.Fprintf(&codes, "<option>%s", esc(c))
 		}
 		if len(l.BonusCodes) > 0 {
 			codes.WriteString("<option>---бонусные")
@@ -474,7 +474,7 @@ func (s *server) levelsPage(q url.Values) string {
 				if i < len(l.BonusTimes) {
 					minutes = l.BonusTimes[i]
 				}
-				fmt.Fprintf(&codes, "<option>%s (%d мин.)", esc(c), minutes)
+				_, _ = fmt.Fprintf(&codes, "<option>%s (%d мин.)", esc(c), minutes)
 			}
 		}
 		if len(l.FakeCodes) > 0 {
@@ -484,7 +484,7 @@ func (s *server) levelsPage(q url.Values) string {
 				if i < len(l.FakePenalties) {
 					penalty = l.FakePenalties[i]
 				}
-				fmt.Fprintf(&codes, "<option>%s (%d мин.)", esc(c), penalty)
+				_, _ = fmt.Fprintf(&codes, "<option>%s (%d мин.)", esc(c), penalty)
 			}
 		}
 		codes.WriteString(`</select>`)
@@ -504,7 +504,7 @@ func (s *server) levelsPage(q url.Values) string {
 		if l.ID == selected && s.has(quirkSelectedLevelZero) {
 			printed = 0
 		}
-		fmt.Fprintf(&b, `<tr valign=top%s><td></td><td class=news><table cellpadding=0 cellspacing=0><tr><td></td><td class=news><span>%d</span>.</td></tr></table></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20></td><td width=10></td><td class=news width=400>%s</td></tr></table></td><td nowrap class=news align=center>%d:%d:%d</td><td nowrap class=news align=center>&nbsp;</td><td nowrap class=news>%s</td><td class=news align=center>%s</td><td class=news align=center>%s</td><td align=center>%s</td><td nowrap class=news>%s</td><td width=10></td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>`,
+		_, _ = fmt.Fprintf(&b, `<tr valign=top%s><td></td><td class=news><table cellpadding=0 cellspacing=0><tr><td></td><td class=news><span>%d</span>.</td></tr></table></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20></td><td width=10></td><td class=news width=400>%s</td></tr></table></td><td nowrap class=news align=center>%d:%d:%d</td><td nowrap class=news align=center>&nbsp;</td><td nowrap class=news>%s</td><td class=news align=center>%s</td><td class=news align=center>%s</td><td align=center>%s</td><td nowrap class=news>%s</td><td width=10></td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>`,
 			rowAttr, printed, nameCell, l.ClueMin, l.ClueMin2, l.ClueMin3, codes.String(), needed, tryLimit, spoiler, kind)
 	}
 	b.WriteString(`</table>`)
@@ -520,20 +520,20 @@ func (s *server) levelsPage(q url.Values) string {
 func levelForm(g *gameState, l *levelDef) string {
 	var b strings.Builder
 	b.WriteString(`<form method=post name=store>`)
-	fmt.Fprintf(&b, `<input type=hidden name=id value=%d>`, l.ID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=id value=%d>`, l.ID)
 	b.WriteString(`<input type=hidden name=Project value=><input type=hidden name=ofset value=0>`)
-	fmt.Fprintf(&b, `<input type=hidden name=categoryValue value=%d><input type=hidden name=category value=%d>`, g.GameID, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=categoryValue value=%d><input type=hidden name=category value=%d>`, g.GameID, g.GameID)
 	b.WriteString(`<input type=hidden name=action value=update_zadanie>`)
-	fmt.Fprintf(&b, `<input type=hidden name=order_p value=%d>`, l.Order)
-	fmt.Fprintf(&b, `<input type=text name=title value='%s'>`, esc(l.Title))
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=order_p value=%d>`, l.Order)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=title value='%s'>`, esc(l.Title))
 	b.WriteString(`<input type=text name=subtitle value=''>`)
-	fmt.Fprintf(&b, `<textarea name=question>%s</textarea>`, esc(l.Question))
-	fmt.Fprintf(&b, `<textarea name=clue1>%s</textarea>`, esc(l.Clue1))
-	fmt.Fprintf(&b, `<textarea name=clue2>%s</textarea>`, esc(l.Clue2))
-	fmt.Fprintf(&b, `<input type=text name=ClueMin value="%d"><input type=text name=ClueMin2 value="%d"><input type=text name=ClueMin3 value="%d">`, l.ClueMin, l.ClueMin2, l.ClueMin3)
+	_, _ = fmt.Fprintf(&b, `<textarea name=question>%s</textarea>`, esc(l.Question))
+	_, _ = fmt.Fprintf(&b, `<textarea name=clue1>%s</textarea>`, esc(l.Clue1))
+	_, _ = fmt.Fprintf(&b, `<textarea name=clue2>%s</textarea>`, esc(l.Clue2))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=ClueMin value="%d"><input type=text name=ClueMin2 value="%d"><input type=text name=ClueMin3 value="%d">`, l.ClueMin, l.ClueMin2, l.ClueMin3)
 	b.WriteString(`<input type=checkbox name=zapros1><input type=text name=interval1 value=""><input type=text name=shtraf1 value="">`)
 	b.WriteString(`<input type=checkbox name=zapros2><input type=text name=interval2 value=""><input type=text name=shtraf2 value="">`)
-	fmt.Fprintf(&b, `<textarea name=location></textarea><textarea name=locationComment>%s</textarea>`, esc(l.LocationComment))
+	_, _ = fmt.Fprintf(&b, `<textarea name=location></textarea><textarea name=locationComment>%s</textarea>`, esc(l.LocationComment))
 	for i, c := range l.Codes {
 		danger, sector := "", ""
 		if i < len(l.Dangers) {
@@ -542,16 +542,16 @@ func levelForm(g *gameState, l *levelDef) string {
 		if i < len(l.Sectors) {
 			sector = l.Sectors[i]
 		}
-		fmt.Fprintf(&b, `<input type=text name=code[%d] value="%s"><input type=text name=codeS[%d] value="">`, i, esc(c), i)
-		fmt.Fprintf(&b, `<select name=danger[%d]><option value="">-<option value="%s" selected>%s</select>`, i, esc(danger), esc(danger))
+		_, _ = fmt.Fprintf(&b, `<input type=text name=code[%d] value="%s"><input type=text name=codeS[%d] value="">`, i, esc(c), i)
+		_, _ = fmt.Fprintf(&b, `<select name=danger[%d]><option value="">-<option value="%s" selected>%s</select>`, i, esc(danger), esc(danger))
 		if sector == "" {
-			fmt.Fprintf(&b, `<select name=sector[%d]><option value="" selected>-<option value=1>1</select>`, i)
+			_, _ = fmt.Fprintf(&b, `<select name=sector[%d]><option value="" selected>-<option value=1>1</select>`, i)
 		} else {
-			fmt.Fprintf(&b, `<select name=sector[%d]><option value="">-<option value=%s selected>%s</select>`, i, esc(sector), esc(sector))
+			_, _ = fmt.Fprintf(&b, `<select name=sector[%d]><option value="">-<option value=%s selected>%s</select>`, i, esc(sector), esc(sector))
 		}
 	}
 	for i, n := range l.SectorNames {
-		fmt.Fprintf(&b, `<input type=text name=secName[%d] value='%s'>`, i+1, esc(n))
+		_, _ = fmt.Fprintf(&b, `<input type=text name=secName[%d] value='%s'>`, i+1, esc(n))
 	}
 	for i, c := range l.BonusCodes {
 		danger, minutes := "1", 0
@@ -561,21 +561,21 @@ func levelForm(g *gameState, l *levelDef) string {
 		if i < len(l.BonusTimes) {
 			minutes = l.BonusTimes[i]
 		}
-		fmt.Fprintf(&b, `<input type=text name=codeB[%d] value="%s"><input type=text name=codeBS[%d] value="">`, i, esc(c), i)
-		fmt.Fprintf(&b, `<select name=dangerB[%d]><option value="">-<option value="%s" selected>%s</select>`, i, esc(danger), esc(danger))
-		fmt.Fprintf(&b, `<input type=text name=timeB[%d] value="%d">`, i, minutes)
+		_, _ = fmt.Fprintf(&b, `<input type=text name=codeB[%d] value="%s"><input type=text name=codeBS[%d] value="">`, i, esc(c), i)
+		_, _ = fmt.Fprintf(&b, `<select name=dangerB[%d]><option value="">-<option value="%s" selected>%s</select>`, i, esc(danger), esc(danger))
+		_, _ = fmt.Fprintf(&b, `<input type=text name=timeB[%d] value="%d">`, i, minutes)
 	}
 	for i, c := range l.FakeCodes {
 		penalty := 0
 		if i < len(l.FakePenalties) {
 			penalty = l.FakePenalties[i]
 		}
-		fmt.Fprintf(&b, `<input type=text name=codeF[%d] value="%s"><input type=text name=codeFS[%d] value=""><input type=text name=fakeShtraf[%d] value="%d">`, i, esc(c), i, i, penalty)
+		_, _ = fmt.Fprintf(&b, `<input type=text name=codeF[%d] value="%s"><input type=text name=codeFS[%d] value=""><input type=text name=fakeShtraf[%d] value="%d">`, i, esc(c), i, i, penalty)
 	}
 	for _, sp := range l.Spoilers {
-		fmt.Fprintf(&b, `<textarea name=spoiler[%d]>%s</textarea>`, sp.Order, esc(sp.Text))
-		fmt.Fprintf(&b, `<input type=text name=spoilerCode[%d] value="%s"><input type=text name=spoilerSynonyms[%d] value="">`, sp.Order, esc(sp.Code), sp.Order)
-		fmt.Fprintf(&b, `<input type=text name=spoilerPenalty[%d] value="%d">`, sp.Order, sp.Penalty)
+		_, _ = fmt.Fprintf(&b, `<textarea name=spoiler[%d]>%s</textarea>`, sp.Order, esc(sp.Text))
+		_, _ = fmt.Fprintf(&b, `<input type=text name=spoilerCode[%d] value="%s"><input type=text name=spoilerSynonyms[%d] value="">`, sp.Order, esc(sp.Code), sp.Order)
+		_, _ = fmt.Fprintf(&b, `<input type=text name=spoilerPenalty[%d] value="%d">`, sp.Order, sp.Penalty)
 	}
 	needed := ""
 	if l.CodeCount > 0 {
@@ -585,15 +585,15 @@ func levelForm(g *gameState, l *levelDef) string {
 	if l.TryLimit > 0 {
 		tryLimit = strconv.Itoa(l.TryLimit)
 	}
-	fmt.Fprintf(&b, `<input type=text name=codeCount value="%s"><input type=text name=tryLimit value="%s">`, needed, tryLimit)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=codeCount value="%s"><input type=text name=tryLimit value="%s">`, needed, tryLimit)
 	b.WriteString(`<input type=text name=penalty value="" id=penalty><input type=text name=greeting value="">`)
-	fmt.Fprintf(&b, `<input type=text name=lat value="%s"><input type=text name=lon value="%s"><input type=text name=radius value="%s">`, esc(l.Lat), esc(l.Lon), esc(l.Radius))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=lat value="%s"><input type=text name=lon value="%s"><input type=text name=radius value="%s">`, esc(l.Lat), esc(l.Lon), esc(l.Radius))
 	b.WriteString(checkbox("noMasterCode", l.NoMasterCode))
 	b.WriteString(checkbox("isSabotage", false))
 	b.WriteString(checkbox("bonus", l.Bonus))
-	fmt.Fprintf(&b, `<input type=text name=bonusTime value="%d">`, l.BonusTime)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=bonusTime value="%d">`, l.BonusTime)
 	b.WriteString(checkbox("skvoz", l.Skvoz))
-	fmt.Fprintf(&b, `<input type=text name=skvozMin value="%d"><input type=text name=skvozStart value="">`, l.SkvozMin)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=skvozMin value="%d"><input type=text name=skvozStart value="">`, l.SkvozMin)
 	b.WriteString(checkbox("nobreak", l.NoBreak))
 	b.WriteString(checkbox("clueBefore", true))
 	b.WriteString(checkbox("zapas", false))
@@ -620,16 +620,16 @@ func (s *server) teamsPage(q url.Values) string {
 	if g.Blocked {
 		blocked = " bgcolor=F0F0F0"
 	}
-	fmt.Fprintf(&b, `<tr valign=top bgcolor=FFFEDE%s><td></td><td class=news><a href=?action=users&edit=1&login=%s&categoryValue=Site&Project= class=news>%s</a></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20></td><td width=10></td><td class=news width=400><b>%s</b></td></tr></table></td><td width=10></td><td class=news>%s</td><td width=10></td><td></td><td></td><td align=center class=news>7</td><td></td><td class=news align=right nowrap></td><td width=10></td><td class=news>%s</td><td width=10></td><td class=news align=right>%d</td><td width=10></td><td class=news nowrap>Первая</td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>`,
+	_, _ = fmt.Fprintf(&b, `<tr valign=top bgcolor=FFFEDE%s><td></td><td class=news><a href=?action=users&edit=1&login=%s&categoryValue=Site&Project= class=news>%s</a></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20></td><td width=10></td><td class=news width=400><b>%s</b></td></tr></table></td><td width=10></td><td class=news>%s</td><td width=10></td><td></td><td></td><td align=center class=news>7</td><td></td><td class=news align=right nowrap></td><td width=10></td><td class=news>%s</td><td width=10></td><td class=news align=right>%d</td><td width=10></td><td class=news nowrap>Первая</td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>`,
 		blocked, esc(g.Captain), esc(g.Captain), esc(g.TeamName), statuses[g.Status], esc(g.Pin), g.RatingPoints)
 	b.WriteString(`</table>`)
 
 	// The engine's "add a team to this game" picker lists every team of the
 	// city, which is the only place that directory is readable.
 	b.WriteString(`<form method=post name=add action=admin.php><input type=hidden name=action value=addTeamToGame>`)
-	fmt.Fprintf(&b, `<input type=hidden name=categoryValue value=%d><select name=team><option value=0>`, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=categoryValue value=%d><select name=team><option value=0>`, g.GameID)
 	for _, t := range g.CityTeams {
-		fmt.Fprintf(&b, `<option value=%d>%s`, t.ID, esc(t.Name))
+		_, _ = fmt.Fprintf(&b, `<option value=%d>%s`, t.ID, esc(t.Name))
 	}
 	b.WriteString(`</select><input type=submit value="Добавить"></form>`)
 
@@ -639,14 +639,14 @@ func (s *server) teamsPage(q url.Values) string {
 		b.WriteString(`<form method=post name=store action=admin.php><input type=hidden name=action value=newTeam><input type=text name=name value=''>`)
 	}
 	b.WriteString(`<form method=post name=frm>`)
-	fmt.Fprintf(&b, `<input type=hidden name=id value=%d>`, g.TeamID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=id value=%d>`, g.TeamID)
 	b.WriteString(`<input type=hidden name=desc value=><input type=hidden name=Project value=>`)
-	fmt.Fprintf(&b, `<input type=hidden name=categoryValue value=%d>`, g.GameID)
-	fmt.Fprintf(&b, `<input type=hidden name=captain value=%s>`, esc(g.Captain))
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=categoryValue value=%d>`, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=captain value=%s>`, esc(g.Captain))
 	b.WriteString(`<input type=hidden name=ofset value=0><input type=hidden name=action value=updateTeam>`)
-	fmt.Fprintf(&b, `<input type=text name=name value='%s'>`, esc(g.TeamName))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=name value='%s'>`, esc(g.TeamName))
 	b.WriteString(`<select name=league><option value=1 selected>Первая</select>`)
-	fmt.Fprintf(&b, `<select name=newCap><option value='%s' selected>%s</select>`, esc(g.Captain), esc(g.Captain))
+	_, _ = fmt.Fprintf(&b, `<select name=newCap><option value='%s' selected>%s</select>`, esc(g.Captain), esc(g.Captain))
 	b.WriteString(`<select name=shtab><option value='' selected>не назначен</option></select>`)
 	b.WriteString(`<select name=captainHelper><option value='' selected>не назначен</option></select>`)
 	b.WriteString(`<textarea name=history></textarea><input type=text name=deviz value='Мы тут просто мимо'><input type=text name=website value=''>`)
@@ -655,7 +655,7 @@ func (s *server) teamsPage(q url.Values) string {
 	// at the head of the block for adding a player.
 	b.WriteString(`<b class=news>Полный состав команды</b><br><input type=checkbox name=pl[]>`)
 	for _, p := range g.Roster {
-		fmt.Fprintf(&b, `<input type=checkbox name=pl[%s]%s><a href=?action=users&edit=1&login=%s>%s</a><br />`,
+		_, _ = fmt.Fprintf(&b, `<input type=checkbox name=pl[%s]%s><a href=?action=users&edit=1&login=%s>%s</a><br />`,
 			esc(p.Login), map[bool]string{true: " checked", false: ""}[p.OnTeam], esc(p.Login), esc(p.Login))
 	}
 	b.WriteString(checkbox("blocked", g.Blocked))
@@ -667,13 +667,13 @@ func (s *server) teamsPage(q url.Values) string {
 		if code == g.Status {
 			sel = " selected"
 		}
-		fmt.Fprintf(&b, `<option value=%d%s>%s`, code, sel, statuses[code])
+		_, _ = fmt.Fprintf(&b, `<option value=%d%s>%s`, code, sel, statuses[code])
 	}
 	b.WriteString(`</select>`)
-	fmt.Fprintf(&b, `<input type=text name=pinlogin disabled value='%s'>`, esc(g.Pin))
+	_, _ = fmt.Fprintf(&b, `<input type=text name=pinlogin disabled value='%s'>`, esc(g.Pin))
 	b.WriteString(`<input type=checkbox id=nPn name=newPIN> Сгенерировать новый`)
 	b.WriteString(`<textarea name=comment></textarea>`)
-	fmt.Fprintf(&b, `<input type=text name=points value='%d'>`, g.RatingPoints)
+	_, _ = fmt.Fprintf(&b, `<input type=text name=points value='%d'>`, g.RatingPoints)
 	b.WriteString(checkbox("novice", false))
 	b.WriteString(`<input type=submit value="Сохранить"></form>`)
 	return page(b.String())
@@ -699,32 +699,32 @@ func (s *server) handleAdminMonitor(w http.ResponseWriter, r *http.Request) {
 	g := s.state
 	var b strings.Builder
 	b.WriteString(`<form name=fnsh method=get><select name=finished onChange="document.fnsh.submit()">`)
-	fmt.Fprintf(&b, `<option value=%d selected>%s - %s`, g.GameID, g.Start.Format("2006-01-02"), esc(g.GameName))
+	_, _ = fmt.Fprintf(&b, `<option value=%d selected>%s - %s`, g.GameID, g.Start.Format("2006-01-02"), esc(g.GameName))
 	b.WriteString(`</select><select name=refresh><option value=15 selected>15 сек.</select></form>`)
 	b.WriteString(`<form method=post name=gmform>`)
-	fmt.Fprintf(&b, `<input type=hidden name=finished value=%d>`, g.GameID)
-	fmt.Fprintf(&b, `<select name=team><option value=0>-- команда --<option value=%d>%s</select>`, g.TeamID, esc(g.TeamName))
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=finished value=%d>`, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<select name=team><option value=0>-- команда --<option value=%d>%s</select>`, g.TeamID, esc(g.TeamName))
 	b.WriteString(`<select name=level><option value=0>-- уровень --`)
 	for _, l := range g.Levels {
-		fmt.Fprintf(&b, `<option value=%d>%d. %s`, l.Order, l.Order, esc(l.Title))
+		_, _ = fmt.Fprintf(&b, `<option value=%d>%d. %s`, l.Order, l.Order, esc(l.Title))
 	}
 	b.WriteString(`</select><input type=text name=time value=""><input type=submit value="выдать"></form>`)
 	engineButton := "остановить движок"
 	if g.EngineStopped {
 		engineButton = "включить движок"
 	}
-	fmt.Fprintf(&b, `<form method=post><input type=hidden name=action value=switchRobot><input type=hidden name=finished value=%d><input type=submit value="%s"></form>`, g.GameID, engineButton)
+	_, _ = fmt.Fprintf(&b, `<form method=post><input type=hidden name=action value=switchRobot><input type=hidden name=finished value=%d><input type=submit value="%s"></form>`, g.GameID, engineButton)
 	b.WriteString(`<table id=suxx>`)
-	fmt.Fprintf(&b, `<tr id=team%d><td>%s</td>`, g.TeamID, esc(g.TeamName))
+	_, _ = fmt.Fprintf(&b, `<tr id=team%d><td>%s</td>`, g.TeamID, esc(g.TeamName))
 	for _, l := range g.Levels {
 		cell := ""
 		if p := g.Progress[l.Order]; p != nil {
 			cell = p.IssuedAt.Format("15:04:05")
 		}
-		fmt.Fprintf(&b, `<td id=cell_%d_%d>%s</td>`, g.TeamID, l.Order, cell)
+		_, _ = fmt.Fprintf(&b, `<td id=cell_%d_%d>%s</td>`, g.TeamID, l.Order, cell)
 	}
 	b.WriteString(`</tr></table>`)
-	fmt.Fprintf(&b, `<iframe name=LogFrame src=lookLog.php?gmid=%d&Project=&refresh=15></iframe>`, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<iframe name=LogFrame src=lookLog.php?gmid=%d&Project=&refresh=15></iframe>`, g.GameID)
 	writeHTML(w, page(b.String()))
 }
 
@@ -908,9 +908,9 @@ func (s *server) handleAdminChat(w http.ResponseWriter, r *http.Request) {
 	g := s.state
 	var b strings.Builder
 	b.WriteString(`<form method=post><input type=hidden name=action value=addMessage><input type=hidden name=Project value=>`)
-	fmt.Fprintf(&b, `<input type=hidden name=gm value=%d>`, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=gm value=%d>`, g.GameID)
 	b.WriteString(`<textarea name=content></textarea>`)
-	fmt.Fprintf(&b, `<select name=team><option value=0>-- ВСЕМ --<option value=%d>%s</select>`, g.TeamID, esc(g.TeamName))
+	_, _ = fmt.Fprintf(&b, `<select name=team><option value=0>-- ВСЕМ --<option value=%d>%s</select>`, g.TeamID, esc(g.TeamName))
 	b.WriteString(`<input type=checkbox name=important> ВАЖНОЕ!<input type=text name=showafter value=""><input type=submit value="Отправить сообщение"></form>`)
 	b.WriteString(`<h3>Сообщения</h3><table cellpadding=3 cellspacing=0 border=1>`)
 	for i := len(g.OrgMessages) - 1; i >= 0; i-- {
@@ -925,12 +925,12 @@ func (s *server) handleAdminChat(w http.ResponseWriter, r *http.Request) {
 			bg = "#99cccc"
 		}
 		ts := m.Time.Format("2006-01-02 15:04:05")
-		fmt.Fprintf(&b, `<tr style='background-color:%s'><td>%s</td><td><strong>%s</strong></td><td>%s</td><td>%s</td><form method=post><td><input type=hidden name=Project value=><input type=hidden name=gm value=%d><input type=hidden name=action value=delMessage><input type=hidden name=tm value='%s'><input type=submit value='del'></td></form></tr>`,
+		_, _ = fmt.Fprintf(&b, `<tr style='background-color:%s'><td>%s</td><td><strong>%s</strong></td><td>%s</td><td>%s</td><form method=post><td><input type=hidden name=Project value=><input type=hidden name=gm value=%d><input type=hidden name=action value=delMessage><input type=hidden name=tm value='%s'><input type=submit value='del'></td></form></tr>`,
 			bg, m.Time.Format("15:04:05"), addressee, esc(m.Text), showAfterCell(m), g.GameID, ts)
 	}
 	b.WriteString(`</table>`)
 	b.WriteString(`<form method=post><input type=hidden name=Project value=><input type=hidden name=action value=delAllMessages>`)
-	fmt.Fprintf(&b, `<input type=hidden name=gm value=%d><input type=submit value="Удалить все сообщения"></form>`, g.GameID)
+	_, _ = fmt.Fprintf(&b, `<input type=hidden name=gm value=%d><input type=submit value="Удалить все сообщения"></form>`, g.GameID)
 	writeHTML(w, page(b.String()))
 }
 

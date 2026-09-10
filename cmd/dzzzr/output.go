@@ -92,7 +92,7 @@ func printError(cfg *config, format string, args ...any) {
 		_ = outputJSON(cfg, errorOutput{Error: msg})
 		return
 	}
-	fmt.Fprintln(cfg.stderr, "Ошибка: "+msg)
+	_, _ = fmt.Fprintln(cfg.stderr, "Ошибка: "+msg)
 }
 
 // errorOutput is the -json form of a failure.

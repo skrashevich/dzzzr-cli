@@ -72,22 +72,22 @@ func formatReport(model string, p *pricing, total time.Duration, s snapshot) str
 
 	var b strings.Builder
 	b.WriteString("\n--- Отчёт о выполнении ---\n")
-	fmt.Fprintf(&b, "Общее время:     %s\n", total.Round(time.Millisecond))
-	fmt.Fprintf(&b, "Модель:          %s\n", model)
-	fmt.Fprintf(&b, "  Модель:        %s\n", s.llmDuration.Round(time.Millisecond))
-	fmt.Fprintf(&b, "  Инструменты:   %s\n", s.toolDuration.Round(time.Millisecond))
-	fmt.Fprintf(&b, "  Накладные:     %s\n", overhead.Round(time.Millisecond))
-	fmt.Fprintf(&b, "Запросов к LLM:  %d\n", s.turns)
-	fmt.Fprintf(&b, "Вызовов тулзов:  %d\n", s.toolCalls)
+	_, _ = fmt.Fprintf(&b, "Общее время:     %s\n", total.Round(time.Millisecond))
+	_, _ = fmt.Fprintf(&b, "Модель:          %s\n", model)
+	_, _ = fmt.Fprintf(&b, "  Модель:        %s\n", s.llmDuration.Round(time.Millisecond))
+	_, _ = fmt.Fprintf(&b, "  Инструменты:   %s\n", s.toolDuration.Round(time.Millisecond))
+	_, _ = fmt.Fprintf(&b, "  Накладные:     %s\n", overhead.Round(time.Millisecond))
+	_, _ = fmt.Fprintf(&b, "Запросов к LLM:  %d\n", s.turns)
+	_, _ = fmt.Fprintf(&b, "Вызовов тулзов:  %d\n", s.toolCalls)
 	if s.promptTokens > 0 || s.completionTokens > 0 {
-		fmt.Fprintf(&b, "Токены:          %d (вход: %d, выход: %d)\n",
+		_, _ = fmt.Fprintf(&b, "Токены:          %d (вход: %d, выход: %d)\n",
 			s.promptTokens+s.completionTokens, s.promptTokens, s.completionTokens)
 		switch {
 		case p == nil:
 		case p.isLocal:
 			b.WriteString("Стоимость:       $0 (локальный прокси)\n")
 		default:
-			fmt.Fprintf(&b, "Стоимость:       $%.4f (тарифы OpenRouter)\n",
+			_, _ = fmt.Fprintf(&b, "Стоимость:       $%.4f (тарифы OpenRouter)\n",
 				p.cost(s.promptTokens, s.completionTokens))
 		}
 	}

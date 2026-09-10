@@ -68,7 +68,7 @@ func ReadScenarioFile(root, name string, limit int64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 	info, err := r.Stat(name)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func ReadScenarioFile(root, name string, limit int64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	info, err = f.Stat()
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func WriteScenarioFile(root, name string, data []byte) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 	f, err := r.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return err
@@ -159,7 +159,7 @@ func (f ScenarioFiles) fetch(ctx context.Context, raw string) ([]byte, string, e
 	if err != nil {
 		return nil, "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, "", fmt.Errorf("asset download HTTP %d", resp.StatusCode)
 	}

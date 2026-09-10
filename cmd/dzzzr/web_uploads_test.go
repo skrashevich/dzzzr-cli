@@ -47,13 +47,13 @@ func TestWebUploadStoresFileUnderChat(t *testing.T) {
 	if _, err := io.WriteString(part, "коды уровня"); err != nil {
 		t.Fatal(err)
 	}
-	mw.Close()
+	_ = mw.Close()
 
 	res, err := srv.Client().Post(srv.URL+"/api/v1/chats/"+snap.ID+"/files", mw.FormDataContentType(), &body)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	if res.StatusCode != http.StatusCreated {
 		data, _ := io.ReadAll(res.Body)
 		t.Fatalf("загрузка вернула %d: %s", res.StatusCode, data)
@@ -88,14 +88,14 @@ func TestWebUploadRejectsUnknownChat(t *testing.T) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
 	part, _ := mw.CreateFormFile("file", "x.md")
-	io.WriteString(part, "x")
-	mw.Close()
+	_, _ = io.WriteString(part, "x")
+	_ = mw.Close()
 
 	res, err := srv.Client().Post(srv.URL+"/api/v1/chats/0123456789abcdef/files", mw.FormDataContentType(), &body)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != http.StatusNotFound {
 		t.Fatalf("загрузка в несуществующий чат вернула %d", res.StatusCode)
 	}

@@ -260,7 +260,7 @@ func TestGamesListPagesThroughEverything(t *testing.T) {
 			if i > offset {
 				b.WriteString(",")
 			}
-			fmt.Fprintf(&b, `{"id" : %d,"name" : "Игра %d","teams" : null}`, 1000+i, i)
+			_, _ = fmt.Fprintf(&b, `{"id" : %d,"name" : "Игра %d","teams" : null}`, 1000+i, i)
 		}
 		b.WriteString(`]}`)
 		_, _ = w.Write([]byte(b.String()))

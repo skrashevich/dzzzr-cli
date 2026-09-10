@@ -108,7 +108,7 @@ func printAction(cfg *config, res *dzzzr.ActionResult, quietOK bool) error {
 		}
 	} else {
 		prefix := map[string]string{"accepted": "Принято:", "rejected": "Отклонено:", "unknown": "Без ответа:"}[outcome]
-		fmt.Fprintf(cfg.stdout, "%s [%d] %s\n", prefix, res.Err, text)
+		_, _ = fmt.Fprintf(cfg.stdout, "%s [%d] %s\n", prefix, res.Err, text)
 	}
 	if outcome == "rejected" {
 		return errRejected
@@ -158,7 +158,7 @@ func levelArg(ctx context.Context, c *dzzzr.Client, args []string) (int, error) 
 // the prompts never pollute a piped stdout.
 func promptLine(cfg *config, prompt string) (string, error) {
 	if prompt != "" {
-		fmt.Fprint(cfg.stderr, prompt)
+		_, _ = fmt.Fprint(cfg.stderr, prompt)
 	}
 	line, err := cfg.lineReader().ReadString('\n')
 	if err != nil && line == "" {
@@ -169,10 +169,10 @@ func promptLine(cfg *config, prompt string) (string, error) {
 
 // promptPassword reads a secret without echoing it when stdin is a terminal.
 func promptPassword(cfg *config, prompt string) (string, error) {
-	fmt.Fprint(cfg.stderr, prompt)
+	_, _ = fmt.Fprint(cfg.stderr, prompt)
 	if f, ok := cfg.stdin.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
 		b, err := term.ReadPassword(int(f.Fd()))
-		fmt.Fprintln(cfg.stderr)
+		_, _ = fmt.Fprintln(cfg.stderr)
 		if err != nil {
 			return "", fatal("не удалось прочитать пароль: %v", err)
 		}
@@ -240,8 +240,8 @@ func cmdLogin(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) 
 	if cfg.jsonOut {
 		return outputJSON(cfg, loginOutput{Code: resp.Code.Int(), UserName: resp.UserName, SessionFile: path})
 	}
-	fmt.Fprintf(cfg.stdout, "Вход выполнен: %s\n", dash(resp.UserName))
-	fmt.Fprintf(cfg.stdout, "Сессия сохранена в %s\n", path)
+	_, _ = fmt.Fprintf(cfg.stdout, "Вход выполнен: %s\n", dash(resp.UserName))
+	_, _ = fmt.Fprintf(cfg.stdout, "Сессия сохранена в %s\n", path)
 	return nil
 }
 
@@ -263,9 +263,9 @@ func cmdLogout(_ context.Context, cfg *config, _ *dzzzr.Client, args []string) e
 		return outputJSON(cfg, logoutOutput{Removed: removed, SessionFile: path})
 	}
 	if removed {
-		fmt.Fprintf(cfg.stdout, "Сессия удалена: %s\n", path)
+		_, _ = fmt.Fprintf(cfg.stdout, "Сессия удалена: %s\n", path)
 	} else {
-		fmt.Fprintf(cfg.stdout, "Сохранённой сессии не было: %s\n", path)
+		_, _ = fmt.Fprintf(cfg.stdout, "Сохранённой сессии не было: %s\n", path)
 	}
 	return nil
 }
@@ -279,7 +279,7 @@ func cmdVersion(_ context.Context, cfg *config, _ *dzzzr.Client, _ []string) err
 	if cfg.jsonOut {
 		return outputJSON(cfg, versionOutput{Version: version})
 	}
-	fmt.Fprintf(cfg.stdout, "dzzzr %s\n", version)
+	_, _ = fmt.Fprintf(cfg.stdout, "dzzzr %s\n", version)
 	return nil
 }
 
@@ -292,13 +292,13 @@ func cmdGames(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) err
 		return outputJSON(cfg, games)
 	}
 	if len(games) == 0 {
-		fmt.Fprintln(cfg.stdout, "Игр не найдено.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Игр не найдено.")
 		return nil
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "ID\tДата\tНомер\tНазвание\tАвторы\tКоманд")
+	_, _ = fmt.Fprintln(tw, "ID\tДата\tНомер\tНазвание\tАвторы\tКоманд")
 	for _, g := range games {
-		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%d\n",
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%d\n",
 			g.ID.Int(), dash(g.Date), dash(g.Number.String()), dash(g.Name), dash(g.Authors), len(g.Teams))
 	}
 	return tw.Flush()
@@ -313,57 +313,57 @@ func cmdStatus(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) er
 		return outputJSON(cfg, st)
 	}
 	w := cfg.stdout
-	fmt.Fprintf(w, "Игра:    %s (#%d)\n", dash(st.GameName), st.GameID.Int())
-	fmt.Fprintf(w, "Команда: %s\n", dash(st.TeamName))
+	_, _ = fmt.Fprintf(w, "Игра:    %s (#%d)\n", dash(st.GameName), st.GameID.Int())
+	_, _ = fmt.Fprintf(w, "Команда: %s\n", dash(st.TeamName))
 	if st.CurrentTime != "" {
-		fmt.Fprintf(w, "Время:   %s\n", st.CurrentTime)
+		_, _ = fmt.Fprintf(w, "Время:   %s\n", st.CurrentTime)
 	}
 
 	if !st.GameStarted() {
-		fmt.Fprintf(w, "\nИгра ещё не началась. Старт: %s в %s", dash(st.GameStartOnDay), dash(st.GameStartOnTime))
+		_, _ = fmt.Fprintf(w, "\nИгра ещё не началась. Старт: %s в %s", dash(st.GameStartOnDay), dash(st.GameStartOnTime))
 		if st.GameStartTime != "" {
-			fmt.Fprintf(w, " (на сервере %s)", st.GameStartTime)
+			_, _ = fmt.Fprintf(w, " (на сервере %s)", st.GameStartTime)
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
 	if st.Finished.Bool() {
-		fmt.Fprintln(w, "\nИгра завершена.")
+		_, _ = fmt.Fprintln(w, "\nИгра завершена.")
 	}
 	if st.HoldTime != "" {
-		fmt.Fprintf(w, "Команда приостановлена организатором: %s\n", st.HoldTime)
+		_, _ = fmt.Fprintf(w, "Команда приостановлена организатором: %s\n", st.HoldTime)
 	}
 	if st.OnBreak != "" {
-		fmt.Fprintf(w, "Перерыв до %s", st.OnBreak)
+		_, _ = fmt.Fprintf(w, "Перерыв до %s", st.OnBreak)
 		if st.Countdown.Int() > 0 {
-			fmt.Fprintf(w, " (осталось %s)", formatDuration(st.Countdown.Int()))
+			_, _ = fmt.Fprintf(w, " (осталось %s)", formatDuration(st.Countdown.Int()))
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
 	for _, note := range []string{st.BlockedError, st.TryLimitError} {
 		if s := dzzzr.StripHTML(note); s != "" {
-			fmt.Fprintln(w, s)
+			_, _ = fmt.Fprintln(w, s)
 		}
 	}
 
 	if st.Level != nil {
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 		printLevelSummary(w, st.Level, st.TotalLevels.Int())
 	} else if st.GameStarted() {
-		fmt.Fprintln(w, "\nЗадание не выдано.")
+		_, _ = fmt.Fprintln(w, "\nЗадание не выдано.")
 	}
 
 	if len(st.BonusLevels) > 0 {
-		fmt.Fprintln(w, "\nСквозные бонусные задания:")
+		_, _ = fmt.Fprintln(w, "\nСквозные бонусные задания:")
 		printBonusLevels(w, st.BonusLevels)
 	}
 	if len(st.Messages) > 0 {
-		fmt.Fprintln(w, "\nСообщения:")
+		_, _ = fmt.Fprintln(w, "\nСообщения:")
 		for _, m := range st.Messages {
-			fmt.Fprintf(w, "  %s [%s] %s\n", m.Timestamp, dash(m.Destination), dzzzr.StripHTML(m.Text))
+			_, _ = fmt.Fprintf(w, "  %s [%s] %s\n", m.Timestamp, dash(m.Destination), dzzzr.StripHTML(m.Text))
 		}
 	}
 	if st.ErrNo.Int() != 0 {
-		fmt.Fprintf(w, "\nПоследнее действие: [%d] %s\n", st.ErrNo.Int(), dzzzr.StripHTML(st.ErrText))
+		_, _ = fmt.Fprintf(w, "\nПоследнее действие: [%d] %s\n", st.ErrNo.Int(), dzzzr.StripHTML(st.ErrText))
 	}
 	return nil
 }
@@ -371,49 +371,49 @@ func cmdStatus(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) er
 // printLevelSummary writes the counters of the level the team is playing.
 func printLevelSummary(w io.Writer, l *dzzzr.Level, totalLevels int) {
 	if totalLevels > 0 {
-		fmt.Fprintf(w, "Уровень %d из %d\n", l.LevelNumber.Int(), totalLevels)
+		_, _ = fmt.Fprintf(w, "Уровень %d из %d\n", l.LevelNumber.Int(), totalLevels)
 	} else {
-		fmt.Fprintf(w, "Уровень %d\n", l.LevelNumber.Int())
+		_, _ = fmt.Fprintf(w, "Уровень %d\n", l.LevelNumber.Int())
 	}
 	needed := l.NeededCodes.Int()
 	if needed <= 0 || needed > l.TotalCodes.Int() {
 		needed = l.TotalCodes.Int()
 	}
-	fmt.Fprintf(w, "  Коды:           %d из %d (нужно %d)\n", l.CodesFounded.Int(), l.TotalCodes.Int(), needed)
+	_, _ = fmt.Fprintf(w, "  Коды:           %d из %d (нужно %d)\n", l.CodesFounded.Int(), l.TotalCodes.Int(), needed)
 	if l.BonusCodesTotal.Int() > 0 {
-		fmt.Fprintf(w, "  Бонусные коды:  %d из %d\n", l.BonusCodesFounded.Int(), l.BonusCodesTotal.Int())
+		_, _ = fmt.Fprintf(w, "  Бонусные коды:  %d из %d\n", l.BonusCodesFounded.Int(), l.BonusCodesTotal.Int())
 	}
 	if kind := levelKind(l); kind != "" {
-		fmt.Fprintf(w, "  Задание:        %s", kind)
+		_, _ = fmt.Fprintf(w, "  Задание:        %s", kind)
 		if m := l.BonusLevelTime.Int(); m > 0 {
-			fmt.Fprintf(w, " (%d мин.)", m)
+			_, _ = fmt.Fprintf(w, " (%d мин.)", m)
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w)
 	}
-	fmt.Fprintf(w, "  Подсказки:      %s\n", hintState(l))
+	_, _ = fmt.Fprintf(w, "  Подсказки:      %s\n", hintState(l))
 	if l.TM.Int() > 0 {
-		fmt.Fprintf(w, "  До события:     %s\n", formatDuration(l.TM.Int()))
+		_, _ = fmt.Fprintf(w, "  До события:     %s\n", formatDuration(l.TM.Int()))
 	}
 	if l.TimeOnLevel != "" {
-		fmt.Fprintf(w, "  На уровне:      %s\n", l.TimeOnLevel)
+		_, _ = fmt.Fprintf(w, "  На уровне:      %s\n", l.TimeOnLevel)
 	}
 	if l.TryLimit.Int() > 0 {
-		fmt.Fprintf(w, "  Попытки:        %d из %d\n", l.TryLimitUsed.Int(), l.TryLimit.Int())
+		_, _ = fmt.Fprintf(w, "  Попытки:        %d из %d\n", l.TryLimitUsed.Int(), l.TryLimit.Int())
 	}
 	if l.IsSabotage.Bool() {
-		fmt.Fprintln(w, "  Задание-диверсия.")
+		_, _ = fmt.Fprintln(w, "  Задание-диверсия.")
 	}
 	if l.NoMasterCode.Bool() {
-		fmt.Fprintln(w, "  Универсальный код запрещён.")
+		_, _ = fmt.Fprintln(w, "  Универсальный код запрещён.")
 	}
 	if n := len(l.Spoilers); n > 0 {
-		fmt.Fprintf(w, "  Спойлеры:       %d\n", n)
+		_, _ = fmt.Fprintf(w, "  Спойлеры:       %d\n", n)
 	}
 	if l.IsLevelFinished.Bool() {
-		fmt.Fprintln(w, "  Уровень выполнен: можно добирать бонусные коды или перейти дальше («dzzzr next-level»).")
+		_, _ = fmt.Fprintln(w, "  Уровень выполнен: можно добирать бонусные коды или перейти дальше («dzzzr next-level»).")
 	}
 	if l.TakeBreak.Bool() {
-		fmt.Fprintln(w, "  После этого уровня запланирован перерыв 15 мин. («dzzzr break» отменяет).")
+		_, _ = fmt.Fprintln(w, "  После этого уровня запланирован перерыв 15 мин. («dzzzr break» отменяет).")
 	}
 }
 
@@ -424,20 +424,20 @@ func printMedia(w io.Writer, c *dzzzr.Client, l *dzzzr.Level) {
 	if len(refs) == 0 {
 		return
 	}
-	fmt.Fprintln(w, "\nВложения:")
+	_, _ = fmt.Fprintln(w, "\nВложения:")
 	for _, r := range refs {
 		switch {
 		case r.Inline:
 			// The bytes are the picture. A terminal cannot show it, and
 			// printing the URI would dump a blob into the scrollback, so
 			// say what it is; a mobile client renders the same ref.
-			fmt.Fprintf(w, "  картинка: встроена в задание (%s, %s)\n", r.MediaType, humanBytes(r.Bytes))
+			_, _ = fmt.Fprintf(w, "  картинка: встроена в задание (%s, %s)\n", r.MediaType, humanBytes(r.Bytes))
 		case r.Kind == dzzzr.MediaImage:
-			fmt.Fprintf(w, "  картинка: %s\n", r.URL)
+			_, _ = fmt.Fprintf(w, "  картинка: %s\n", r.URL)
 		case r.Text != "":
-			fmt.Fprintf(w, "  ссылка «%s»: %s\n", r.Text, r.URL)
+			_, _ = fmt.Fprintf(w, "  ссылка «%s»: %s\n", r.Text, r.URL)
 		default:
-			fmt.Fprintf(w, "  ссылка: %s\n", r.URL)
+			_, _ = fmt.Fprintf(w, "  ссылка: %s\n", r.URL)
 		}
 	}
 }
@@ -489,7 +489,7 @@ func hintState(l *dzzzr.Level) string {
 // printBonusLevels renders the skvoz levels running alongside the main line.
 func printBonusLevels(w io.Writer, levels []dzzzr.Level) {
 	tw := newTable(w)
-	fmt.Fprintln(tw, "  Уровень\tКоды\tБонус, мин\tОсталось\tЗадание")
+	_, _ = fmt.Fprintln(tw, "  Уровень\tКоды\tБонус, мин\tОсталось\tЗадание")
 	for i, l := range levels {
 		number := l.LevelNumber.Int()
 		label := strconv.Itoa(number)
@@ -504,7 +504,7 @@ func printBonusLevels(w io.Writer, levels []dzzzr.Level) {
 		if idx := strings.IndexByte(question, '\n'); idx >= 0 {
 			question = question[:idx]
 		}
-		fmt.Fprintf(tw, "  %s\t%d/%d\t%d\t%s\t%s\n",
+		_, _ = fmt.Fprintf(tw, "  %s\t%d/%d\t%d\t%s\t%s\n",
 			label, l.CodesFounded.Int(), l.TotalCodes.Int(), l.BonusLevelTime.Int(), left, dash(question))
 	}
 	_ = tw.Flush()
@@ -528,31 +528,31 @@ func cmdLevel(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) err
 	}
 	l := st.Level
 	w := cfg.stdout
-	fmt.Fprintf(w, "Уровень %d\n\n", l.LevelNumber.Int())
+	_, _ = fmt.Fprintf(w, "Уровень %d\n\n", l.LevelNumber.Int())
 	if q := dzzzr.StripHTML(l.Question); q != "" {
-		fmt.Fprintln(w, q)
+		_, _ = fmt.Fprintln(w, q)
 	} else {
-		fmt.Fprintln(w, "(текст задания пуст)")
+		_, _ = fmt.Fprintln(w, "(текст задания пуст)")
 	}
 	printMedia(w, c, l)
 	if s := dzzzr.StripHTML(l.LocationComment); s != "" {
-		fmt.Fprintf(w, "\nКомментарий к локации: %s\n", s)
+		_, _ = fmt.Fprintf(w, "\nКомментарий к локации: %s\n", s)
 	}
 	if s := dzzzr.StripHTML(l.KOLine); s != "" {
-		fmt.Fprintf(w, "\nКоэффициенты сложности:\n%s\n", indent(s, "  "))
+		_, _ = fmt.Fprintf(w, "\nКоэффициенты сложности:\n%s\n", indent(s, "  "))
 	}
 	if len(l.Spoilers) > 0 {
-		fmt.Fprintln(w, "\nСпойлеры:")
+		_, _ = fmt.Fprintln(w, "\nСпойлеры:")
 		for _, sp := range l.Spoilers {
 			status := "закрыт"
 			if sp.Solved.Bool() {
 				status = "открыт"
 			}
-			fmt.Fprintf(w, "  #%d (%s, штраф %d)", sp.Number.Int(), status, sp.Penalty.Int())
+			_, _ = fmt.Fprintf(w, "  #%d (%s, штраф %d)", sp.Number.Int(), status, sp.Penalty.Int())
 			if text := dzzzr.StripHTML(sp.Text); text != "" {
-				fmt.Fprintf(w, ": %s", text)
+				_, _ = fmt.Fprintf(w, ": %s", text)
 			}
-			fmt.Fprintln(w)
+			_, _ = fmt.Fprintln(w)
 		}
 	}
 	return nil
@@ -578,17 +578,17 @@ func cmdHints(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) err
 		return outputJSON(cfg, hintsOutput{Level: l.LevelNumber.Int(), Hint1: l.Hint1, Hint2: l.Hint2})
 	}
 	w := cfg.stdout
-	fmt.Fprintf(w, "Уровень %d\n", l.LevelNumber.Int())
+	_, _ = fmt.Fprintf(w, "Уровень %d\n", l.LevelNumber.Int())
 	for i, h := range []string{l.Hint1, l.Hint2} {
 		text := dzzzr.StripHTML(h)
 		if text == "" {
-			fmt.Fprintf(w, "\nПодсказка %d: ещё не выдана\n", i+1)
+			_, _ = fmt.Fprintf(w, "\nПодсказка %d: ещё не выдана\n", i+1)
 			continue
 		}
-		fmt.Fprintf(w, "\nПодсказка %d:\n%s\n", i+1, indent(text, "  "))
+		_, _ = fmt.Fprintf(w, "\nПодсказка %d:\n%s\n", i+1, indent(text, "  "))
 	}
 	if l.TM.Int() > 0 {
-		fmt.Fprintf(w, "\nДо следующего события: %s\n", formatDuration(l.TM.Int()))
+		_, _ = fmt.Fprintf(w, "\nДо следующего события: %s\n", formatDuration(l.TM.Int()))
 	}
 	return nil
 }
@@ -602,13 +602,13 @@ func cmdBonusLevels(ctx context.Context, cfg *config, c *dzzzr.Client, _ []strin
 		return outputJSON(cfg, st.BonusLevels)
 	}
 	if len(st.BonusLevels) == 0 {
-		fmt.Fprintln(cfg.stdout, "Сквозных бонусных заданий нет.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Сквозных бонусных заданий нет.")
 		return nil
 	}
 	printBonusLevels(cfg.stdout, st.BonusLevels)
 	for i, l := range st.BonusLevels {
 		if q := dzzzr.StripHTML(l.Question); q != "" {
-			fmt.Fprintf(cfg.stdout, "\n#%d:\n%s\n", i+1, indent(q, "  "))
+			_, _ = fmt.Fprintf(cfg.stdout, "\n#%d:\n%s\n", i+1, indent(q, "  "))
 		}
 	}
 	return nil
@@ -624,16 +624,16 @@ func cmdStat(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) erro
 	}
 	rows := stat.Rows()
 	if len(rows) == 0 {
-		fmt.Fprintln(cfg.stdout, "Статистика пуста.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Статистика пуста.")
 		return nil
 	}
 	if stat.Time != "" {
-		fmt.Fprintf(cfg.stdout, "Статистика на %s\n\n", stat.Time)
+		_, _ = fmt.Fprintf(cfg.stdout, "Статистика на %s\n\n", stat.Time)
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "Уровень\tРезультат")
+	_, _ = fmt.Fprintln(tw, "Уровень\tРезультат")
 	for _, r := range rows {
-		fmt.Fprintf(tw, "%s\t%s\n", dash(r[0]), dash(r[1]))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\n", dash(r[0]), dash(r[1]))
 	}
 	return tw.Flush()
 }
@@ -651,13 +651,13 @@ func cmdLog(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) error
 		return outputJSON(cfg, clean)
 	}
 	if len(clean) == 0 {
-		fmt.Fprintln(cfg.stdout, "Журнал пуст.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Журнал пуст.")
 		return nil
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "Время\tСобытие\tДанные\tПользователь")
+	_, _ = fmt.Fprintln(tw, "Время\tСобытие\tДанные\tПользователь")
 	for _, e := range clean {
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", dash(e.Time), dash(e.Event), dash(e.Data), dash(e.User))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", dash(e.Time), dash(e.Event), dash(e.Data), dash(e.User))
 	}
 	return tw.Flush()
 }
@@ -671,11 +671,11 @@ func cmdMessages(ctx context.Context, cfg *config, c *dzzzr.Client, _ []string) 
 		return outputJSON(cfg, msgs)
 	}
 	if len(msgs) == 0 {
-		fmt.Fprintln(cfg.stdout, "Сообщений нет.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Сообщений нет.")
 		return nil
 	}
 	for _, m := range msgs {
-		fmt.Fprintf(cfg.stdout, "%s %s:\n%s\n\n", m.Time, dash(m.Who), indent(dzzzr.StripHTML(m.Content), "  "))
+		_, _ = fmt.Fprintf(cfg.stdout, "%s %s:\n%s\n\n", m.Time, dash(m.Who), indent(dzzzr.StripHTML(m.Content), "  "))
 	}
 	return nil
 }
@@ -881,9 +881,9 @@ func cmdSelectLevel(ctx context.Context, cfg *config, c *dzzzr.Client, args []st
 		if cfg.jsonOut {
 			return outputJSON(cfg, choices)
 		}
-		fmt.Fprintln(cfg.stdout, "Доступные уровни:")
+		_, _ = fmt.Fprintln(cfg.stdout, "Доступные уровни:")
 		for _, ch := range choices {
-			fmt.Fprintf(cfg.stdout, "  %d  %s\n", ch.Number, ch.Title)
+			_, _ = fmt.Fprintf(cfg.stdout, "  %d  %s\n", ch.Number, ch.Title)
 		}
 		return nil
 	}

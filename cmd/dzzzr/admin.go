@@ -167,7 +167,7 @@ func reportDone(cfg *config, format string, args ...any) error {
 	if cfg.jsonOut {
 		return outputJSON(cfg, okOutput{OK: true})
 	}
-	fmt.Fprintf(cfg.stdout, format+"\n", args...)
+	_, _ = fmt.Fprintf(cfg.stdout, format+"\n", args...)
 	return nil
 }
 
@@ -246,13 +246,13 @@ func cmdAdminGames(ctx context.Context, cfg *config, c *dzzzr.Client, args []str
 		return outputJSON(cfg, games)
 	}
 	if len(games) == 0 {
-		fmt.Fprintln(cfg.stdout, "Игр не найдено.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Игр не найдено.")
 		return nil
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "ID\tДата\tНомер\tНазвание\tСтатус\tСезон\tОпубликована")
+	_, _ = fmt.Fprintln(tw, "ID\tДата\tНомер\tНазвание\tСтатус\tСезон\tОпубликована")
 	for _, g := range games {
-		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			g.ID, dash(g.Date), dash(g.Number), dash(g.Name), dash(g.Status), dash(g.Season), yesNo(g.Published))
 	}
 	return tw.Flush()
@@ -273,7 +273,7 @@ func cmdAdminGameInfo(ctx context.Context, cfg *config, c *dzzzr.Client, args []
 	if cfg.jsonOut {
 		return outputJSON(cfg, info)
 	}
-	fmt.Fprintf(cfg.stdout, "Игра %d\n", info.ID)
+	_, _ = fmt.Fprintf(cfg.stdout, "Игра %d\n", info.ID)
 	printGameParams(cfg.stdout, info.Params)
 	return nil
 }
@@ -293,7 +293,7 @@ func cmdAdminCreateGame(ctx context.Context, cfg *config, c *dzzzr.Client, args 
 	if cfg.jsonOut {
 		return outputJSON(cfg, idOutput{ID: id})
 	}
-	fmt.Fprintf(cfg.stdout, "Игра создана: %d\n", id)
+	_, _ = fmt.Fprintf(cfg.stdout, "Игра создана: %d\n", id)
 	return nil
 }
 
@@ -344,7 +344,7 @@ func cmdAdminCopyGame(ctx context.Context, cfg *config, c *dzzzr.Client, args []
 	if cfg.jsonOut {
 		return outputJSON(cfg, idOutput{ID: newID})
 	}
-	fmt.Fprintf(cfg.stdout, "Игра %d скопирована в %d\n", gameID, newID)
+	_, _ = fmt.Fprintf(cfg.stdout, "Игра %d скопирована в %d\n", gameID, newID)
 	return nil
 }
 
@@ -367,17 +367,17 @@ func cmdAdminLevels(ctx context.Context, cfg *config, c *dzzzr.Client, args []st
 		return outputJSON(cfg, levels)
 	}
 	if len(levels) == 0 {
-		fmt.Fprintln(cfg.stdout, "Заданий нет.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Заданий нет.")
 		return nil
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "№\tID\tНазвание\tТип\tКоды\tНужно\tПопытки\tПодсказки\tОпубликовано")
+	_, _ = fmt.Fprintln(tw, "№\tID\tНазвание\tТип\tКоды\tНужно\tПопытки\tПодсказки\tОпубликовано")
 	for _, l := range levels {
 		kind := dash(l.Kind)
 		if l.Skvoz {
 			kind += ", сквозной"
 		}
-		fmt.Fprintf(tw, "%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(tw, "%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			l.Order, l.ID, dash(l.Title), kind, dash(strings.Join(l.Codes, " ")),
 			dash(l.CodeCount), dash(l.TryLimit), dash(l.HintTimings), yesNo(l.Published))
 	}
@@ -403,7 +403,7 @@ func cmdAdminLevel(ctx context.Context, cfg *config, c *dzzzr.Client, args []str
 	if cfg.jsonOut {
 		return outputJSON(cfg, info)
 	}
-	fmt.Fprintf(cfg.stdout, "Задание %d игры %d, уровень %d\n", info.ID, info.GameID, info.Order)
+	_, _ = fmt.Fprintf(cfg.stdout, "Задание %d игры %d, уровень %d\n", info.ID, info.GameID, info.Order)
 	printLevelParams(cfg.stdout, info.Params)
 	return nil
 }
@@ -427,7 +427,7 @@ func cmdAdminCreateLevel(ctx context.Context, cfg *config, c *dzzzr.Client, args
 	if cfg.jsonOut {
 		return outputJSON(cfg, idOutput{ID: id})
 	}
-	fmt.Fprintf(cfg.stdout, "Задание создано: %d\n", id)
+	_, _ = fmt.Fprintf(cfg.stdout, "Задание создано: %d\n", id)
 	return nil
 }
 
@@ -608,17 +608,17 @@ func cmdAdminTeams(ctx context.Context, cfg *config, c *dzzzr.Client, args []str
 		return outputJSON(cfg, teams)
 	}
 	if len(teams) == 0 {
-		fmt.Fprintln(cfg.stdout, "Заявок нет.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Заявок нет.")
 		return nil
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "ID\tНазвание\tКапитан\tСтатус\tPIN\tОчки\tИгр\tЗаблокирована")
+	_, _ = fmt.Fprintln(tw, "ID\tНазвание\tКапитан\tСтатус\tPIN\tОчки\tИгр\tЗаблокирована")
 	for _, t := range teams {
 		status := t.StatusText
 		if status == "" && t.Status >= 0 {
 			status = dzzzr.ApplicationStatusText(t.Status)
 		}
-		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n",
+		_, _ = fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n",
 			t.ID, dash(t.Name), dash(t.Captain), dash(status), dash(t.Pin), t.Points, t.GamesCount, yesNo(t.Blocked))
 	}
 	return tw.Flush()
@@ -640,22 +640,22 @@ func cmdAdminTeam(ctx context.Context, cfg *config, c *dzzzr.Client, args []stri
 		return outputJSON(cfg, info)
 	}
 	w := cfg.stdout
-	fmt.Fprintf(w, "Команда %d в игре %d\n", info.ID, gameID)
-	fmt.Fprintf(w, "  Название:      %s\n", dash(info.Name))
-	fmt.Fprintf(w, "  Капитан:       %s\n", dash(info.Captain))
-	fmt.Fprintf(w, "  Штаб:          %s\n", dash(info.Shtab))
-	fmt.Fprintf(w, "  Помощник:      %s\n", dash(info.Helper))
-	fmt.Fprintf(w, "  Статус заявки: %s (%d)\n", dzzzr.ApplicationStatusText(info.Status), info.Status)
-	fmt.Fprintf(w, "  PIN:           %s\n", dash(info.Pin))
-	fmt.Fprintf(w, "  Очки:          %d\n", info.Points)
-	fmt.Fprintf(w, "  Новичок:       %s\n", yesNo(info.Novice))
-	fmt.Fprintf(w, "  Заблокирована: %s\n", yesNo(info.Blocked))
-	fmt.Fprintf(w, "  Сайт:          %s\n", dash(info.Website))
+	_, _ = fmt.Fprintf(w, "Команда %d в игре %d\n", info.ID, gameID)
+	_, _ = fmt.Fprintf(w, "  Название:      %s\n", dash(info.Name))
+	_, _ = fmt.Fprintf(w, "  Капитан:       %s\n", dash(info.Captain))
+	_, _ = fmt.Fprintf(w, "  Штаб:          %s\n", dash(info.Shtab))
+	_, _ = fmt.Fprintf(w, "  Помощник:      %s\n", dash(info.Helper))
+	_, _ = fmt.Fprintf(w, "  Статус заявки: %s (%d)\n", dzzzr.ApplicationStatusText(info.Status), info.Status)
+	_, _ = fmt.Fprintf(w, "  PIN:           %s\n", dash(info.Pin))
+	_, _ = fmt.Fprintf(w, "  Очки:          %d\n", info.Points)
+	_, _ = fmt.Fprintf(w, "  Новичок:       %s\n", yesNo(info.Novice))
+	_, _ = fmt.Fprintf(w, "  Заблокирована: %s\n", yesNo(info.Blocked))
+	_, _ = fmt.Fprintf(w, "  Сайт:          %s\n", dash(info.Website))
 	if info.League != "" {
-		fmt.Fprintf(w, "  Лига:          %s\n", info.League)
+		_, _ = fmt.Fprintf(w, "  Лига:          %s\n", info.League)
 	}
 	if info.Deviz != "" {
-		fmt.Fprintf(w, "  Девиз:         %s\n", firstLineOf(info.Deviz))
+		_, _ = fmt.Fprintf(w, "  Девиз:         %s\n", firstLineOf(info.Deviz))
 	}
 	if len(info.Roster) > 0 {
 		onTeam := 0
@@ -664,13 +664,13 @@ func cmdAdminTeam(ctx context.Context, cfg *config, c *dzzzr.Client, args []stri
 				onTeam++
 			}
 		}
-		fmt.Fprintf(w, "\nСостав: %d в команде из %d\n", onTeam, len(info.Roster))
+		_, _ = fmt.Fprintf(w, "\nСостав: %d в команде из %d\n", onTeam, len(info.Roster))
 		for _, p := range info.Roster {
 			mark := " "
 			if p.OnTeam {
 				mark = "+"
 			}
-			fmt.Fprintf(w, "  %s %s\n", mark, p.Login)
+			_, _ = fmt.Fprintf(w, "  %s %s\n", mark, p.Login)
 		}
 	}
 	return nil
@@ -705,13 +705,13 @@ func cmdAdminCityTeams(ctx context.Context, cfg *config, c *dzzzr.Client, args [
 		return outputJSON(cfg, teams)
 	}
 	if len(teams) == 0 {
-		fmt.Fprintln(cfg.stdout, "Команд не найдено.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Команд не найдено.")
 		return nil
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "ID\tНазвание")
+	_, _ = fmt.Fprintln(tw, "ID\tНазвание")
 	for _, t := range teams {
-		fmt.Fprintf(tw, "%d\t%s\n", t.ID, t.Name)
+		_, _ = fmt.Fprintf(tw, "%d\t%s\n", t.ID, t.Name)
 	}
 	return tw.Flush()
 }
@@ -815,10 +815,10 @@ func cmdAdminCreateTeam(ctx context.Context, cfg *config, c *dzzzr.Client, args 
 		return outputJSON(cfg, idOutput{ID: id})
 	}
 	if id == 0 {
-		fmt.Fprintf(cfg.stdout, "Команда %s создана, движок не сообщил её номер.\n", name)
+		_, _ = fmt.Fprintf(cfg.stdout, "Команда %s создана, движок не сообщил её номер.\n", name)
 		return nil
 	}
-	fmt.Fprintf(cfg.stdout, "Команда создана: %d\n", id)
+	_, _ = fmt.Fprintf(cfg.stdout, "Команда создана: %d\n", id)
 	return nil
 }
 
@@ -841,29 +841,29 @@ func cmdAdminMonitor(ctx context.Context, cfg *config, c *dzzzr.Client, args []s
 		return outputJSON(cfg, st)
 	}
 	w := cfg.stdout
-	fmt.Fprintf(w, "Игра %d: %s\n", st.GameID, dash(st.GameName))
+	_, _ = fmt.Fprintf(w, "Игра %d: %s\n", st.GameID, dash(st.GameName))
 	if st.EngineStopped {
-		fmt.Fprintln(w, "Движок: остановлен")
+		_, _ = fmt.Fprintln(w, "Движок: остановлен")
 	} else {
-		fmt.Fprintln(w, "Движок: работает")
+		_, _ = fmt.Fprintln(w, "Движок: работает")
 	}
 	if len(st.Teams) > 0 {
-		fmt.Fprintln(w, "\nКоманды:")
+		_, _ = fmt.Fprintln(w, "\nКоманды:")
 		tw := newTable(w)
-		fmt.Fprintln(tw, "  ID\tНазвание")
+		_, _ = fmt.Fprintln(tw, "  ID\tНазвание")
 		for _, t := range st.Teams {
-			fmt.Fprintf(tw, "  %d\t%s\n", t.ID, dash(t.Name))
+			_, _ = fmt.Fprintf(tw, "  %d\t%s\n", t.ID, dash(t.Name))
 		}
 		if err := tw.Flush(); err != nil {
 			return err
 		}
 	}
 	if len(st.Levels) > 0 {
-		fmt.Fprintln(w, "\nУровни:")
+		_, _ = fmt.Fprintln(w, "\nУровни:")
 		tw := newTable(w)
-		fmt.Fprintln(tw, "  №\tНазвание")
+		_, _ = fmt.Fprintln(tw, "  №\tНазвание")
 		for _, l := range st.Levels {
-			fmt.Fprintf(tw, "  %d\t%s\n", l.Order, dash(l.Title))
+			_, _ = fmt.Fprintf(tw, "  %d\t%s\n", l.Order, dash(l.Title))
 		}
 		if err := tw.Flush(); err != nil {
 			return err
@@ -915,19 +915,19 @@ func cmdAdminLog(ctx context.Context, cfg *config, c *dzzzr.Client, args []strin
 		return outputJSON(cfg, adminLogOutput{Entries: entries, Next: next})
 	}
 	if len(entries) == 0 {
-		fmt.Fprintln(cfg.stdout, "Новых событий нет.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Новых событий нет.")
 	} else {
 		tw := newTable(cfg.stdout)
-		fmt.Fprintln(tw, "Время\tКоманда\tУровень\tСобытие\tКомментарий")
+		_, _ = fmt.Fprintln(tw, "Время\tКоманда\tУровень\tСобытие\tКомментарий")
 		for _, e := range entries {
-			fmt.Fprintf(tw, "%s\t%d\t%d\t%s\t%s\n", dash(e.Time), e.TeamID, e.Level, logEventText(e.Event), dash(e.Comment))
+			_, _ = fmt.Fprintf(tw, "%s\t%d\t%d\t%s\t%s\n", dash(e.Time), e.TeamID, e.Level, logEventText(e.Event), dash(e.Comment))
 		}
 		if err := tw.Flush(); err != nil {
 			return err
 		}
 	}
 	if next != "" {
-		fmt.Fprintf(cfg.stdout, "\nСледующий запрос: -since «%s»\n", next)
+		_, _ = fmt.Fprintf(cfg.stdout, "\nСледующий запрос: -since «%s»\n", next)
 	}
 	return nil
 }
@@ -1251,17 +1251,17 @@ func cmdAdminMessages(ctx context.Context, cfg *config, c *dzzzr.Client, args []
 		return outputJSON(cfg, msgs)
 	}
 	if len(msgs) == 0 {
-		fmt.Fprintln(cfg.stdout, "Сообщений нет.")
+		_, _ = fmt.Fprintln(cfg.stdout, "Сообщений нет.")
 		return nil
 	}
 	tw := newTable(cfg.stdout)
-	fmt.Fprintln(tw, "Метка времени\tОтправитель\tАдресат\tПоказать после\tТекст")
+	_, _ = fmt.Fprintln(tw, "Метка времени\tОтправитель\tАдресат\tПоказать после\tТекст")
 	for _, m := range msgs {
 		from := "организатор"
 		if m.FromTeam {
 			from = "команда"
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
 			dash(m.Timestamp), from, dash(m.Addressee), dash(m.ShowAfter), dash(dzzzr.StripHTML(m.Content)))
 	}
 	return tw.Flush()
@@ -1795,7 +1795,7 @@ func (l *kvLines) flag(key string, value *bool) {
 // write prints the collected lines indented under a heading.
 func (l kvLines) write(w io.Writer) {
 	for _, line := range l {
-		fmt.Fprintln(w, "  "+line)
+		_, _ = fmt.Fprintln(w, "  "+line)
 	}
 }
 
@@ -1805,7 +1805,7 @@ func printTextBlock(w io.Writer, title, text string) {
 	if text == "" {
 		return
 	}
-	fmt.Fprintf(w, "\n%s:\n%s\n", title, indent(text, "  "))
+	_, _ = fmt.Fprintf(w, "\n%s:\n%s\n", title, indent(text, "  "))
 }
 
 // printGameParams writes a game's settings as the same pairs
