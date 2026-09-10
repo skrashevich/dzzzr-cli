@@ -11,8 +11,8 @@ SHOTS_DIR="$ROOT/docs/shots"
 BIN_DIR="$SHOTS_DIR/bin"
 OUT_DIR="$ROOT/docs/screenshots"
 
-PORT_MOCK="${DZZR_SHOTS_MOCK_PORT:-18190}"
-PORT_WEB="${DZZR_SHOTS_WEB_PORT:-18191}"
+PORT_MOCK="${DZZZR_SHOTS_MOCK_PORT:-18190}"
+PORT_WEB="${DZZZR_SHOTS_WEB_PORT:-18191}"
 
 HOME_DIR="$(mktemp -d)"
 MOCK_PID=""
@@ -43,8 +43,8 @@ done
 export PATH="$BIN_DIR:$PATH"
 
 export HOME="$HOME_DIR"
-export DZZR_CITY="moscow"
-export DZZR_BASE_URL="http://127.0.0.1:${PORT_MOCK}/moscow/"
+export DZZZR_CITY="moscow"
+export DZZZR_BASE_URL="http://127.0.0.1:${PORT_MOCK}/moscow/"
 
 echo "==> Starting dzzzr-mock on 127.0.0.1:${PORT_MOCK}..."
 "$BIN_DIR/dzzzr-mock" -addr "127.0.0.1:${PORT_MOCK}" >/tmp/dzzzr-shots-mock.log 2>&1 &
@@ -62,10 +62,10 @@ CHATS_DIR="$HOME/.config/dzzzr/web/chats"
 mkdir -p "$CHATS_DIR"
 cp "$SHOTS_DIR"/fixtures/chats/*.json "$CHATS_DIR"/
 
-export DZZR_LLM_API_KEY="demo-key"
-export DZZR_LLM_MODEL="openrouter/anthropic/claude-3.5-sonnet"
-export DZZR_FILES_ROOT="$HOME/files"
-mkdir -p "$DZZR_FILES_ROOT"
+export DZZZR_LLM_API_KEY="demo-key"
+export DZZZR_LLM_MODEL="openrouter/anthropic/claude-3.5-sonnet"
+export DZZZR_FILES_ROOT="$HOME/files"
+mkdir -p "$DZZZR_FILES_ROOT"
 
 echo "==> Serving dzzzr web on 127.0.0.1:${PORT_WEB}..."
 "$BIN_DIR/dzzzr" web -web-addr "127.0.0.1:${PORT_WEB}" >/tmp/dzzzr-shots-web.log 2>&1 &
@@ -83,7 +83,7 @@ fi
 npx --yes playwright install --with-deps chromium 2>/dev/null || npx --yes playwright install chromium
 
 echo "==> Capturing screenshots..."
-DZZR_WEB_URL="http://127.0.0.1:${PORT_WEB}" SHOTS_OUT="$OUT_DIR" node shoot.mjs
+DZZZR_WEB_URL="http://127.0.0.1:${PORT_WEB}" SHOTS_OUT="$OUT_DIR" node shoot.mjs
 
 echo "==> Done. Screenshots written to $OUT_DIR (gitignored; CI publishes to GitHub Pages):"
 ls -lh "$OUT_DIR"/*.png

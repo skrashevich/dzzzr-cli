@@ -40,7 +40,7 @@ func TestResolveGeneratedFileContainment(t *testing.T) {
 }
 
 // TestHarvestFindsFileAcrossRootResolutions covers the real mismatch: the
-// writer tool resolves DZZR_FILES_ROOT without following symlinks, while
+// writer tool resolves DZZZR_FILES_ROOT without following symlinks, while
 // agentfiles.RootFromEnv does follow them, so the two disagree on the root
 // string even though they point at the same directory.
 func TestHarvestFindsFileAcrossRootResolutions(t *testing.T) {
@@ -108,7 +108,7 @@ func TestHarvestFindsFileAcrossRootResolutions(t *testing.T) {
 	}
 }
 
-// TestHarvestFindsFileInWorkingDir covers DZZR_FILES_ROOT being unset, where
+// TestHarvestFindsFileInWorkingDir covers DZZZR_FILES_ROOT being unset, where
 // the tools write into the process working directory.
 func TestHarvestFindsFileInWorkingDir(t *testing.T) {
 	hub := newTestHub(t, nil)

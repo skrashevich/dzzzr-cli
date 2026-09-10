@@ -32,10 +32,10 @@ func TestCodexConfig(t *testing.T) {
 	isolate(t)
 	path := codexAuthFixture(t, "test-token", "test-account")
 	t.Setenv("CODEX_HOME", filepath.Dir(path))
-	t.Setenv("DZZR_LLM_PROVIDER", "codex")
+	t.Setenv("DZZZR_LLM_PROVIDER", "codex")
 	t.Setenv("OPENROUTER_MODEL", "anthropic/claude")
-	t.Setenv("DZZR_LLM_API_KEY", "must-not-be-used")
-	t.Setenv("DZZR_LLM_BASE_URL", "https://example.invalid")
+	t.Setenv("DZZZR_LLM_API_KEY", "must-not-be-used")
+	t.Setenv("DZZZR_LLM_BASE_URL", "https://example.invalid")
 	cfg, err := llmConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -43,16 +43,16 @@ func TestCodexConfig(t *testing.T) {
 	if cfg.Provider == nil || cfg.APIKey != "" || cfg.BaseURL != "https://chatgpt.com/backend-api/codex" || cfg.Model == "anthropic/claude" {
 		t.Fatalf("incorrect subscription config")
 	}
-	t.Setenv("DZZR_LLM_MODEL", "openai/gpt-5.4")
+	t.Setenv("DZZZR_LLM_MODEL", "openai/gpt-5.4")
 	cfg, err = llmConfig()
 	if err != nil || cfg.Model != "gpt-5.4" {
 		t.Fatalf("model = %q, err = %v", cfg.Model, err)
 	}
-	t.Setenv("DZZR_LLM_MODEL", "anthropic/claude")
+	t.Setenv("DZZZR_LLM_MODEL", "anthropic/claude")
 	if _, err := llmConfig(); err == nil {
 		t.Fatal("accepted incompatible model")
 	}
-	t.Setenv("DZZR_LLM_PROVIDER", "typo")
+	t.Setenv("DZZZR_LLM_PROVIDER", "typo")
 	if _, err := llmConfig(); err == nil {
 		t.Fatal("accepted unknown provider")
 	}
@@ -89,8 +89,8 @@ func (f codexTransport) RoundTrip(r *http.Request) (*http.Response, error) { ret
 func TestCodexResponsesToolRoundTrip(t *testing.T) {
 	isolate(t)
 	path := codexAuthFixture(t, "first-token", "first-account")
-	t.Setenv("DZZR_CODEX_AUTH_FILE", path)
-	t.Setenv("DZZR_LLM_PROVIDER", "chatgpt")
+	t.Setenv("DZZZR_CODEX_AUTH_FILE", path)
+	t.Setenv("DZZZR_LLM_PROVIDER", "chatgpt")
 	cfg, err := llmConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -143,8 +143,8 @@ func TestCodexResponsesToolRoundTrip(t *testing.T) {
 
 func TestCodexErrorDetail(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_CODEX_AUTH_FILE", codexAuthFixture(t, "token", "account"))
-	t.Setenv("DZZR_LLM_PROVIDER", "codex")
+	t.Setenv("DZZZR_CODEX_AUTH_FILE", codexAuthFixture(t, "token", "account"))
+	t.Setenv("DZZZR_LLM_PROVIDER", "codex")
 	cfg, err := llmConfig()
 	if err != nil {
 		t.Fatal(err)

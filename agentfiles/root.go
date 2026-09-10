@@ -8,10 +8,10 @@ import (
 )
 
 // RootEnv names the environment variable that chooses the root directory.
-const RootEnv = "DZZR_FILES_ROOT"
+const RootEnv = "DZZZR_FILES_ROOT"
 
 // RootFromEnv returns the directory the tools may read, taken from
-// DZZR_FILES_ROOT or, when it is unset, the working directory.
+// DZZZR_FILES_ROOT or, when it is unset, the working directory.
 func RootFromEnv() (string, error) {
 	root := strings.TrimSpace(os.Getenv(RootEnv))
 	if root == "" {

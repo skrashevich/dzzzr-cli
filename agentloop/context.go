@@ -38,7 +38,7 @@ func boundToolHistory(messages []providers.Message, sourceBudget int) ([]provide
 		// so drop the redundancy before declaring the source itself too large.
 		compactSourceResults(out, sourceCalls)
 		if sourceBytes(out, sourceCalls) > sourceBudget {
-			return nil, fmt.Errorf("source document results exceed context budget (%d bytes); stopped without discarding pages. Increase DZZR_LLM_SOURCE_CONTEXT_BYTES if the model supports it, or process the document in separate sections", sourceBudget)
+			return nil, fmt.Errorf("source document results exceed context budget (%d bytes); stopped without discarding pages. Increase DZZZR_LLM_SOURCE_CONTEXT_BYTES if the model supports it, or process the document in separate sections", sourceBudget)
 		}
 	}
 	const totalBudget = 48000

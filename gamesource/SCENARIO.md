@@ -35,7 +35,7 @@ LLM tools are `admin_export_scenario`, `admin_validate_scenario` and
 `linked_assets`. Import takes `path`, optional positive `game_id`, and optional
 `level_ids` mapping. These are registered in the common agent/MCP catalog when
 admin tools and credentials are enabled. Local paths stay inside
-`DZZR_FILES_ROOT`; export writes a file and returns its path/counts rather than
+`DZZZR_FILES_ROOT`; export writes a file and returns its path/counts rather than
 Base64 through the model context. Import follows the usual mutation policy.
 
 The root contains `format: "dzzzr-scenario"`, `version: 1`, `game.params`,

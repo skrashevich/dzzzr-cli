@@ -1,6 +1,6 @@
 // Screenshots of the dzzzr web interface (`dzzzr web`).
 //
-// Expects a `dzzzr web` server already running and reachable at DZZR_WEB_URL,
+// Expects a `dzzzr web` server already running and reachable at DZZZR_WEB_URL,
 // backed by dzzzr-mock and seeded with the chat fixtures under
 // fixtures/chats/. docs/shots/render.sh wires all of that up; this file only
 // drives the browser.
@@ -13,7 +13,7 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const WEB_URL = (process.env.DZZR_WEB_URL || 'http://127.0.0.1:18191').replace(/\/$/, '');
+const WEB_URL = (process.env.DZZZR_WEB_URL || 'http://127.0.0.1:18191').replace(/\/$/, '');
 const OUT = process.env.SHOTS_OUT || fileURLToPath(new URL('../screenshots', import.meta.url));
 mkdirSync(OUT, { recursive: true });
 

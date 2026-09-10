@@ -56,7 +56,7 @@ func answer(text string) *providers.LLMResponse {
 
 func TestAgentAnswersAndReports(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
 	provider := &scriptedProvider{replies: []*providers.LLMResponse{answer("Уровень взят.")}}
 	useProvider(t, provider)
 
@@ -80,7 +80,7 @@ func TestAgentAnswersAndReports(t *testing.T) {
 
 func TestAgentPassesEngineToolsToModel(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
 	provider := &scriptedProvider{replies: []*providers.LLMResponse{answer("готово")}}
 	useProvider(t, provider)
 
@@ -104,7 +104,7 @@ func TestAgentPassesEngineToolsToModel(t *testing.T) {
 
 func TestAgentJSONOutput(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
 	useProvider(t, &scriptedProvider{replies: []*providers.LLMResponse{answer("Всё готово.")}})
 
 	code, out, errOut := runCLI(t, "-json", "agent", "статус")
@@ -129,14 +129,14 @@ func TestAgentWithoutAPIKeyFails(t *testing.T) {
 	if code != 1 {
 		t.Errorf("код выхода %d, ожидался 1", code)
 	}
-	if !strings.Contains(errOut, "DZZR_LLM_API_KEY") {
+	if !strings.Contains(errOut, "DZZZR_LLM_API_KEY") {
 		t.Errorf("сообщение не называет нужную переменную: %q", errOut)
 	}
 }
 
 func TestAgentAllowsLocalEndpointWithoutAPIKey(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
+	t.Setenv("DZZZR_LLM_BASE_URL", "http://127.0.0.1:11434/v1")
 	useProvider(t, &scriptedProvider{replies: []*providers.LLMResponse{answer("локально")}})
 
 	if code, out, errOut := runCLI(t, "agent", "статус"); code != 0 {
@@ -146,7 +146,7 @@ func TestAgentAllowsLocalEndpointWithoutAPIKey(t *testing.T) {
 
 func TestAgentWithoutPromptFails(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
 	code, _, errOut := runCLI(t, "agent")
 	if code != 1 {
 		t.Errorf("код выхода %d, ожидался 1", code)
@@ -158,7 +158,7 @@ func TestAgentWithoutPromptFails(t *testing.T) {
 
 func TestAgentRejectsUnknownSecurity(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
 	useProvider(t, &scriptedProvider{replies: []*providers.LLMResponse{answer("готово")}})
 
 	code, _, errOut := runCLI(t, "agent", "-security", "маленько", "статус")
@@ -172,7 +172,7 @@ func TestAgentRejectsUnknownSecurity(t *testing.T) {
 
 func TestAgentReportsProviderFailure(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
 	useProvider(t, &scriptedProvider{failure: errors.New("HTTP 401 unauthorized")})
 
 	code, _, errOut := runCLI(t, "agent", "статус")

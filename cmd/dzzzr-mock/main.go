@@ -33,7 +33,7 @@ var (
 )
 
 // defaultAddr is the listen address used when neither the flag nor
-// DZZR_MOCK_ADDR says otherwise.
+// DZZZR_MOCK_ADDR says otherwise.
 const defaultAddr = "0.0.0.0:18090"
 
 // session is a signed-in site account, the equivalent of a row of usersSite
@@ -171,10 +171,10 @@ func (s *server) logRequests(next http.Handler) http.Handler {
 }
 
 func main() {
-	addr := flag.String("addr", envOr("DZZR_MOCK_ADDR", defaultAddr), "listen address")
+	addr := flag.String("addr", envOr("DZZZR_MOCK_ADDR", defaultAddr), "listen address")
 	city := flag.String("city", "moscow", "city segment the mock serves")
-	quirkList := flag.String("quirks", envOr("DZZR_MOCK_QUIRKS", ""),
-		"comma-separated engine quirks to reproduce ("+quirkNames()+"), env DZZR_MOCK_QUIRKS")
+	quirkList := flag.String("quirks", envOr("DZZZR_MOCK_QUIRKS", ""),
+		"comma-separated engine quirks to reproduce ("+quirkNames()+"), env DZZZR_MOCK_QUIRKS")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 

@@ -67,9 +67,9 @@ func authHint(err error) error {
 	case dzzzr.AuthSession:
 		return fatal("сессия сайта отсутствует или истекла. Выполните «dzzzr login»")
 	case dzzzr.AuthBasic:
-		return fatal("движок отклонил игровую авторизацию. Проверьте логин капитана и PIN: -captain/-pin (DZZR_CAPTAIN/DZZR_PIN)")
+		return fatal("движок отклонил игровую авторизацию. Проверьте логин капитана и PIN: -captain/-pin (DZZZR_CAPTAIN/DZZZR_PIN)")
 	case dzzzr.AuthAdmin:
-		return fatal("движок отклонил учётные данные организатора. Проверьте -admin-login/-admin-password (DZZR_ADMIN_LOGIN/DZZR_ADMIN_PASSWORD)")
+		return fatal("движок отклонил учётные данные организатора. Проверьте -admin-login/-admin-password (DZZZR_ADMIN_LOGIN/DZZZR_ADMIN_PASSWORD)")
 	case dzzzr.AuthAdminScope:
 		// The library names the refused page or form verb; the wording
 		// around it lives here, so the two cannot stutter into "нет

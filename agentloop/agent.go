@@ -350,7 +350,7 @@ func (o *observer) chatWithProgress(
 			return nil, ctx.Err()
 		}
 		if requestCtx.Err() != nil {
-			return nil, fmt.Errorf("модель не завершила ответ за %s; DZZR_LLM_REQUEST_TIMEOUT_SECONDS задаёт таймаут: %w", timeout, requestCtx.Err())
+			return nil, fmt.Errorf("модель не завершила ответ за %s; DZZZR_LLM_REQUEST_TIMEOUT_SECONDS задаёт таймаут: %w", timeout, requestCtx.Err())
 		}
 		return result, err
 	}

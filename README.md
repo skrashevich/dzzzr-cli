@@ -43,7 +43,7 @@ Docker:
 
 ```sh
 docker run --rm ghcr.io/skrashevich/dzzzr-cli version
-docker run --rm -p 18090:18090 -e DZZR_MOCK_ADDR=0.0.0.0:18090 ghcr.io/skrashevich/dzzzr-mock
+docker run --rm -p 18090:18090 -e DZZZR_MOCK_ADDR=0.0.0.0:18090 ghcr.io/skrashevich/dzzzr-mock
 ```
 
 ## Быстрый старт
@@ -67,7 +67,7 @@ dzzzr send-code "(112)D45R92"
 
 ```sh
 dzzzr-mock &                       # слушает 0.0.0.0:18090
-export DZZR_BASE_URL=http://127.0.0.1:18090/moscow/
+export DZZZR_BASE_URL=http://127.0.0.1:18090/moscow/
 dzzzr login -login demo -password demo -captain demo -pin 1234
 dzzzr status
 dzzzr send-code 1
@@ -110,7 +110,7 @@ if dzzzr send-code "$code"; then echo принят; else echo мимо; fi
 
 ```sh
 dzzzr mcp                                    # MCP-сервер, только чтение
-export DZZR_LLM_API_KEY=sk-…
+export DZZZR_LLM_API_KEY=sk-…
 dzzzr agent "на каком мы уровне и сколько кодов осталось"
 dzzzr chat                                   # полноэкранный диалог в терминале
 dzzzr web                                    # тот же агент в браузере
@@ -162,9 +162,9 @@ go test -tags e2e ./e2e -count=1     # собранная утилита про�
 golangci-lint run ./...              # нужен golangci-lint v2
 ```
 
-Живые тесты против боевого движка включаются переменными `DZZR_INTEGRATION=1`,
-`DZZR_E2E_CITY`, `DZZR_E2E_LOGIN`, `DZZR_E2E_PASSWORD`, `DZZR_E2E_CAPTAIN`,
-`DZZR_E2E_PIN`. Без них они пропускаются.
+Живые тесты против боевого движка включаются переменными `DZZZR_INTEGRATION=1`,
+`DZZZR_E2E_CITY`, `DZZZR_E2E_LOGIN`, `DZZZR_E2E_PASSWORD`, `DZZZR_E2E_CAPTAIN`,
+`DZZZR_E2E_PIN`. Без них они пропускаются.
 
 Демо-медиа для README собираются локально теми же скриптами, что и в CI:
 

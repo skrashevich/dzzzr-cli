@@ -10,9 +10,9 @@ Require dzzzr
 Require dzzzr-mock
 
 Hide
-Type `export PATH="$PWD/bin:$PATH" DZZR_BASE_URL="http://127.0.0.1:18094/moscow/"`
+Type `export PATH="$PWD/bin:$PATH" DZZZR_BASE_URL="http://127.0.0.1:18094/moscow/"`
 Enter
-Type `export DZZR_ADMIN_LOGIN=admin DZZR_ADMIN_PASSWORD=admin`
+Type `export DZZZR_ADMIN_LOGIN=admin DZZZR_ADMIN_PASSWORD=admin`
 Enter
 Type "dzzzr-mock -addr 127.0.0.1:18094 >/tmp/dzzzr-mock-admin.log 2>&1 &"
 Enter

@@ -75,7 +75,7 @@ func TestProviderDeadlineStopsWithoutThreeLongRetries(t *testing.T) {
 			o.cb.OnStatus = func(string, string) {}
 		}
 		_, err := o.Chat(t.Context(), nil, nil, "test", nil)
-		if !errors.Is(err, context.DeadlineExceeded) || !strings.Contains(err.Error(), "DZZR_LLM_REQUEST_TIMEOUT_SECONDS") {
+		if !errors.Is(err, context.DeadlineExceeded) || !strings.Contains(err.Error(), "DZZZR_LLM_REQUEST_TIMEOUT_SECONDS") {
 			t.Fatalf("missing timeout diagnostic: %v", err)
 		}
 		if p.calls != 1 {

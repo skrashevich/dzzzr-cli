@@ -31,7 +31,7 @@ func setupPDFCLI(t *testing.T) (string, pdfCLIIndex) {
 	t.Helper()
 	isolate(t)
 	root := t.TempDir()
-	t.Setenv("DZZR_FILES_ROOT", root)
+	t.Setenv("DZZZR_FILES_ROOT", root)
 	data, err := os.ReadFile("../../pdfsource/testdata/synthetic.pdf")
 	if err != nil {
 		t.Fatal(err)
@@ -183,7 +183,7 @@ func TestPDFCLIUsage(t *testing.T) {
 func TestPDFCLIRejectsOutsideRoot(t *testing.T) {
 	isolate(t)
 	root := t.TempDir()
-	t.Setenv("DZZR_FILES_ROOT", root)
+	t.Setenv("DZZZR_FILES_ROOT", root)
 	code, _, stderr := runCLI(t, "pdf-index", "../outside.pdf")
 	if code == 0 || stderr == "" {
 		t.Fatalf("outside path accepted: code=%d stderr=%s", code, stderr)

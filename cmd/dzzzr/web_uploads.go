@@ -17,7 +17,7 @@ import (
 const maxChatUploadBytes = 20 << 20
 
 // chatUploadsRoot is where files attached in the browser land. It is kept
-// apart from DZZR_FILES_ROOT so an attachment never depends on the directory
+// apart from DZZZR_FILES_ROOT so an attachment never depends on the directory
 // «dzzzr web» happened to be started in.
 func chatUploadsRoot() (string, error) {
 	dir, err := sessionDir()

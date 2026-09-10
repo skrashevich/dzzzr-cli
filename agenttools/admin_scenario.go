@@ -19,7 +19,7 @@ func scenarioLocalPath(root, name string) (string, error) {
 		}
 	}
 	if !filepath.IsLocal(name) {
-		return "", fmt.Errorf("path must stay inside DZZR_FILES_ROOT")
+		return "", fmt.Errorf("path must stay inside DZZZR_FILES_ROOT")
 	}
 	return name, nil
 }
@@ -67,8 +67,8 @@ func adminScenarioTools(e Engine, g *gate, root string) []*Tool {
 	return []*Tool{
 		{
 			name:        "admin_export_scenario",
-			description: "Экспорт полного сценария игры в новый JSON-файл внутри DZZR_FILES_ROOT. По умолчанию изображения и вложения встроены в Base64. linked_assets=true оставляет URL. Существующий файл не перезаписывается; возвращаются путь и счётчики без содержимого сценария.",
-			parameters:  schema(map[string]any{"game_id": intProp("ID игры"), "path": strProp("Новый файл внутри DZZR_FILES_ROOT"), "linked_assets": boolProp("Сохранить ссылки без скачивания")}, "game_id", "path"),
+			description: "Экспорт полного сценария игры в новый JSON-файл внутри DZZZR_FILES_ROOT. По умолчанию изображения и вложения встроены в Base64. linked_assets=true оставляет URL. Существующий файл не перезаписывается; возвращаются путь и счётчики без содержимого сценария.",
+			parameters:  schema(map[string]any{"game_id": intProp("ID игры"), "path": strProp("Новый файл внутри DZZZR_FILES_ROOT"), "linked_assets": boolProp("Сохранить ссылки без скачивания")}, "game_id", "path"),
 			gate:        g, noCache: true, writesLocal: true,
 			run: func(ctx context.Context, args arguments) (any, error) {
 				id, err := requireAdminInt(args, "game_id")
@@ -111,7 +111,7 @@ func adminScenarioTools(e Engine, g *gate, root string) []*Tool {
 		},
 		{
 			name:        "admin_validate_scenario",
-			description: "Проверить полный JSON-сценарий из файла внутри DZZR_FILES_ROOT. Без записи в движок; удалённые файлы не скачиваются.",
+			description: "Проверить полный JSON-сценарий из файла внутри DZZZR_FILES_ROOT. Без записи в движок; удалённые файлы не скачиваются.",
 			parameters:  schema(map[string]any{"path": strProp("Файл полного сценария")}, "path"), gate: g, noCache: true,
 			run: func(_ context.Context, args arguments) (any, error) {
 				s, _, err := toolScenario(args, root)
@@ -127,7 +127,7 @@ func adminScenarioTools(e Engine, g *gate, root string) []*Tool {
 		{
 			name:        "admin_import_scenario",
 			description: "Импорт полного сценария из path. Без game_id создаёт новую игру; с game_id пишет в явно указанную игру. Для непустой игры обязательна полная level_ids: ключ сценария -> ID уровня назначения, с равным числом уровней. Публикация восстанавливается последней. При ошибке возвращает этап и уже записанные ID; автоматически повторять импорт нельзя.",
-			parameters:  schema(map[string]any{"path": strProp("Файл сценария внутри DZZR_FILES_ROOT"), "game_id": intProp("Положительный ID назначения; не задан -> новая игра"), "level_ids": map[string]any{"type": "object", "additionalProperties": map[string]any{"type": "integer", "minimum": 1}}}, "path"),
+			parameters:  schema(map[string]any{"path": strProp("Файл сценария внутри DZZZR_FILES_ROOT"), "game_id": intProp("Положительный ID назначения; не задан -> новая игра"), "level_ids": map[string]any{"type": "object", "additionalProperties": map[string]any{"type": "integer", "minimum": 1}}}, "path"),
 			gate:        g, mutating: true,
 			run: func(ctx context.Context, args arguments) (any, error) {
 				engine, ok := e.(gamesource.ScenarioEngine)

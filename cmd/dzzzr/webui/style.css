@@ -1111,7 +1111,7 @@ body::before {
   color: var(--teal);
 }
 
-/* Session files — what the agent saved into DZZR_FILES_ROOT this chat */
+/* Session files — what the agent saved into DZZZR_FILES_ROOT this chat */
 .session-files[hidden] {
   display: none !important;
 }

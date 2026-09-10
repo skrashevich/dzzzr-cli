@@ -70,7 +70,7 @@ func TestSourceContextOverflowStopsBeforeProvider(t *testing.T) {
 				{Role: "assistant", ToolCalls: []providers.ToolCall{{ID: "source", Function: &providers.FunctionCall{Name: name}}}},
 				{Role: "tool", ToolCallID: "source", Content: strings.Repeat("x", 101)},
 			}
-			if _, err := o.Chat(t.Context(), messages, nil, "fake", nil); err == nil || !strings.Contains(err.Error(), "DZZR_LLM_SOURCE_CONTEXT_BYTES") {
+			if _, err := o.Chat(t.Context(), messages, nil, "fake", nil); err == nil || !strings.Contains(err.Error(), "DZZZR_LLM_SOURCE_CONTEXT_BYTES") {
 				t.Fatalf("expected actionable overflow, got %v", err)
 			}
 			if p.seen != nil {
@@ -131,7 +131,7 @@ func TestBoundToolHistoryStillReportsOversizedUniqueSources(t *testing.T) {
 		providers.Message{Role: "tool", ToolCallID: "a", Content: strings.Repeat("a", budget*7/10)},
 		providers.Message{Role: "tool", ToolCallID: "b", Content: strings.Repeat("b", budget*7/10)},
 	)
-	if _, err := boundToolHistory(messages, budget); err == nil || !strings.Contains(err.Error(), "DZZR_LLM_SOURCE_CONTEXT_BYTES") {
+	if _, err := boundToolHistory(messages, budget); err == nil || !strings.Contains(err.Error(), "DZZZR_LLM_SOURCE_CONTEXT_BYTES") {
 		t.Fatalf("expected actionable overflow, got %v", err)
 	}
 }
@@ -147,7 +147,7 @@ func TestBoundToolHistoryKeepsWindowedReadsOfOneSource(t *testing.T) {
 			providers.Message{Role: "tool", ToolCallID: id, Content: fmt.Sprintf("страница %d: %s", window, strings.Repeat("текст", 200))},
 		)
 	}
-	if _, err := boundToolHistory(messages, budget); err == nil || !strings.Contains(err.Error(), "DZZR_LLM_SOURCE_CONTEXT_BYTES") {
+	if _, err := boundToolHistory(messages, budget); err == nil || !strings.Contains(err.Error(), "DZZZR_LLM_SOURCE_CONTEXT_BYTES") {
 		t.Fatalf("expected actionable overflow, got %v", err)
 	}
 	for i, message := range messages {

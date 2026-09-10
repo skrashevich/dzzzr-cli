@@ -27,7 +27,7 @@ func pdfMappingTools(g *gate, root string) []*Tool {
 	return []*Tool{
 		{name: "index_pdf", gate: g, noCache: true,
 			description: "Индекс PDF для построения LLM схемы: SHA-256 файла, нумерованные строки, ссылки и ID картинок. Смысловой анализ определяет только адреса полей; содержимое затем копирует Go через extract_pdf. До 10 страниц за вызов. Для каждого PDF нужна своя схема.",
-			parameters:  schema(map[string]any{"path": strProp("PDF внутри DZZR_FILES_ROOT"), "start_page": intProp("Первая страница с 1"), "end_page": intProp("Последняя включительно, максимум 10 страниц")}, "path"),
+			parameters:  schema(map[string]any{"path": strProp("PDF внутри DZZZR_FILES_ROOT"), "start_page": intProp("Первая страница с 1"), "end_page": intProp("Последняя включительно, максимум 10 страниц")}, "path"),
 			run: func(ctx context.Context, a arguments) (any, error) {
 				path, err := a.requireString("path")
 				if err != nil {
@@ -50,7 +50,7 @@ func pdfMappingTools(g *gate, root string) []*Tool {
 			}},
 		{name: "extract_pdf", gate: g, noCache: true, writesLocal: true,
 			description: "Алгоритмически извлечь данные PDF по сохранённой структурной схеме и создать НОВЫЙ JSON. LLM задаёт только $source ссылки на строки, без текстов. Проверяет SHA-256, диапазоны, типы и непокрытые строки. Локальная запись разрешена при readonly движка. Не перезаписывает файлы и ничего не загружает в движок.",
-			parameters:  schema(map[string]any{"path": strProp("Исходный PDF"), "mapping_path": strProp("Схема version:1 либо манифест version:2 с source_sha256 и упорядоченным parts:[имена файлов схем]"), "output_path": strProp("Новый итоговый .json внутри DZZR_FILES_ROOT")}, "path", "mapping_path", "output_path"),
+			parameters:  schema(map[string]any{"path": strProp("Исходный PDF"), "mapping_path": strProp("Схема version:1 либо манифест version:2 с source_sha256 и упорядоченным parts:[имена файлов схем]"), "output_path": strProp("Новый итоговый .json внутри DZZZR_FILES_ROOT")}, "path", "mapping_path", "output_path"),
 			run: func(ctx context.Context, a arguments) (any, error) {
 				path, err := a.requireString("path")
 				if err != nil {

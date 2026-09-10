@@ -17,18 +17,18 @@ import (
 // dzzrEnv lists every environment variable the CLI reads, so a test can
 // neutralize a developer's own settings.
 var dzzrEnv = []string{
-	"DZZR_CITY", "DZZR_LOGIN", "DZZR_PASSWORD", "DZZR_CAPTAIN", "DZZR_PIN",
-	"DZZR_ADMIN_LOGIN", "DZZR_ADMIN_PASSWORD", "DZZR_BASE_URL",
-	"DZZR_INSECURE", "DZZR_DEBUG", "DZZR_HAR", "DZZR_HAR_OUT",
-	"DZZR_LLM_API_KEY", "DZZR_LLM_BASE_URL", "DZZR_LLM_MODEL", "DZZR_FILES_ROOT",
-	"DZZR_LLM_PROVIDER", "DZZR_CODEX_AUTH_FILE",
-	"DZZR_LLM_SOURCE_CONTEXT_BYTES",
-	"DZZR_LLM_REQUEST_TIMEOUT_SECONDS",
+	"DZZZR_CITY", "DZZZR_LOGIN", "DZZZR_PASSWORD", "DZZZR_CAPTAIN", "DZZZR_PIN",
+	"DZZZR_ADMIN_LOGIN", "DZZZR_ADMIN_PASSWORD", "DZZZR_BASE_URL",
+	"DZZZR_INSECURE", "DZZZR_DEBUG", "DZZZR_HAR", "DZZZR_HAR_OUT",
+	"DZZZR_LLM_API_KEY", "DZZZR_LLM_BASE_URL", "DZZZR_LLM_MODEL", "DZZZR_FILES_ROOT",
+	"DZZZR_LLM_PROVIDER", "DZZZR_CODEX_AUTH_FILE",
+	"DZZZR_LLM_SOURCE_CONTEXT_BYTES",
+	"DZZZR_LLM_REQUEST_TIMEOUT_SECONDS",
 	"LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL",
 	"OPENROUTER_API_KEY", "OPENROUTER_BASE_URL", "OPENROUTER_MODEL",
 }
 
-// isolate gives the test its own HOME and an empty DZZR_* environment.
+// isolate gives the test its own HOME and an empty DZZZR_* environment.
 func isolate(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
@@ -182,9 +182,9 @@ func TestParseArgsFlagsBeforeAndAfterCommand(t *testing.T) {
 
 func TestParseArgsEnvironmentDefaults(t *testing.T) {
 	isolate(t)
-	t.Setenv("DZZR_CITY", "ekb")
-	t.Setenv("DZZR_CAPTAIN", "cap")
-	t.Setenv("DZZR_DEBUG", "1")
+	t.Setenv("DZZZR_CITY", "ekb")
+	t.Setenv("DZZZR_CAPTAIN", "cap")
+	t.Setenv("DZZZR_DEBUG", "1")
 	cfg, positional := parseFor(t, []string{"status"})
 	if cfg.city != "ekb" || cfg.captain != "cap" || !cfg.debug {
 		t.Fatalf("город=%q капитан=%q debug=%v", cfg.city, cfg.captain, cfg.debug)
@@ -192,7 +192,7 @@ func TestParseArgsEnvironmentDefaults(t *testing.T) {
 	// A flag still wins over the environment.
 	cfg2, _ := parseFor(t, []string{"-city", "moscow", "status"})
 	if cfg2.city != "moscow" {
-		t.Fatalf("флаг -city не переопределил DZZR_CITY: %q", cfg2.city)
+		t.Fatalf("флаг -city не переопределил DZZZR_CITY: %q", cfg2.city)
 	}
 	if len(positional) != 1 {
 		t.Fatalf("позиционные аргументы = %q", positional)
@@ -403,7 +403,7 @@ func TestRequireAdminAuthWithoutCredentials(t *testing.T) {
 	cfg := &config{city: "moscow", stdout: io.Discard, stderr: io.Discard}
 	c := newClient(cfg)
 	err := requireAdminAuth(cfg, c)
-	if err == nil || !strings.Contains(err.Error(), "DZZR_ADMIN_LOGIN") {
+	if err == nil || !strings.Contains(err.Error(), "DZZZR_ADMIN_LOGIN") {
 		t.Fatalf("ошибка = %v", err)
 	}
 	cfg.adminLogin, cfg.adminPassword = "org", "secret"

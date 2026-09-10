@@ -324,7 +324,7 @@ async function loadAgentConfig() {
     } else {
       const err = String(data?.error || '').trim();
       el.textContent = err ? 'модель не настроена' : '—';
-      el.title = err || 'Задайте DZZR_LLM_API_KEY и DZZR_LLM_MODEL';
+      el.title = err || 'Задайте DZZZR_LLM_API_KEY и DZZZR_LLM_MODEL';
       el.classList.add('is-missing');
     }
   } catch (e) {
@@ -647,7 +647,7 @@ function formatFileSize(bytes) {
 
 /* ---------- файлы сессии ---------- */
 
-// renderSessionFiles lists the files the agent wrote to DZZR_FILES_ROOT during
+// renderSessionFiles lists the files the agent wrote to DZZZR_FILES_ROOT during
 // the active chat, each a direct download link.
 function renderSessionFiles() {
   const wrap = $('session-files');

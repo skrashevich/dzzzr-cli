@@ -76,24 +76,24 @@ func newAgentCatalog(cfg *config, c *dzzzr.Client, confirmer agenttools.Confirme
 	return catalog, nil
 }
 
-// llmConfig resolves the provider the agent talks to. The DZZR_-prefixed names
+// llmConfig resolves the provider the agent talks to. The DZZZR_-prefixed names
 // win, so a machine that already runs another agent keeps both configured.
 func llmConfig() (agentloop.Config, error) {
 	out, err := resolveLLMConfig()
 	if err != nil {
 		return out, err
 	}
-	if value := os.Getenv("DZZR_LLM_SOURCE_CONTEXT_BYTES"); value != "" {
+	if value := os.Getenv("DZZZR_LLM_SOURCE_CONTEXT_BYTES"); value != "" {
 		budget, err := strconv.Atoi(value)
 		if err != nil || budget < 1 || budget > 16<<20 {
-			return agentloop.Config{}, fatal("DZZR_LLM_SOURCE_CONTEXT_BYTES должен быть числом от 1 до 16777216")
+			return agentloop.Config{}, fatal("DZZZR_LLM_SOURCE_CONTEXT_BYTES должен быть числом от 1 до 16777216")
 		}
 		out.SourceContextBytes = budget
 	}
-	if value := os.Getenv("DZZR_LLM_REQUEST_TIMEOUT_SECONDS"); value != "" {
+	if value := os.Getenv("DZZZR_LLM_REQUEST_TIMEOUT_SECONDS"); value != "" {
 		seconds, err := strconv.Atoi(value)
 		if err != nil || seconds < 1 || seconds > 3600 {
-			return agentloop.Config{}, fatal("DZZR_LLM_REQUEST_TIMEOUT_SECONDS должен быть числом от 1 до 3600")
+			return agentloop.Config{}, fatal("DZZZR_LLM_REQUEST_TIMEOUT_SECONDS должен быть числом от 1 до 3600")
 		}
 		out.RequestTimeout = time.Duration(seconds) * time.Second
 	}
@@ -101,7 +101,7 @@ func llmConfig() (agentloop.Config, error) {
 }
 
 func resolveLLMConfig() (agentloop.Config, error) {
-	switch provider := strings.ToLower(strings.TrimSpace(os.Getenv("DZZR_LLM_PROVIDER"))); provider {
+	switch provider := strings.ToLower(strings.TrimSpace(os.Getenv("DZZZR_LLM_PROVIDER"))); provider {
 	case "codex", "chatgpt":
 		out, err := codexLLMConfig()
 		if err == nil && agentConfigHook != nil {
@@ -110,21 +110,21 @@ func resolveLLMConfig() (agentloop.Config, error) {
 		return out, err
 	case "", "openai", "openrouter":
 	default:
-		return agentloop.Config{}, fatal("неизвестный DZZR_LLM_PROVIDER %q: используйте openai, openrouter или codex", provider)
+		return agentloop.Config{}, fatal("неизвестный DZZZR_LLM_PROVIDER %q: используйте openai, openrouter или codex", provider)
 	}
 	baseURL := cmp.Or(
-		os.Getenv("DZZR_LLM_BASE_URL"),
+		os.Getenv("DZZZR_LLM_BASE_URL"),
 		os.Getenv("LLM_BASE_URL"),
 		os.Getenv("OPENROUTER_BASE_URL"),
 		defaultLLMBaseURL,
 	)
 	apiKey := cmp.Or(
-		os.Getenv("DZZR_LLM_API_KEY"),
+		os.Getenv("DZZZR_LLM_API_KEY"),
 		os.Getenv("LLM_API_KEY"),
 		os.Getenv("OPENROUTER_API_KEY"),
 	)
 	model := cmp.Or(
-		os.Getenv("DZZR_LLM_MODEL"),
+		os.Getenv("DZZZR_LLM_MODEL"),
 		os.Getenv("LLM_MODEL"),
 		os.Getenv("OPENROUTER_MODEL"),
 		defaultLLMModel,
@@ -134,7 +134,7 @@ func resolveLLMConfig() (agentloop.Config, error) {
 	// missing key only produces a rejected request several seconds later.
 	if apiKey == "" && !isLocalEndpoint(baseURL) {
 		return agentloop.Config{}, fatal(
-			"не задан ключ модели: укажите DZZR_LLM_API_KEY (или LLM_API_KEY, OPENROUTER_API_KEY)")
+			"не задан ключ модели: укажите DZZZR_LLM_API_KEY (или LLM_API_KEY, OPENROUTER_API_KEY)")
 	}
 
 	out := agentloop.Config{

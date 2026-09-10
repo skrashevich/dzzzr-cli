@@ -28,7 +28,7 @@ func rootedPath(root, path string) (string, error) {
 		}
 	}
 	if !filepath.IsLocal(path) {
-		return "", errors.New("path must stay inside DZZR_FILES_ROOT")
+		return "", errors.New("path must stay inside DZZZR_FILES_ROOT")
 	}
 	return path, nil
 }

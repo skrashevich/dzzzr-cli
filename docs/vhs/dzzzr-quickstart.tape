@@ -10,7 +10,7 @@ Require dzzzr
 Require dzzzr-mock
 
 Hide
-Type `export PATH="$PWD/bin:$PATH" DZZR_BASE_URL="http://127.0.0.1:18091/moscow/"`
+Type `export PATH="$PWD/bin:$PATH" DZZZR_BASE_URL="http://127.0.0.1:18091/moscow/"`
 Enter
 Type "dzzzr-mock -addr 127.0.0.1:18091 >/tmp/dzzzr-mock-quickstart.log 2>&1 &"
 Enter

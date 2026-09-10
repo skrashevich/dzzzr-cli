@@ -178,7 +178,7 @@ func requireAuth(ctx context.Context, cfg *config, c *dzzzr.Client) error {
 
 	if c.Session() == "" {
 		if !canSignIn(cfg) {
-			return fatal("нет сохранённой сессии (%s). Выполните «dzzzr login» или задайте -login и -password (DZZR_LOGIN/DZZR_PASSWORD)", path)
+			return fatal("нет сохранённой сессии (%s). Выполните «dzzzr login» или задайте -login и -password (DZZZR_LOGIN/DZZZR_PASSWORD)", path)
 		}
 		return signIn(ctx, cfg, c)
 	}
@@ -242,7 +242,7 @@ func requireAdminAuth(cfg *config, c *dzzzr.Client) error {
 	}
 	applyCredentialOverrides(cfg, c)
 	if !c.HasAdminCredentials() {
-		return fatal("не заданы учётные данные организатора. Укажите -admin-login и -admin-password (DZZR_ADMIN_LOGIN/DZZR_ADMIN_PASSWORD)")
+		return fatal("не заданы учётные данные организатора. Укажите -admin-login и -admin-password (DZZZR_ADMIN_LOGIN/DZZZR_ADMIN_PASSWORD)")
 	}
 	return nil
 }

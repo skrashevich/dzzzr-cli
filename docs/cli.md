@@ -56,7 +56,7 @@ if dzzzr send-code "$code"; then echo принят; else echo мимо; fi
 
 ## Команды организатора
 
-Требуют `-admin-login` и `-admin-password` (или `DZZR_ADMIN_LOGIN` / `DZZR_ADMIN_PASSWORD`).
+Требуют `-admin-login` и `-admin-password` (или `DZZZR_ADMIN_LOGIN` / `DZZZR_ADMIN_PASSWORD`).
 
 ```sh
 # игры
@@ -107,16 +107,16 @@ dzzzr admin-send-message 4242 "Через 10 минут закрываем дв�
 
 | Флаг | Переменная | Назначение |
 | --- | --- | --- |
-| `-city` | `DZZR_CITY` | Город, сегмент пути движка (по умолчанию `moscow`) |
-| `-login`, `-password` | `DZZR_LOGIN`, `DZZR_PASSWORD` | Аккаунт сайта |
-| `-captain`, `-pin` | `DZZR_CAPTAIN`, `DZZR_PIN` | Логин капитана и PIN, если организатор их выдал |
-| `-admin-login`, `-admin-password` | `DZZR_ADMIN_LOGIN`, `DZZR_ADMIN_PASSWORD` | Доступ к админке |
-| `-base-url` | `DZZR_BASE_URL` | Другой адрес движка, например mock |
+| `-city` | `DZZZR_CITY` | Город, сегмент пути движка (по умолчанию `moscow`) |
+| `-login`, `-password` | `DZZZR_LOGIN`, `DZZZR_PASSWORD` | Аккаунт сайта |
+| `-captain`, `-pin` | `DZZZR_CAPTAIN`, `DZZZR_PIN` | Логин капитана и PIN, если организатор их выдал |
+| `-admin-login`, `-admin-password` | `DZZZR_ADMIN_LOGIN`, `DZZZR_ADMIN_PASSWORD` | Доступ к админке |
+| `-base-url` | `DZZZR_BASE_URL` | Другой адрес движка, например mock |
 | `-http` | — | HTTP вместо HTTPS для стандартного хоста |
-| `-insecure` | `DZZR_INSECURE` | Не проверять TLS-сертификат |
+| `-insecure` | `DZZZR_INSECURE` | Не проверять TLS-сертификат |
 | `-json` | — | Машинночитаемый вывод |
-| `-debug` | `DZZR_DEBUG` | Печатать запросы в stderr (токен и PIN скрыты) |
-| `-har`, `-har-out` | `DZZR_HAR`, `DZZR_HAR_OUT` | Записать трафик в HAR-файл |
+| `-debug` | `DZZZR_DEBUG` | Печатать запросы в stderr (токен и PIN скрыты) |
+| `-har`, `-har-out` | `DZZZR_HAR`, `DZZZR_HAR_OUT` | Записать трафик в HAR-файл |
 | `-timeout` | — | Таймаут HTTP в секундах |
 | `-security` | — | Права агента: `readonly`, `approve` или `full` (`agent`, `chat`, `mcp`) |
 | `-levels` | — | Показывать колонки заданий, а не только итоги (`game-stat`) |

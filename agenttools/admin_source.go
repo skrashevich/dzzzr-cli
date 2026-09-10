@@ -16,7 +16,7 @@ import (
 
 func uploadRoot(root string) (string, error) {
 	if root == "" {
-		root = os.Getenv("DZZR_FILES_ROOT")
+		root = os.Getenv("DZZZR_FILES_ROOT")
 	}
 	if root == "" {
 		root = "."
@@ -39,7 +39,7 @@ func readUploadLimited(root, path string, maxBytes int64) ([]byte, error) {
 		path = rel
 	}
 	if !filepath.IsLocal(path) {
-		return nil, fmt.Errorf("path must stay inside DZZR_FILES_ROOT")
+		return nil, fmt.Errorf("path must stay inside DZZZR_FILES_ROOT")
 	}
 	dir, err := os.OpenRoot(root)
 	if err != nil {
@@ -94,7 +94,7 @@ func sourcePlanSchema() map[string]any {
 func sourceInputSchema() map[string]any {
 	s := schema(map[string]any{
 		"plan":    sourcePlanSchema(),
-		"path":    strProp("Путь к локальному JSON исходника внутри DZZR_FILES_ROOT, до 4 МиБ; передать только plan или path"),
+		"path":    strProp("Путь к локальному JSON исходника внутри DZZZR_FILES_ROOT, до 4 МиБ; передать только plan или path"),
 		"game_id": intProp("Положительный ID целевой игры; переопределение только для path, из запроса пользователя"),
 		"mode":    map[string]any{"type": "string", "enum": []string{"create", "update"}, "description": "Режим только для path; переопределяет режим файла"},
 	})
@@ -179,7 +179,7 @@ func adminSourceTools(e Engine, g *gate, root string) []*Tool {
 	return []*Tool{
 		{
 			name:        "admin_upload_file",
-			description: "Загрузить локальную картинку или вложение в файловый менеджер игры и получить URL для HTML задания. Нужен аккаунт игротехника. Уже существующий файл не перезаписывается. Путь внутри DZZR_FILES_ROOT (по умолчанию рабочий каталог).",
+			description: "Загрузить локальную картинку или вложение в файловый менеджер игры и получить URL для HTML задания. Нужен аккаунт игротехника. Уже существующий файл не перезаписывается. Путь внутри DZZZR_FILES_ROOT (по умолчанию рабочий каталог).",
 			parameters:  schema(map[string]any{"game_id": intProp("ID игры"), "path": strProp("Путь к локальному файлу внутри корня"), "name": strProp("Имя в движке; по умолчанию имя файла")}, "game_id", "path"),
 			mutating:    true, gate: g,
 			run: func(ctx context.Context, args arguments) (any, error) {
@@ -236,7 +236,7 @@ func adminSourceTools(e Engine, g *gate, root string) []*Tool {
 		{
 			name:        "admin_validate_source",
 			noCache:     true,
-			description: "Проверить JSON исходника игры из plan или локального path (до 4 МиБ внутри DZZR_FILES_ROOT), без переписывания полей моделью: типы, кодировку Windows-1251, коды, повторы, тайминги. Проверка локальная; существование ID и права проверяются при заливке. HTML передаётся как есть.",
+			description: "Проверить JSON исходника игры из plan или локального path (до 4 МиБ внутри DZZZR_FILES_ROOT), без переписывания полей моделью: типы, кодировку Windows-1251, коды, повторы, тайминги. Проверка локальная; существование ID и права проверяются при заливке. HTML передаётся как есть.",
 			parameters:  sourceInputSchema(), gate: g,
 			run: func(_ context.Context, args arguments) (any, error) {
 				plan, err := decodeSourcePlan(args, root)
@@ -251,7 +251,7 @@ func adminSourceTools(e Engine, g *gate, root string) []*Tool {
 		},
 		{
 			name:        "admin_upload_source",
-			description: "Залить уровни из JSON plan или локального path (до 4 МиБ внутри DZZR_FILES_ROOT) после проверки всего исходника; поля из файла передаются напрямую без переписывания моделью. create добавляет, update полностью заменяет поля уровней (неуказанные значения очищаются). Файлы загружаются отдельно через admin_upload_file, их URL вставляются в HTML. Технический уровень НЕ добавляется. При ошибке возвращаются уже записанные ID; не повторять весь create, иначе будут дубликаты.",
+			description: "Залить уровни из JSON plan или локального path (до 4 МиБ внутри DZZZR_FILES_ROOT) после проверки всего исходника; поля из файла передаются напрямую без переписывания моделью. create добавляет, update полностью заменяет поля уровней (неуказанные значения очищаются). Файлы загружаются отдельно через admin_upload_file, их URL вставляются в HTML. Технический уровень НЕ добавляется. При ошибке возвращаются уже записанные ID; не повторять весь create, иначе будут дубликаты.",
 			parameters:  sourceInputSchema(), mutating: true, gate: g,
 			run: func(ctx context.Context, args arguments) (any, error) {
 				plan, err := decodeSourcePlan(args, root)

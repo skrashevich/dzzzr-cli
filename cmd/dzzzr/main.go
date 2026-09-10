@@ -121,22 +121,22 @@ func (cfg *config) lineReader() *bufio.Reader {
 }
 
 // registerFlags declares the global flags. Defaults come from the
-// environment so DZZR_* works everywhere a flag does.
+// environment so DZZZR_* works everywhere a flag does.
 func (cfg *config) registerFlags(fs *flag.FlagSet) {
-	fs.StringVar(&cfg.city, "city", envOr("DZZR_CITY", "moscow"), "город (сегмент пути движка), env DZZR_CITY")
-	fs.StringVar(&cfg.login, "login", os.Getenv("DZZR_LOGIN"), "логин сайта для входа, env DZZR_LOGIN")
-	fs.StringVar(&cfg.password, "password", os.Getenv("DZZR_PASSWORD"), "пароль сайта, env DZZR_PASSWORD")
-	fs.StringVar(&cfg.captain, "captain", os.Getenv("DZZR_CAPTAIN"), "логин капитана для игровой авторизации, env DZZR_CAPTAIN")
-	fs.StringVar(&cfg.pin, "pin", os.Getenv("DZZR_PIN"), "игровой PIN команды, env DZZR_PIN")
-	fs.StringVar(&cfg.adminLogin, "admin-login", os.Getenv("DZZR_ADMIN_LOGIN"), "логин организатора, env DZZR_ADMIN_LOGIN")
-	fs.StringVar(&cfg.adminPassword, "admin-password", os.Getenv("DZZR_ADMIN_PASSWORD"), "пароль организатора, env DZZR_ADMIN_PASSWORD")
-	fs.StringVar(&cfg.baseURL, "base-url", os.Getenv("DZZR_BASE_URL"), "адрес движка вместо стандартного, env DZZR_BASE_URL")
+	fs.StringVar(&cfg.city, "city", envOr("DZZZR_CITY", "moscow"), "город (сегмент пути движка), env DZZZR_CITY")
+	fs.StringVar(&cfg.login, "login", os.Getenv("DZZZR_LOGIN"), "логин сайта для входа, env DZZZR_LOGIN")
+	fs.StringVar(&cfg.password, "password", os.Getenv("DZZZR_PASSWORD"), "пароль сайта, env DZZZR_PASSWORD")
+	fs.StringVar(&cfg.captain, "captain", os.Getenv("DZZZR_CAPTAIN"), "логин капитана для игровой авторизации, env DZZZR_CAPTAIN")
+	fs.StringVar(&cfg.pin, "pin", os.Getenv("DZZZR_PIN"), "игровой PIN команды, env DZZZR_PIN")
+	fs.StringVar(&cfg.adminLogin, "admin-login", os.Getenv("DZZZR_ADMIN_LOGIN"), "логин организатора, env DZZZR_ADMIN_LOGIN")
+	fs.StringVar(&cfg.adminPassword, "admin-password", os.Getenv("DZZZR_ADMIN_PASSWORD"), "пароль организатора, env DZZZR_ADMIN_PASSWORD")
+	fs.StringVar(&cfg.baseURL, "base-url", os.Getenv("DZZZR_BASE_URL"), "адрес движка вместо стандартного, env DZZZR_BASE_URL")
 	fs.BoolVar(&cfg.useHTTP, "http", false, "обращаться к стандартному хосту по http, а не https")
-	fs.BoolVar(&cfg.insecure, "insecure", envBool("DZZR_INSECURE"), "не проверять TLS-сертификат, env DZZR_INSECURE")
+	fs.BoolVar(&cfg.insecure, "insecure", envBool("DZZZR_INSECURE"), "не проверять TLS-сертификат, env DZZZR_INSECURE")
 	fs.BoolVar(&cfg.jsonOut, "json", false, "выводить данные в JSON")
-	fs.BoolVar(&cfg.debug, "debug", envBool("DZZR_DEBUG"), "печатать HTTP-запросы в stderr, env DZZR_DEBUG")
-	fs.BoolVar(&cfg.har, "har", envBool("DZZR_HAR"), "записывать HTTP-трафик в HAR, env DZZR_HAR")
-	fs.StringVar(&cfg.harOut, "har-out", os.Getenv("DZZR_HAR_OUT"), "файл для HAR-записи (включает -har), env DZZR_HAR_OUT")
+	fs.BoolVar(&cfg.debug, "debug", envBool("DZZZR_DEBUG"), "печатать HTTP-запросы в stderr, env DZZZR_DEBUG")
+	fs.BoolVar(&cfg.har, "har", envBool("DZZZR_HAR"), "записывать HTTP-трафик в HAR, env DZZZR_HAR")
+	fs.StringVar(&cfg.harOut, "har-out", os.Getenv("DZZZR_HAR_OUT"), "файл для HAR-записи (включает -har), env DZZZR_HAR_OUT")
 	fs.IntVar(&cfg.timeout, "timeout", 30, "таймаут HTTP-запроса в секундах")
 	fs.BoolVar(&cfg.showVersion, "version", false, "показать версию и выйти")
 	fs.BoolVar(&cfg.showVersion, "v", false, "то же, что -version")
@@ -152,7 +152,7 @@ func (cfg *config) registerFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&cfg.important, "important", false, "пометить сообщение как важное (admin-send-message)")
 	fs.StringVar(&cfg.security, "security", "readonly", "права агента: readonly, approve или full (mcp)")
 	fs.BoolVar(&cfg.withTasks, "levels", false, "показывать колонки заданий, а не только итоги (game-stat)")
-	fs.StringVar(&cfg.webAddr, "web-addr", envOr("DZZR_WEB_ADDR", defaultWebAddr), "адрес браузерного чата, env DZZR_WEB_ADDR (web)")
+	fs.StringVar(&cfg.webAddr, "web-addr", envOr("DZZZR_WEB_ADDR", defaultWebAddr), "адрес браузерного чата, env DZZZR_WEB_ADDR (web)")
 }
 
 // debugf writes a timestamped diagnostic line to stderr when -debug is on.

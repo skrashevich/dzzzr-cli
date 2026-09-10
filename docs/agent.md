@@ -51,7 +51,7 @@ dzzzr mcp -security full        # агент действует сам
 Если MCP-клиента под рукой нет, модель можно позвать прямо из утилиты. Цикл агента построен на [PicoClaw](https://github.com/sipeed/picoclaw): он владеет обращениями к провайдеру, перебором вызовов инструментов и лимитом в 200 обращений к модели за один запуск.
 
 ```sh
-export DZZR_LLM_API_KEY=sk-…
+export DZZZR_LLM_API_KEY=sk-…
 dzzzr agent "на каком мы уровне и сколько кодов осталось"      # один запрос, ответ в stdout
 dzzzr agent -security approve "отправь код ЛУНА"               # каждое изменение спросит
 dzzzr chat                                                     # полноэкранный диалог
@@ -65,36 +65,36 @@ dzzzr chat                                                     # полноэк�
 
 ```sh
 codex -c 'cli_auth_credentials_store="file"' login
-export DZZR_LLM_PROVIDER=codex
-export DZZR_LLM_MODEL=gpt-5.4 # укажите модель, доступную вашей учётной записи
+export DZZZR_LLM_PROVIDER=codex
+export DZZZR_LLM_MODEL=gpt-5.4 # укажите модель, доступную вашей учётной записи
 dzzzr agent "на каком мы уровне и сколько кодов осталось"
 dzzzr chat
 ```
 
-Используется сохранённый `~/.codex/auth.json` (или `$CODEX_HOME/auth.json`). Для другого файла задайте `DZZR_CODEX_AUTH_FILE`. Уже выполненный вход через ChatGPT с файловым хранением подходит без повторного входа. Хранилище ОС (keyring) напрямую не читается; [документация авторизации Codex](https://developers.openai.com/codex/auth) описывает варианты хранения и вход через `login --device-auth` для сервера без браузера.
+Используется сохранённый `~/.codex/auth.json` (или `$CODEX_HOME/auth.json`). Для другого файла задайте `DZZZR_CODEX_AUTH_FILE`. Уже выполненный вход через ChatGPT с файловым хранением подходит без повторного входа. Хранилище ОС (keyring) напрямую не читается; [документация авторизации Codex](https://developers.openai.com/codex/auth) описывает варианты хранения и вход через `login --device-auth` для сервера без браузера.
 
-В режиме `codex` (синоним `chatgpt`) API-ключ не нужен. Настройки API-ключа, базового URL и `OPENROUTER_MODEL` игнорируются: запросы идут в Codex через Responses API с обычными инструментами и политикой `-security`. Модель выбирается из `DZZR_LLM_MODEL`, затем `LLM_MODEL`, затем значения по умолчанию провайдера PicoClaw. Доступность моделей и лимиты определяются учётной записью Codex; стоимость по тарифам OpenRouter не рассчитывается.
+В режиме `codex` (синоним `chatgpt`) API-ключ не нужен. Настройки API-ключа, базового URL и `OPENROUTER_MODEL` игнорируются: запросы идут в Codex через Responses API с обычными инструментами и политикой `-security`. Модель выбирается из `DZZZR_LLM_MODEL`, затем `LLM_MODEL`, затем значения по умолчанию провайдера PicoClaw. Доступность моделей и лимиты определяются учётной записью Codex; стоимость по тарифам OpenRouter не рассчитывается.
 
 Файл авторизации перечитывается перед каждым запросом. Обновлением токенов управляет Codex: если токен истёк, обновите авторизацию в Codex и повторите запрос. CLI не изменяет `auth.json` и не сохраняет токены в историю чата.
 
 | Переменная | По умолчанию | Назначение |
 | --- | --- | --- |
-| `DZZR_LLM_PROVIDER` | `openrouter` | `codex` / `chatgpt` — подписка ChatGPT; `openrouter` / `openai` — OpenAI-совместимый API |
-| `DZZR_CODEX_AUTH_FILE` | `$CODEX_HOME/auth.json` или `~/.codex/auth.json` | Файл авторизации ChatGPT/Codex |
-| `DZZR_LLM_API_KEY`, `LLM_API_KEY`, `OPENROUTER_API_KEY` | — | Ключ провайдера. Не нужен, если адрес указывает на этот же компьютер |
-| `DZZR_LLM_BASE_URL`, `LLM_BASE_URL`, `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Адрес OpenAI-совместимого API |
-| `DZZR_LLM_MODEL`, `LLM_MODEL`, `OPENROUTER_MODEL` | `openrouter/auto` | Идентификатор модели |
-| `DZZR_FILES_ROOT` | текущий каталог | Корень локальных файлов: чтение, поиск и создание новых `.json` через `save_local_json` |
-| `DZZR_LLM_SOURCE_CONTEXT_BYTES` | `524288` | Лимит полных результатов `read_pdf` / `read_local_file` в контексте одного запуска, в байтах; максимум 16 МиБ |
-| `DZZR_LLM_REQUEST_TIMEOUT_SECONDS` | `600` | Таймаут одного запроса к модели, включая чтение ответа; от 1 до 3600 секунд. Истечение таймаута не запускает автоматический повтор |
+| `DZZZR_LLM_PROVIDER` | `openrouter` | `codex` / `chatgpt` — подписка ChatGPT; `openrouter` / `openai` — OpenAI-совместимый API |
+| `DZZZR_CODEX_AUTH_FILE` | `$CODEX_HOME/auth.json` или `~/.codex/auth.json` | Файл авторизации ChatGPT/Codex |
+| `DZZZR_LLM_API_KEY`, `LLM_API_KEY`, `OPENROUTER_API_KEY` | — | Ключ провайдера. Не нужен, если адрес указывает на этот же компьютер |
+| `DZZZR_LLM_BASE_URL`, `LLM_BASE_URL`, `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | Адрес OpenAI-совместимого API |
+| `DZZZR_LLM_MODEL`, `LLM_MODEL`, `OPENROUTER_MODEL` | `openrouter/auto` | Идентификатор модели |
+| `DZZZR_FILES_ROOT` | текущий каталог | Корень локальных файлов: чтение, поиск и создание новых `.json` через `save_local_json` |
+| `DZZZR_LLM_SOURCE_CONTEXT_BYTES` | `524288` | Лимит полных результатов `read_pdf` / `read_local_file` в контексте одного запуска, в байтах; максимум 16 МиБ |
+| `DZZZR_LLM_REQUEST_TIMEOUT_SECONDS` | `600` | Таймаут одного запроса к модели, включая чтение ответа; от 1 до 3600 секунд. Истечение таймаута не запускает автоматический повтор |
 
-Переменные перечислены в порядке приоритета: `DZZR_`-имена побеждают, поэтому на машине, где уже настроен другой агент, обе настройки уживаются. Локальный сервер подключается так:
+Переменные перечислены в порядке приоритета: `DZZZR_`-имена побеждают, поэтому на машине, где уже настроен другой агент, обе настройки уживаются. Локальный сервер подключается так:
 
 ```sh
-DZZR_LLM_BASE_URL=http://127.0.0.1:8080/v1 DZZR_LLM_MODEL=qwen dzzzr agent "что с уровнем"
+DZZZR_LLM_BASE_URL=http://127.0.0.1:8080/v1 DZZZR_LLM_MODEL=qwen dzzzr agent "что с уровнем"
 ```
 
-За пределы `DZZR_FILES_ROOT` агент не выйдет: путь через `..`, абсолютный путь и символическая ссылка наружу отклоняются.
+За пределы `DZZZR_FILES_ROOT` агент не выйдет: путь через `..`, абсолютный путь и символическая ссылка наружу отклоняются.
 
 После каждого запуска печатается отчёт: сколько времени ушло на модель и на инструменты, сколько было обращений и токенов. Для OpenRouter к нему добавляется стоимость по опубликованным тарифам, для локального сервера — `$0`.
 
@@ -139,7 +139,7 @@ dzzzr admin-upload-source ./scenario.json
 dzzzr admin-create-technical-level 4242
 ```
 
-Для записи нужны `DZZR_ADMIN_LOGIN` и `DZZR_ADMIN_PASSWORD` игротехника
+Для записи нужны `DZZZR_ADMIN_LOGIN` и `DZZZR_ADMIN_PASSWORD` игротехника
 (либо `-admin-login` / `-admin-password`). Проверка JSON локальная, без авторизации.
 `admin-upload-file` возвращает постоянный URL, который можно вставить в HTML задания,
 подсказки, спойлера или комментария. Уже существующий файл не перезаписывается.
@@ -189,8 +189,8 @@ Google Docs/Drive не требуется. PDF обрабатывается вн
 CGO и вызовов внешних программ:
 
 ```sh
-export DZZR_FILES_ROOT="$HOME/Downloads"
-# DZZR_LLM_API_KEY / DZZR_LLM_MODEL и админские учётные данные настраиваются выше.
+export DZZZR_FILES_ROOT="$HOME/Downloads"
+# DZZZR_LLM_API_KEY / DZZZR_LLM_MODEL и админские учётные данные настраиваются выше.
 dzzzr -security approve agent \
   'Прочитай Игра ПР 2026.pdf целиком, подготовь сценарий для игры 4242 в режиме create, проверь и залей уровни. Технический уровень не нужен.'
 ```
@@ -204,7 +204,7 @@ dzzzr -security approve agent \
 Прочитанные страницы сохраняются в контексте целиком. Они не подпадают под
 ограничение истории обычных инструментов (48 КБ суммарно / 16 КБ на ответ).
 Если отдельный лимит исходных документов превышен, запуск останавливается без
-удаления страниц; его можно увеличить через `DZZR_LLM_SOURCE_CONTEXT_BYTES`,
+удаления страниц; его можно увеличить через `DZZZR_LLM_SOURCE_CONTEXT_BYTES`,
 учитывая размер контекста выбранной модели. Байты не равны токенам.
 
 Для локального экспорта достаточно readonly:
@@ -213,7 +213,7 @@ dzzzr -security approve agent \
 dzzzr agent 'Прочитай Игра ПР 2026.pdf и сохрани сценарий в scenario.json в машиночитаемом JSON'
 ```
 
-`save_local_json` создаёт новый `.json` внутри `DZZR_FILES_ROOT` по явной просьбе
+`save_local_json` создаёт новый `.json` внутри `DZZZR_FILES_ROOT` по явной просьбе
 пользователя, проверяет JSON и не перезаписывает существующие файлы. Лимит — 4 МиБ.
 Это локальный документ; админские права и ID игры для экспорта не требуются.
 При работе с PDF через `save_local_json` сохраняется **только схема** с адресами
@@ -262,7 +262,7 @@ dzzzr pdf-extract scenario.pdf mapping.json scenario.json
 кодов; при неоднозначности агент должен уточнить назначение. OCR сканов не реализован:
 `requires_ocr` сообщает об отсутствии текстового слоя (это бывает и на пустых страницах).
 
-Пути ограничены `DZZR_FILES_ROOT` (по умолчанию текущая папка). Чтение доступно в
+Пути ограничены `DZZZR_FILES_ROOT` (по умолчанию текущая папка). Чтение доступно в
 readonly, запись в движок подчиняется readonly/approve/full. Эти же инструменты и
 инструкции доступны MCP-клиентам. Достаточно одного Go-бинарника;
 Docker-образ использует distroless/static.

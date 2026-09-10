@@ -12,9 +12,9 @@ import (
 func init() {
 	register(
 		command{Name: "pdf-index", Usage: "pdf-index PDF [НАЧАЛО КОНЕЦ]", Auth: authNone, Run: cmdPDFIndex,
-			Help: "Индекс строк локального PDF в JSON; пути относительно DZZR_FILES_ROOT (по умолчанию текущий каталог)"},
+			Help: "Индекс строк локального PDF в JSON; пути относительно DZZZR_FILES_ROOT (по умолчанию текущий каталог)"},
 		command{Name: "pdf-extract", Usage: "pdf-extract PDF СХЕМА.json РЕЗУЛЬТАТ.json", Auth: authNone, Run: cmdPDFExtract,
-			Help: "Скопировать строки PDF в JSON по схеме ссылок на источник; пути относительно DZZR_FILES_ROOT"},
+			Help: "Скопировать строки PDF в JSON по схеме ссылок на источник; пути относительно DZZZR_FILES_ROOT"},
 	)
 }
 
@@ -34,7 +34,7 @@ func cmdPDFIndex(ctx context.Context, cfg *config, _ *dzzzr.Client, args []strin
 		}
 		opts = pdfsource.Options{StartPage: start, EndPage: end}
 	}
-	indexed, err := pdfsource.IndexFile(ctx, envOr("DZZR_FILES_ROOT", "."), args[0], opts)
+	indexed, err := pdfsource.IndexFile(ctx, envOr("DZZZR_FILES_ROOT", "."), args[0], opts)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func cmdPDFExtract(ctx context.Context, cfg *config, _ *dzzzr.Client, args []str
 	if len(args) != 3 {
 		return &cliError{msg: "использование: pdf-extract PDF СХЕМА.json РЕЗУЛЬТАТ.json", code: 2}
 	}
-	result, err := pdfsource.ExtractFiles(ctx, envOr("DZZR_FILES_ROOT", "."), args[0], args[1], args[2])
+	result, err := pdfsource.ExtractFiles(ctx, envOr("DZZZR_FILES_ROOT", "."), args[0], args[1], args[2])
 	if err != nil {
 		return err
 	}

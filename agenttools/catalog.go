@@ -21,7 +21,7 @@ type Options struct {
 	// IncludeAdmin adds the admin_* tools. They need organizer credentials on
 	// the client; without them the tools are omitted.
 	IncludeAdmin bool
-	// FilesRoot restricts local upload paths. Empty uses DZZR_FILES_ROOT or the working directory.
+	// FilesRoot restricts local upload paths. Empty uses DZZZR_FILES_ROOT or the working directory.
 	FilesRoot string
 	// Reauthenticate restores a rejected site session using credentials held by
 	// the host. Read tools retry once; mutating workflows are never replayed.

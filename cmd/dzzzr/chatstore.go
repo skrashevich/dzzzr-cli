@@ -32,7 +32,7 @@ type chatLine struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// chatFile is a file the agent wrote to DZZR_FILES_ROOT during this chat. The
+// chatFile is a file the agent wrote to DZZZR_FILES_ROOT during this chat. The
 // browser offers it for download; Path stays server-side only, addressed by
 // Name.
 type chatFile struct {

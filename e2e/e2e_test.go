@@ -94,7 +94,7 @@ func (h *harness) run(args ...string) (string, string, int) {
 	h.t.Helper()
 	args = append([]string{"-base-url", h.baseURL}, args...)
 	cmd := exec.Command(h.cli, args...)
-	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZR_CITY=moscow")
+	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZZR_CITY=moscow")
 	var stdout, stderr strings.Builder
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -392,7 +392,7 @@ func TestMCPServesTools(t *testing.T) {
 	// A real MCP client keeps the pipe open while it waits, so the test does
 	// too: closing stdin ends the server, and it would end before answering.
 	cmd := exec.Command(h.cli, "-base-url", h.baseURL, "mcp")
-	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZR_CITY=moscow")
+	cmd.Env = append(os.Environ(), "HOME="+h.home, "DZZZR_CITY=moscow")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		t.Fatal(err)

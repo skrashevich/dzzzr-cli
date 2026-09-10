@@ -2,7 +2,7 @@
 // notes from a briefing, a scenario draft, a script that decodes something.
 //
 // Everything is confined to one root directory, given to [Tools] or taken from
-// DZZR_FILES_ROOT. save_local_json can also create a new JSON artifact when
+// DZZZR_FILES_ROOT. save_local_json can also create a new JSON artifact when
 // explicitly requested; it never overwrites a file. This local save is available
 // independently of the engine mutation policy. Paths outside the root, including
 // escaping symlinks, are refused. Saved JSON must be a UTF-8 object or array,

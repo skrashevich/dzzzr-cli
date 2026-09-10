@@ -21,7 +21,7 @@ import (
 // codexLLMConfig uses the subscription endpoint, never the generic API key or
 // base URL. Credentials remain owned by Codex and are reread before each call.
 func codexLLMConfig() (agentloop.Config, error) {
-	path := os.Getenv("DZZR_CODEX_AUTH_FILE")
+	path := os.Getenv("DZZZR_CODEX_AUTH_FILE")
 	if path == "" {
 		dir := os.Getenv("CODEX_HOME")
 		if dir == "" {
@@ -39,12 +39,12 @@ func codexLLMConfig() (agentloop.Config, error) {
 		return agentloop.Config{}, err
 	}
 	p := providers.NewCodexProviderWithTokenSource(token, account, source)
-	model := cmp.Or(os.Getenv("DZZR_LLM_MODEL"), os.Getenv("LLM_MODEL"), p.GetDefaultModel())
+	model := cmp.Or(os.Getenv("DZZZR_LLM_MODEL"), os.Getenv("LLM_MODEL"), p.GetDefaultModel())
 	model = strings.ToLower(strings.TrimSpace(model))
 	model = strings.TrimPrefix(model, "openai/")
 	// PicoClaw otherwise silently substitutes its default for another family.
 	if strings.Contains(model, "/") || !(strings.HasPrefix(model, "gpt-") || strings.HasPrefix(model, "o3") || strings.HasPrefix(model, "o4")) {
-		return agentloop.Config{}, fatal("модель %q несовместима с Codex: задайте DZZR_LLM_MODEL с именем модели OpenAI", model)
+		return agentloop.Config{}, fatal("модель %q несовместима с Codex: задайте DZZZR_LLM_MODEL с именем модели OpenAI", model)
 	}
 	return agentloop.Config{
 		Model:    model,
@@ -76,7 +76,7 @@ func (p *codexErrorProvider) Chat(ctx context.Context, messages []providers.Mess
 
 func readCodexAuth(path string) (string, string, error) {
 	fail := func(reason string) (string, string, error) {
-		return "", "", fmt.Errorf("авторизация ChatGPT/Codex (%s): %s; выполните codex -c 'cli_auth_credentials_store=\"file\"' login через ChatGPT и проверьте CODEX_HOME или DZZR_CODEX_AUTH_FILE", path, reason)
+		return "", "", fmt.Errorf("авторизация ChatGPT/Codex (%s): %s; выполните codex -c 'cli_auth_credentials_store=\"file\"' login через ChatGPT и проверьте CODEX_HOME или DZZZR_CODEX_AUTH_FILE", path, reason)
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {

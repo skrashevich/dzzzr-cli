@@ -193,7 +193,7 @@ func TestWebPostMessageStartsRunAndRefusesSecond(t *testing.T) {
 
 func TestWebRunTurnAnswersThroughScriptedProvider(t *testing.T) {
 	hub := newTestHub(t, runWebChatTurn)
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
 	useProvider(t, &scriptedProvider{replies: []*providers.LLMResponse{answer("Уровень взят.")}})
 
 	srv := httptest.NewServer(hub.newMux())
@@ -311,9 +311,9 @@ func TestWebAgentConfigReportsMissingModel(t *testing.T) {
 		t.Fatalf("без ключа модели ожидалась ошибка в теле: %+v", missing)
 	}
 
-	t.Setenv("DZZR_LLM_API_KEY", "тест")
-	t.Setenv("DZZR_LLM_MODEL", "тестовая-модель")
-	t.Setenv("DZZR_FILES_ROOT", t.TempDir())
+	t.Setenv("DZZZR_LLM_API_KEY", "тест")
+	t.Setenv("DZZZR_LLM_MODEL", "тестовая-модель")
+	t.Setenv("DZZZR_FILES_ROOT", t.TempDir())
 	var ready agentConfigBody
 	if code := webDo(t, srv, http.MethodGet, "/api/v1/agent/config", "", &ready); code != http.StatusOK {
 		t.Fatalf("настройки агента вернули %d", code)
