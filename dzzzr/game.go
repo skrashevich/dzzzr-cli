@@ -65,17 +65,17 @@ func (c *Client) action(ctx context.Context, form url.Values) (*ActionResult, er
 		return nil, err
 	}
 	ctxName := "action " + form.Get("action")
-	switch {
-	case status == http.StatusMovedPermanently || status == http.StatusFound || status == http.StatusSeeOther || status == http.StatusTemporaryRedirect:
+	switch status {
+	case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect:
 		loc := hdr.Get("Location")
 		code, penalty, err := resultCodeFromLocation(loc)
 		if err != nil {
 			return nil, &UndecodableResponseError{StatusCode: status, Context: ctxName, Err: err, Body: loc}
 		}
 		return &ActionResult{Err: code, Text: actionText(code, penalty), Penalty: penalty, Location: loc}, nil
-	case status == http.StatusUnauthorized:
+	case http.StatusUnauthorized:
 		return nil, &AuthError{Kind: AuthBasic, Message: strings.TrimSpace(string(body))}
-	case status == http.StatusOK:
+	case http.StatusOK:
 		body = trimEngineNoise(body)
 		if isEmptyBody(body) {
 			return nil, &UndecodableResponseError{StatusCode: status, Context: ctxName, Err: errEmptyBody}
@@ -250,10 +250,10 @@ func (c *Client) SaveOptions(ctx context.Context, options map[string]string) (*A
 
 // classifyStatus maps non-200 statuses of read endpoints to errors.
 func classifyStatus(status int, body []byte, ctxName string) error {
-	switch {
-	case status == http.StatusOK:
+	switch status {
+	case http.StatusOK:
 		return nil
-	case status == http.StatusUnauthorized:
+	case http.StatusUnauthorized:
 		return &AuthError{Kind: AuthBasic, Message: strings.TrimSpace(StripHTML(string(body)))}
 	default:
 		return &HTTPError{StatusCode: status, Context: ctxName}

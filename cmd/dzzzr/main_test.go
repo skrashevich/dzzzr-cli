@@ -234,7 +234,7 @@ func TestSessionFilePath(t *testing.T) {
 	}
 }
 
-func TestSessionDirHonoursOverride(t *testing.T) {
+func TestSessionDirHonorsOverride(t *testing.T) {
 	isolate(t)
 	custom := filepath.Join(t.TempDir(), "настройки")
 	t.Setenv("DZZZR_CONFIG_DIR", custom)

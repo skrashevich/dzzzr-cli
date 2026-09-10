@@ -43,7 +43,7 @@ func codexLLMConfig() (agentloop.Config, error) {
 	model = strings.ToLower(strings.TrimSpace(model))
 	model = strings.TrimPrefix(model, "openai/")
 	// PicoClaw otherwise silently substitutes its default for another family.
-	if strings.Contains(model, "/") || !(strings.HasPrefix(model, "gpt-") || strings.HasPrefix(model, "o3") || strings.HasPrefix(model, "o4")) {
+	if strings.Contains(model, "/") || (!strings.HasPrefix(model, "gpt-") && !strings.HasPrefix(model, "o3") && !strings.HasPrefix(model, "o4")) {
 		return agentloop.Config{}, fatal("модель %q несовместима с Codex: задайте DZZZR_LLM_MODEL с именем модели OpenAI", model)
 	}
 	return agentloop.Config{

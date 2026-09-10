@@ -159,7 +159,8 @@ func (s *server) applyAdminWrite(form url.Values) string {
 	g := s.state
 	action := form.Get("action")
 	gameID := parseInt(form.Get("categoryValue"))
-	target := "?action=games&edit=1&Project="
+	// Every branch below, the default included, names its own page.
+	var target string
 	switch action {
 	case "add_game":
 		// The mock hosts a single game, so a create only reports an id.

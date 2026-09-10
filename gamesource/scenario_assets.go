@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	stdhtml "html"
 	"io"
@@ -256,7 +257,7 @@ func rewriteHTML(text string, visit func(string) (string, error)) (string, error
 	for {
 		tt := z.Next()
 		if tt == html.ErrorToken {
-			if z.Err() != io.EOF {
+			if !errors.Is(z.Err(), io.EOF) {
 				return "", z.Err()
 			}
 			return out.String(), nil
@@ -507,7 +508,7 @@ func validateRelocatableAsset(a ScenarioAsset, data []byte) error {
 	for {
 		tt := z.Next()
 		if tt == html.ErrorToken {
-			if z.Err() == io.EOF {
+			if errors.Is(z.Err(), io.EOF) {
 				return nil
 			}
 			return z.Err()
