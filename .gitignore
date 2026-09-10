@@ -35,6 +35,12 @@ dist/
 *.aar
 *.jar
 
+# Working notes kept beside the published docs but not part of them. The rest
+# of docs/ is committed, so these are named one by one rather than by a glob.
+/docs/design.md
+/docs/engine-notes.md
+/docs/implementation-plan.md
+
 # Local game material: PDF scenarios, engine dumps, field mappings. This is
 # other people's game content, pulled in only for local testing — never commit
 # it. All checked-in JSON lives under subdirectories (testdata/, gamesource/,
