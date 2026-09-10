@@ -1,4 +1,4 @@
-package dzzrmobile_test
+package dzzzrmobile_test
 
 import (
 	"encoding/json"
@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/skrashevich/dzzzr-cli/mobile/dzzrmobile"
+	"github.com/skrashevich/dzzzr-cli/mobile/dzzzrmobile"
 )
 
 // newTestClient points a mobile client at a fake engine.
-func newTestClient(t *testing.T, h http.Handler) *dzzrmobile.DzzrClient {
+func newTestClient(t *testing.T, h http.Handler) *dzzzrmobile.DzzzrClient {
 	t.Helper()
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	c := dzzrmobile.NewClientWithOptions("moscow", srv.URL+"/moscow/", false, false, 5)
+	c := dzzzrmobile.NewClientWithOptions("moscow", srv.URL+"/moscow/", false, false, 5)
 	c.SetRequestMinIntervalMillis(0)
 	c.SetCredentials("demo", "1234")
 	return c
@@ -66,7 +66,7 @@ func TestLoginAndSession(t *testing.T) {
 	if login.Code != 2 || c.Session() != "TOKEN" {
 		t.Errorf("login = %+v session = %q", login, c.Session())
 	}
-	if dzzrmobile.LoginCodeText(2) != "Успешная авторизация" {
+	if dzzzrmobile.LoginCodeText(2) != "Успешная авторизация" {
 		t.Error("LoginCodeText")
 	}
 	if c.Captain() != "demo" || c.City() != "moscow" || !strings.HasSuffix(c.BaseURL(), "/moscow/") {
@@ -77,7 +77,7 @@ func TestLoginAndSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	restored := dzzrmobile.NewClientWithOptions("moscow", c.BaseURL(), false, false, 5)
+	restored := dzzzrmobile.NewClientWithOptions("moscow", c.BaseURL(), false, false, 5)
 	if err := restored.ImportSession(data); err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestLoginFailureCode(t *testing.T) {
 	if login.Code != 4 || c.Session() != "" {
 		t.Errorf("code = %d session = %q", login.Code, c.Session())
 	}
-	if !strings.Contains(dzzrmobile.LoginCodeText(4), "Неверный") {
+	if !strings.Contains(dzzzrmobile.LoginCodeText(4), "Неверный") {
 		t.Error("LoginCodeText(4)")
 	}
 }
@@ -134,7 +134,7 @@ func TestGetGameJSON(t *testing.T) {
 	if st.GameName != "Тест" || st.GameID != 4242 || st.Level.LevelNumber != 2 || st.Level.TM != 120 {
 		t.Errorf("state = %+v", st)
 	}
-	if got := dzzrmobile.StripHTML(st.Level.Question); got != "Вопрос" {
+	if got := dzzzrmobile.StripHTML(st.Level.Question); got != "Вопрос" {
 		t.Errorf("StripHTML = %q", got)
 	}
 }
@@ -175,10 +175,10 @@ func TestActionsReturnResultJSON(t *testing.T) {
 			if res.Err != 9 || res.Text == "" {
 				t.Errorf("result = %+v", res)
 			}
-			if !dzzrmobile.IsAcceptedCode(int64(res.Err)) {
+			if !dzzzrmobile.IsAcceptedCode(int64(res.Err)) {
 				t.Error("code 9 must be accepted")
 			}
-			if dzzrmobile.ErrText(int64(res.Err)) != res.Text {
+			if dzzzrmobile.ErrText(int64(res.Err)) != res.Text {
 				t.Error("ErrText must match the result text")
 			}
 		})
@@ -224,10 +224,10 @@ func TestAuthErrorsAreClassified(t *testing.T) {
 	}))
 	c.SetSession("STALE")
 	_, err := c.GetGame()
-	if !dzzrmobile.IsAuthError(err) || dzzrmobile.AuthErrorKind(err) != "session" {
-		t.Fatalf("err = %v kind = %q", err, dzzrmobile.AuthErrorKind(err))
+	if !dzzzrmobile.IsAuthError(err) || dzzzrmobile.AuthErrorKind(err) != "session" {
+		t.Fatalf("err = %v kind = %q", err, dzzzrmobile.AuthErrorKind(err))
 	}
-	if dzzrmobile.AuthErrorKind(nil) != "" {
+	if dzzzrmobile.AuthErrorKind(nil) != "" {
 		t.Error("nil error has no kind")
 	}
 }
@@ -239,7 +239,7 @@ func TestUndecodableAcceptedIsFlagged(t *testing.T) {
 	}))
 	c.SetSession("TOKEN")
 	_, err := c.SendCode("КОД")
-	if !dzzrmobile.IsUndecodableAccepted(err) {
+	if !dzzzrmobile.IsUndecodableAccepted(err) {
 		t.Fatalf("err = %v", err)
 	}
 }

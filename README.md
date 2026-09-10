@@ -23,7 +23,7 @@ Encounter.
 | `agentloop/` | цикл LLM-агента над каталогом, на базе [PicoClaw](https://github.com/sipeed/picoclaw) |
 | `agentfiles/` | чтение локальных файлов и сохранение новых JSON-документов агентом |
 | `gamesource/`, `pdfsource/` | импорт сценария игры из JSON и PDF |
-| `mobile/dzzrmobile/` | gomobile-обёртка для iOS и Android |
+| `mobile/dzzzrmobile/` | gomobile-обёртка для iOS и Android |
 | `e2e/` | сквозные тесты: собранная утилита против mock-сервера |
 
 ## Установка
@@ -143,7 +143,7 @@ dzzzr web                                    # тот же агент в бра�
 
 ## Мобильные биндинги
 
-`mobile/dzzrmobile` — gomobile-обёртка: методы возвращают JSON-строки, все целые
+`mobile/dzzzrmobile` — gomobile-обёртка: методы возвращают JSON-строки, все целые
 `int64`, контекста нет.
 
 ```sh

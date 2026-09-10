@@ -1,4 +1,4 @@
-package dzzrmobile
+package dzzzrmobile
 
 import (
 	"errors"
@@ -8,17 +8,17 @@ import (
 
 // SetCredentials installs the team's captain login and game PIN. They are
 // required for every game request.
-func (c *DzzrClient) SetCredentials(captain, pin string) {
+func (c *DzzzrClient) SetCredentials(captain, pin string) {
 	c.client.SetCredentials(dzzzr.Credentials{Captain: captain, Pin: pin})
 }
 
 // Captain returns the captain login the client uses.
-func (c *DzzrClient) Captain() string { return c.client.Credentials().Captain }
+func (c *DzzzrClient) Captain() string { return c.client.Credentials().Captain }
 
 // Login signs in with a site account and stores the session. Returns the
 // LoginResponse as JSON; check its "code" field (2 means success) and pass it
 // to LoginCodeText for the engine's own wording.
-func (c *DzzrClient) Login(login, password string) (string, error) {
+func (c *DzzzrClient) Login(login, password string) (string, error) {
 	resp, err := c.client.Login(c.ctx(), login, password)
 	if err != nil {
 		return "", err
@@ -27,16 +27,16 @@ func (c *DzzrClient) Login(login, password string) (string, error) {
 }
 
 // Logout forgets the session token; credentials stay.
-func (c *DzzrClient) Logout() { c.client.Logout() }
+func (c *DzzzrClient) Logout() { c.client.Logout() }
 
 // Session returns the current session token, empty when signed out.
-func (c *DzzrClient) Session() string { return c.client.Session() }
+func (c *DzzzrClient) Session() string { return c.client.Session() }
 
 // SetSession installs a session token obtained elsewhere.
-func (c *DzzrClient) SetSession(token string) { c.client.SetSession(token) }
+func (c *DzzzrClient) SetSession(token string) { c.client.SetSession(token) }
 
 // GetGame returns the current game state as GameState JSON.
-func (c *DzzrClient) GetGame() (string, error) {
+func (c *DzzzrClient) GetGame() (string, error) {
 	st, err := c.client.GetGame(c.ctx())
 	if err != nil {
 		return "", err
@@ -45,7 +45,7 @@ func (c *DzzrClient) GetGame() (string, error) {
 }
 
 // GetLevelInfo returns the current level's per-code detail as LevelInfo JSON.
-func (c *DzzrClient) GetLevelInfo() (string, error) {
+func (c *DzzzrClient) GetLevelInfo() (string, error) {
 	info, err := c.client.GetLevelInfo(c.ctx())
 	if err != nil {
 		return "", err
@@ -54,7 +54,7 @@ func (c *DzzrClient) GetLevelInfo() (string, error) {
 }
 
 // GetBonusLevelInfo returns the bonus (skvoz) levels as LevelInfo JSON.
-func (c *DzzrClient) GetBonusLevelInfo() (string, error) {
+func (c *DzzzrClient) GetBonusLevelInfo() (string, error) {
 	info, err := c.client.GetBonusLevelInfo(c.ctx())
 	if err != nil {
 		return "", err
@@ -63,7 +63,7 @@ func (c *DzzrClient) GetBonusLevelInfo() (string, error) {
 }
 
 // GetStat returns the team's per-level statistics as TeamStat JSON.
-func (c *DzzrClient) GetStat() (string, error) {
+func (c *DzzzrClient) GetStat() (string, error) {
 	st, err := c.client.GetStat(c.ctx())
 	if err != nil {
 		return "", err
@@ -72,7 +72,7 @@ func (c *DzzrClient) GetStat() (string, error) {
 }
 
 // GetLog returns the team's game log as a JSON array.
-func (c *DzzrClient) GetLog() (string, error) {
+func (c *DzzzrClient) GetLog() (string, error) {
 	log, err := c.client.GetLog(c.ctx())
 	if err != nil {
 		return "", err
@@ -82,7 +82,7 @@ func (c *DzzrClient) GetLog() (string, error) {
 
 // GetMessages returns the chat as a JSON array. after limits the reply to
 // messages newer than "YYYY-MM-DD HH:MM:SS"; empty returns everything.
-func (c *DzzrClient) GetMessages(after string) (string, error) {
+func (c *DzzzrClient) GetMessages(after string) (string, error) {
 	msgs, err := c.client.GetMessages(c.ctx(), after)
 	if err != nil {
 		return "", err
@@ -92,13 +92,13 @@ func (c *DzzrClient) GetMessages(after string) (string, error) {
 
 // PostMessage writes to API/postmessage.php. Dozor Classic acknowledges that
 // endpoint and delivers nothing; use SendMessageToOrg to reach the organizer.
-func (c *DzzrClient) PostMessage(text string) error {
+func (c *DzzzrClient) PostMessage(text string) error {
 	return c.client.PostMessage(c.ctx(), text)
 }
 
 // GetGamesList returns the city's games as a JSON array. It needs no
 // credentials.
-func (c *DzzrClient) GetGamesList(newOnly, archive bool) (string, error) {
+func (c *DzzzrClient) GetGamesList(newOnly, archive bool) (string, error) {
 	games, err := c.client.GetGamesList(c.ctx(), dzzzr.GamesListOptions{NewOnly: newOnly, Archive: archive})
 	if err != nil {
 		return "", err
@@ -108,7 +108,7 @@ func (c *DzzrClient) GetGamesList(newOnly, archive bool) (string, error) {
 
 // SendCode submits a code for the current level and returns ActionResult
 // JSON. It uses the short code-send timeout.
-func (c *DzzrClient) SendCode(code string) (string, error) {
+func (c *DzzzrClient) SendCode(code string) (string, error) {
 	ctx, cancel := c.codeCtx()
 	defer cancel()
 	r, err := c.client.SendCode(ctx, code)
@@ -119,7 +119,7 @@ func (c *DzzrClient) SendCode(code string) (string, error) {
 }
 
 // SendBonusCode submits a code for a bonus (skvoz) level.
-func (c *DzzrClient) SendBonusCode(levelNumber int64, code string) (string, error) {
+func (c *DzzzrClient) SendBonusCode(levelNumber int64, code string) (string, error) {
 	ctx, cancel := c.codeCtx()
 	defer cancel()
 	r, err := c.client.SendBonusCode(ctx, int(levelNumber), code)
@@ -130,7 +130,7 @@ func (c *DzzrClient) SendBonusCode(levelNumber int64, code string) (string, erro
 }
 
 // SendSpoilerCode submits the code that unlocks a spoiler of a level.
-func (c *DzzrClient) SendSpoilerCode(level int64, code string) (string, error) {
+func (c *DzzzrClient) SendSpoilerCode(level int64, code string) (string, error) {
 	ctx, cancel := c.codeCtx()
 	defer cancel()
 	r, err := c.client.SendSpoilerCode(ctx, int(level), code)
@@ -141,7 +141,7 @@ func (c *DzzrClient) SendSpoilerCode(level int64, code string) (string, error) {
 }
 
 // TakeHint requests hint 1 or 2 of a level that issues hints on demand.
-func (c *DzzrClient) TakeHint(level, hint int64) (string, error) {
+func (c *DzzzrClient) TakeHint(level, hint int64) (string, error) {
 	r, err := c.client.TakeHint(c.ctx(), int(level), int(hint))
 	if err != nil {
 		return "", err
@@ -152,7 +152,7 @@ func (c *DzzrClient) TakeHint(level, hint int64) (string, error) {
 // TakeHintEarly takes hint 1 or 2 of a level before its time, for a penalty.
 // The engine picks a hint of its own when it is given neither number, so both
 // are required here.
-func (c *DzzrClient) TakeHintEarly(level, hint int64) (string, error) {
+func (c *DzzzrClient) TakeHintEarly(level, hint int64) (string, error) {
 	r, err := c.client.TakeHintEarly(c.ctx(), int(level), int(hint))
 	if err != nil {
 		return "", err
@@ -161,7 +161,7 @@ func (c *DzzrClient) TakeHintEarly(level, hint int64) (string, error) {
 }
 
 // Abandon gives up the current level and asks for the next one.
-func (c *DzzrClient) Abandon() (string, error) {
+func (c *DzzzrClient) Abandon() (string, error) {
 	r, err := c.client.Abandon(c.ctx())
 	if err != nil {
 		return "", err
@@ -171,7 +171,7 @@ func (c *DzzrClient) Abandon() (string, error) {
 
 // TakeBreak schedules a 15-minute break after the current level, or cancels
 // one already scheduled.
-func (c *DzzrClient) TakeBreak() (string, error) {
+func (c *DzzzrClient) TakeBreak() (string, error) {
 	r, err := c.client.TakeBreak(c.ctx())
 	if err != nil {
 		return "", err
@@ -181,7 +181,7 @@ func (c *DzzrClient) TakeBreak() (string, error) {
 
 // StopBreak ends a running break early. It takes no level: the engine issues
 // none while the team is paused.
-func (c *DzzrClient) StopBreak() (string, error) {
+func (c *DzzzrClient) StopBreak() (string, error) {
 	r, err := c.client.StopBreak(c.ctx())
 	if err != nil {
 		return "", err
@@ -190,7 +190,7 @@ func (c *DzzrClient) StopBreak() (string, error) {
 }
 
 // NextLevel moves on without collecting the level's bonus codes.
-func (c *DzzrClient) NextLevel(level int64) (string, error) {
+func (c *DzzzrClient) NextLevel(level int64) (string, error) {
 	r, err := c.client.NextLevel(c.ctx(), int(level))
 	if err != nil {
 		return "", err
@@ -199,7 +199,7 @@ func (c *DzzrClient) NextLevel(level int64) (string, error) {
 }
 
 // SelectLevel picks the next level in games with a free order.
-func (c *DzzrClient) SelectLevel(current, next int64) (string, error) {
+func (c *DzzzrClient) SelectLevel(current, next int64) (string, error) {
 	r, err := c.client.SelectLevel(c.ctx(), int(current), int(next))
 	if err != nil {
 		return "", err
@@ -209,7 +209,7 @@ func (c *DzzrClient) SelectLevel(current, next int64) (string, error) {
 
 // SendMessageToOrg posts a message through the game interface. Captain,
 // chief of staff or an authorized helper only.
-func (c *DzzrClient) SendMessageToOrg(text string) (string, error) {
+func (c *DzzzrClient) SendMessageToOrg(text string) (string, error) {
 	r, err := c.client.SendMessageToOrg(c.ctx(), text)
 	if err != nil {
 		return "", err
@@ -225,7 +225,7 @@ func (c *DzzrClient) SendMessageToOrg(text string) (string, error) {
 // absolute. A picture the organizer embedded rather than linked has
 // "inline": true and keeps its data: URI in "url", which an image view
 // decodes as it stands; "media_type" and "bytes" describe it.
-func (c *DzzrClient) GetLevelMedia() (string, error) {
+func (c *DzzzrClient) GetLevelMedia() (string, error) {
 	refs, err := c.client.CurrentLevelMedia(c.ctx())
 	if err != nil {
 		return "", err
@@ -235,7 +235,7 @@ func (c *DzzrClient) GetLevelMedia() (string, error) {
 
 // GetGameView returns a game or its access explanation as JSON.
 // Classify access errors before crossing gomobile, which loses Go error types.
-func (c *DzzrClient) GetGameView() (string, error) {
+func (c *DzzzrClient) GetGameView() (string, error) {
 	st, err := c.client.GetGame(c.ctx())
 	var view struct {
 		Game       *dzzzr.GameState `json:"game"`

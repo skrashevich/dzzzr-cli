@@ -1,4 +1,4 @@
-// Package dzzrmobile provides gomobile-compatible bindings for the dzzzr
+// Package dzzzrmobile provides gomobile-compatible bindings for the dzzzr
 // client, so an iOS or Android app can play Dozor Classic through the same
 // code the CLI uses.
 //
@@ -7,6 +7,6 @@
 // model, every integer is int64, and nothing takes a context: cancellation and
 // timeouts are configured on the client instead.
 //
-//	gomobile bind -target=ios     -o dzzzr.xcframework ./mobile/dzzrmobile
-//	gomobile bind -target=android -o dzzzr.aar         ./mobile/dzzrmobile
-package dzzrmobile
+//	gomobile bind -target=ios     -o dzzzr.xcframework ./mobile/dzzzrmobile
+//	gomobile bind -target=android -o dzzzr.aar         ./mobile/dzzzrmobile
+package dzzzrmobile

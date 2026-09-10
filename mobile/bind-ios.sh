@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds dzzzr.xcframework from mobile/dzzrmobile.
+# Builds dzzzr.xcframework from mobile/dzzzrmobile.
 #
 # Usage: ./mobile/bind-ios.sh [output-dir]
 set -euo pipefail
@@ -18,9 +18,9 @@ export PATH
 gomobile init
 
 echo "==> Running the binding tests..."
-go test ./mobile/dzzrmobile/ -count=1
+go test ./mobile/dzzzrmobile/ -count=1
 
 echo "==> Building dzzzr.xcframework..."
-gomobile bind -target=ios -o "$OUT_DIR/dzzzr.xcframework" ./mobile/dzzrmobile
+gomobile bind -target=ios -o "$OUT_DIR/dzzzr.xcframework" ./mobile/dzzzrmobile
 
 echo "==> Done: $OUT_DIR/dzzzr.xcframework"

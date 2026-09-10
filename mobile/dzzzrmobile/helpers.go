@@ -1,4 +1,4 @@
-package dzzrmobile
+package dzzzrmobile
 
 import "github.com/skrashevich/dzzzr-cli/dzzzr"
 

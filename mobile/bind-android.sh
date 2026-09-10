@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds dzzzr.aar from mobile/dzzrmobile.
+# Builds dzzzr.aar from mobile/dzzzrmobile.
 #
 # Needs the Android SDK and NDK: set ANDROID_HOME (or ANDROID_SDK_ROOT) and
 # ANDROID_NDK_HOME. minSdk is 24, which is what gomobile supports without
@@ -39,9 +39,9 @@ export PATH
 gomobile init
 
 echo "==> Running the binding tests..."
-go test ./mobile/dzzrmobile/ -count=1
+go test ./mobile/dzzzrmobile/ -count=1
 
 echo "==> Building dzzzr.aar..."
-gomobile bind -target=android -androidapi 24 -o "$OUT_DIR/dzzzr.aar" ./mobile/dzzrmobile
+gomobile bind -target=android -androidapi 24 -o "$OUT_DIR/dzzzr.aar" ./mobile/dzzzrmobile
 
 echo "==> Done: $OUT_DIR/dzzzr.aar"

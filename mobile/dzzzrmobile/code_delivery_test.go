@@ -1,4 +1,4 @@
-package dzzrmobile_test
+package dzzzrmobile_test
 
 import (
 	"encoding/json/v2"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/skrashevich/dzzzr-cli/mobile/dzzrmobile"
+	"github.com/skrashevich/dzzzr-cli/mobile/dzzzrmobile"
 )
 
 func TestCodeDeliveryCertainty(t *testing.T) {
@@ -23,7 +23,7 @@ func TestCodeDeliveryCertainty(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(test.status) }))
 			defer server.Close()
-			client := dzzrmobile.NewClientWithOptions("moscow", server.URL+"/moscow/", false, true, 2)
+			client := dzzzrmobile.NewClientWithOptions("moscow", server.URL+"/moscow/", false, true, 2)
 			client.SetSession("TOKEN")
 			client.SetCredentials("demo", "pin")
 			if test.close {
