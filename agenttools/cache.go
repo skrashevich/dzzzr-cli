@@ -79,12 +79,3 @@ func (c *readCache) clear() {
 	defer c.mu.Unlock()
 	c.entries = map[string]cacheEntry{}
 }
-
-func (c *readCache) len() int {
-	if c == nil {
-		return 0
-	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return len(c.entries)
-}

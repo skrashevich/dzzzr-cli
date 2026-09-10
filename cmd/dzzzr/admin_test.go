@@ -242,15 +242,6 @@ func (e *adminEngine) lastGet() url.Values {
 	return e.gets[len(e.gets)-1]
 }
 
-func (e *adminEngine) lastPath() string {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	if len(e.paths) == 0 {
-		e.t.Fatal("админка не получила ни одного запроса")
-	}
-	return e.paths[len(e.paths)-1]
-}
-
 // administering starts the administration area and returns the flags that
 // point the CLI at it with the organizer's credentials.
 func administering(t *testing.T) (*adminEngine, []string) {

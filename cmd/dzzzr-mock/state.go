@@ -630,16 +630,6 @@ func (g *gameState) koline(l *levelDef, p *levelProgress) string {
 	return strings.TrimSuffix(b.String(), " ") + "<br>"
 }
 
-// allSpoilersSolved reports whether the team unlocked every spoiler.
-func (p *levelProgress) allSpoilersSolved(l *levelDef) bool {
-	for _, sp := range l.Spoilers {
-		if !p.Spoilers[sp.Order] {
-			return false
-		}
-	}
-	return true
-}
-
 // htmlTag matches the markup strip_tags removes from a submitted code.
 var htmlTag = regexp.MustCompile(`<[^>]*>`)
 
