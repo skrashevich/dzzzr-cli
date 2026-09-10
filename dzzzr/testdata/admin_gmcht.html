@@ -1,0 +1,29 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1251"></head><body>
+<form name=f method=get>
+<input type=hidden name=gm value=4242>
+<input type=hidden name=Project value=>
+автоматически обновлять <select onChange=document.f.submit() name=refresh><option value=0>не обновлять<option value=15>15 сек.</select>
+показывать сообщения: <select name=team onChange=document.f.submit()><option value=0>-- всем --<option value=5150>MockTeam</select>
+</form>
+<form method=post>
+<input type=hidden name=action value=addMessage>
+<input type=hidden name=Project value=>
+<input type=hidden name=gm value=4242>
+<textarea rows=6 cols=70 name=content></textarea><br>
+<select name=team><option value=0>-- ВСЕМ --<option value=5150>MockTeam<option value=5151>Ночные совы</select>
+<input type=checkbox name=important> ВАЖНОЕ!
+<br>Показывать это сообщение командам после <input type=text size=20 name=showafter value="2026-09-08 22:00:00"> (ГГГГ-ММ-ДД ЧЧ:ММ:СС)<br>
+<input type=submit value="Отправить сообщение">
+</form>
+<h3>Сообщения</h3>
+<table cellpadding=3 cellspacing=0 border=1>
+<tr style='background-color:#99cccc'><td>22:05:10</td><td><strong>MockTeam</strong></td><td>Мы застряли на уровне 2</td><td></td><form method=post><td>	<input type=hidden name=Project value=><input type=hidden name=gm value=4242><input type=hidden name=action value=delMessage><input type=hidden name=tm value='2026-09-08 22:05:10'><input type=submit value='del'></td></form></tr>
+<tr style='background-color:#ffcccc'><td>22:03:00</td><td><strong>всем</strong></td><td>Внимание! ВАЖНО: движок перезапущен</td><td></td><form method=post><td>	<input type=hidden name=Project value=><input type=hidden name=gm value=4242><input type=hidden name=action value=delMessage><input type=hidden name=tm value='2026-09-08 22:03:00'><input type=submit value='del'></td></form></tr>
+</table>
+<form method=post onSubmit="return confirm('Удалить все сообщения?')">
+	<input type=hidden name=Project value=>
+	<input type=hidden name=action value=delAllMessages>
+	<input type=hidden name=gm value=4242>
+	<input type=submit value="Удалить все сообщения">
+</form>
+</body></html>

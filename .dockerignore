@@ -1,0 +1,9 @@
+.git
+.github
+.omc
+*.md
+docs
+mobile/build
+build
+dist
+*.log

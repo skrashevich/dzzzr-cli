@@ -1,0 +1,108 @@
+{
+  "gameName": "Ночной дозор: Осень",
+  "greeting": "Добро пожаловать!",
+  "lastOrgMessage": "Штаб: не забывайте про бонусы",
+  "gameId": "4242",
+  "teamName": "MockTeam",
+  "gameStartTime": "",
+  "gameStartOnDay": "",
+  "gameStartOnTime": "",
+  "holdTime": "",
+  "finished": false,
+  "countdown": "",
+  "onBreak": "",
+  "currentTime": "2026-09-08 22:15:07",
+  "legend": "<p>Легенда игры</p>",
+  "canControl": "1",
+  "totallevels": "12",
+  "tryLimitError": "",
+  "blockedError": "",
+  "NextLevelSelector": "<form method=post><input name=\"action\" type=\"hidden\" value=\"selectlevel\"><input name=\"llevel\" type=\"hidden\" value=3><input type=radio name=level value=4 checked>Гаражи<br><input type=radio name=level value=7 >Пустырь<br><input type=submit value=\"выбрать уровень\"></form>",
+  "level": {
+  "isLevelFinished": "",
+  "levelNumber": "3",
+  "isBonusLevel": "0",
+  "bonusLevelTime": "0",
+  "codesFounded": "1",
+  "totalCodes": "4",
+  "neededCodes": "3",
+  "bonusCodesFounded": "0",
+  "bonusCodesTotal": "1",
+  "skvoz": false,
+  "bonusCodesTimes": [ "10"
+  ],
+  "bonusAfter": "0",
+  "noMasterCode": "0",
+  "isSabotage": "0",
+  "tryLimit": "0",
+  "tryLimitUsed": "",
+  "koline": "Сектор 1: основные коды: <span style='color:red'>1</span>, 1; Сектор 2: основные коды: 2, 3<br>",
+  "question": "<p>Найдите двор с <b>тремя</b> гаражами.<br />Коды на стенах.</p>",
+  "locationComment": "Тихий район, не шумите",
+  "spoilers": [
+      {
+        "spoilerText": "",
+        "spoilerSolved": "0",
+        "spoilerPenalty": "5",
+        "spoilerNumber": "1"
+    }
+  ],
+  "koinspoiler": "0",
+  "hint1": "Подсказка 1: смотрите выше",
+  "hint2": "",
+  "locationLat": "",
+  "locationLon": "",
+  "locationRadius": "",
+  "timeOnLevel": "00:12:40",
+  "tm": "125",
+  "takeBreak": ""
+},
+  "bonusLevels": [ {
+  "isLevelFinished": "",
+  "levelNumber": "",
+  "isBonusLevel": "1",
+  "bonusLevelTime": "15",
+  "codesFounded": "0",
+  "totalCodes": "1",
+  "neededCodes": "0",
+  "bonusCodesFounded": "0",
+  "bonusCodesTotal": "0",
+  "skvoz": true,
+  "bonusCodesTimes": [
+  ],
+  "bonusAfter": "0",
+  "noMasterCode": "1",
+  "isSabotage": "0",
+  "tryLimit": "0",
+  "tryLimitUsed": "",
+  "koline": "основные коды: 1",
+  "question": "Сквозной бонус: найдите памятник",
+  "locationComment": "",
+  "spoilers": [
+  ],
+  "koinspoiler": "0",
+  "hint1": "",
+  "hint2": "",
+  "locationLat": "55.75",
+  "locationLon": "37.61",
+  "locationRadius": "300",
+  "timeOnLevel": "01:02:03",
+  "tm": "0",
+  "takeBreak": ""
+}, { }],
+  "messages": [
+    {
+    "timestamp": "22:01:10",
+    "destination": "всем",
+    "text": "Всем командам: движок работает"
+    },
+    {
+    "timestamp": "22:05:00",
+    "destination": "команде",
+    "text": "Вам начислен бонус 5 мин"
+    }
+  ],
+  "bonusSkvozLevels": "",
+  "errNo": 9,
+  "errText": "<B>Код принят.</B> Выполняйте следующее задание."
+}

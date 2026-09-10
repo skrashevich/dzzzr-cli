@@ -1,0 +1,36 @@
+# OS / editor noise
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Logs and test output
+*.log
+*.out
+coverage.*
+
+# OMC runtime state
+.omc/
+
+# Built binaries. There is deliberately no "/dzzzr" entry: it would match the
+# library package directory, and an ignored directory is never scanned, so the
+# library itself would stay untracked. A binary of that name cannot be built at
+# the root anyway, because the directory occupies it.
+/dzzzr-mock
+/dzzzr-agent
+/dzzzr/dzzzr
+dzzzr-binary-probe
+/mobile/build/
+/build/
+dist/
+*.xcframework
+*.aar
+*.jar
+
+# Local game material: PDF scenarios, engine dumps, field mappings. This is
+# other people's game content, pulled in only for local testing — never commit
+# it. All checked-in JSON lives under subdirectories (testdata/, gamesource/,
+# pdfsource/); the repository root carries none.
+/*.pdf
+/*.json

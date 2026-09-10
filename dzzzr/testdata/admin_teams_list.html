@@ -1,0 +1,52 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1251"></head><body>
+<table cellpadding=0 cellspacing=0 border=0 width=100%>
+<tr align=center class=news style="color:white" bgcolor=a1a1a1><td height=47 width=10></td><td><b>Капитан</b></td><td width=10></td><td align=left><b>Команда</b></td><td width=10></td><td><b>Статус заявки</b></td><td width=10></td><td></td><td></td><td><strong>Сыграно игр</strong></td><td></td><td nowrap><b>Скидка</b></td><td width=10></td><td nowrap><b>PIN</b></td><td width=10></td><td nowrap><b>рейтинговые очки</b></td><td width=10></td><td nowrap><b>лига</b></td><td colspan=3></td></tr>
+<tr><td height=1 bgcolor=DADADA colspan=20></td></tr>
+<tr bgcolor=FFFEDE><td height=5 colspan=20></td></tr>
+<tr valign=top bgcolor=FFFEDE><td></td><td class=news><a href=?action=users&edit=1&login=demo&categoryValue=Site&Project= class=news>demo</a></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20><img src=../ICONS-01/arrow-1.gif width=17 height=11></td><td width=10></td><td class=news width=400><b>MockTeam</b></td></tr></table></td><td width=10></td><td class=news>принята</td><td width=10></td><td><a href=printAgreeHTML.php?gmid=4242&team=5150&Project= class=news target=_blank><strong>список</strong></a></td><td></td><td align=center class=news>7</td><td></td><td class=news align=right nowrap></td><td width=10></td><td class=news>1234</td><td width=10></td><td class=news align=right>12</td><td width=10></td><td class=news nowrap>Первая</td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>
+<tr bgcolor=FFFEDE><td height=5 colspan=20></td></tr>
+<tr><td height=1 bgcolor=DADADA colspan=20></td></tr>
+<tr><td height=5 colspan=20></td></tr>
+<tr valign=top><td></td><td class=news><a href=?action=users&edit=1&login=alice&categoryValue=Site&Project= class=news>alice</a></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20><img src=../ICONS-01/icon-users.gif width=19 height=15></td><td width=10></td><td class=news width=400><a href=?action=teams&desc=&edit=1&id=5151&categoryValue=4242&ofset=0&Project= class=news>Ночные совы</a></td></tr></table></td><td width=10></td><td class=news>не рассмотрена</td><td width=10></td><td></td><td></td><td align=center class=news>3</td><td></td><td class=news align=right nowrap>50 %</td><td width=10></td><td class=news></td><td width=10></td><td class=news align=right>0</td><td width=10></td><td class=news nowrap>Первая</td><form name=f5151 method=post action=admin.php onSubmit="return confirm('Удалить заявку и рейтинговые очки команды?')"><input type=hidden name=Project value=><input type=hidden name=action value=del_application><input type=hidden name=ofset value=0><input type=hidden name=id value=5151><input type=hidden name=categoryValue value=4242><input type=hidden name=status value=0><td width=20 align=right><input type=image src=../ICONS-01/b_drop.png width=16 height=16 border=0></td><td width=70 class=news align=left>удалить</td></form><td width=10></td></tr>
+<tr><td height=5 colspan=20></td></tr>
+<tr><td height=1 bgcolor=DADADA colspan=20></td></tr>
+<tr bgcolor=F0F0F0><td height=5 colspan=20></td></tr>
+<tr valign=top bgcolor=F0F0F0><td></td><td class=news><a href=?action=users&edit=1&login=bob&categoryValue=Site&Project= class=news>bob</a></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20><img src=../ICONS-01/vw_d.gif width=15 height=15></td><td width=10></td><td class=news width=400><a href=?action=teams&desc=&edit=1&id=5152&categoryValue=4242&ofset=0&Project= class=news>Заблокированные</a></td></tr></table></td><td width=10></td><td class=news>отклонена</td><td width=10></td><td></td><td></td><td align=center class=news>0</td><td></td><td class=news align=right nowrap></td><td width=10></td><td class=news></td><td width=10></td><td class=news align=right>0</td><td width=10></td><td class=news nowrap>Первая</td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>
+<tr bgcolor=F0F0F0><td height=5 colspan=20></td></tr>
+</table>
+<form method=post name=frm>
+<input type=hidden name=id value=5150>
+<input type=hidden name=desc value=>
+<input type=hidden name=Project value=>
+<input type=hidden name=categoryValue value=4242>
+<input type=hidden name=captain value=demo>
+<input type=hidden name=ofset value=0>
+<input type=hidden name=action value=updateTeam>
+<input type=text name=name value='MockTeam'>
+<select name=league><option value=1 selected>Первая<option value=2>Вторая</select>
+<select name=newCap><option value='demo' selected>demo<option value='alice'>alice</select>
+<select name=shtab><option value=''>не назначен</option><option value='alice' selected>alice</option></select>
+<select name=captainHelper><option value=''>не назначен</option></select>
+<input type='checkbox' name='captainHelperCanGame'/> Может управлять игрой
+<textarea name=history rows=3 cols=74>История</textarea>
+<input type=text name=deviz size=75 value='Девиз'>
+<input type=text name=website size=75 value='mock.example'>
+<input type=text name=comment size=75 value='служебное'>
+<input type=checkbox name=blocked> Команда заблокирована
+<input type=checkbox name=autoApplication checked> Автоматически принимать заявки
+<textarea name=changeLog rows=12 cols=74></textarea>
+<select name=status><option value=1 selected>принята<option value=3>вне зачета<option value=4>автор<option value=5>дисквалифициирована</select>
+<input type=hidden name=discount><input type=hidden name=newExplain>
+<input type=text size=6 name=discountText value=''> %
+<input type=text size=32 name=newExplainText value="">
+<input type=text name=pinlogin disabled value='1234'>
+<input type=checkbox id=nPn name=newPIN> Сгенерировать новый
+<textarea name=comment rows=6 cols=74></textarea>
+<input type=text size=6 name=points value='12'>
+<input type=text size=6 name=ekipazh value=''>
+<input type=text size=74 name=pointsExpl value=''>
+<input type=checkbox name=novice checked> команда новичок
+<input type=checkbox name=pl[demo]> demo <input type=checkbox name=pl[alice] checked> alice
+<input type=submit value="Сохранить">
+</form>
+</body></html>

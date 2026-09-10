@@ -1,0 +1,28 @@
+{
+  "gameName": "Будущая игра",
+  "greeting": "",
+  "lastOrgMessage": "",
+  "gameId": "4243",
+  "teamName": "MockTeam",
+  "gameStartTime": "21:30",
+  "gameStartOnDay": "9 сентября 2026 г.",
+  "gameStartOnTime": "22:00",
+  "holdTime": "",
+  "finished": false,
+  "countdown": "",
+  "onBreak": "",
+  "currentTime": "2026-09-09 21:30:00",
+  "legend": "",
+  "canControl": "",
+  "totallevels": "0",
+  "tryLimitError": "",
+  "blockedError": "",
+  "NextLevelSelector": "",
+  "level": { },
+  "bonusLevels": [  { }],
+  "messages": [
+  ],
+  "bonusSkvozLevels": "",
+  "errNo": 0,
+  "errText": ""
+}

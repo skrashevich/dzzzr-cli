@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "dzzzr-cli complete game scenario v1",
+  "description": "A complete snapshot of all modeled scenario fields, not an edit patch. Array order defines level order. Assets may be embedded for a self-contained export. Engine IDs are provenance only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "version", "game", "levels", "assets"],
+  "properties": {
+    "$schema": { "type": "string", "format": "uri-reference" },
+    "format": { "const": "dzzzr-scenario" },
+    "version": { "const": 1 },
+    "exported_at": { "type": "string", "format": "date-time" },
+    "source": { "$ref": "#/$defs/source" },
+    "game": { "$ref": "#/$defs/game" },
+    "levels": { "type": "array", "items": { "$ref": "#/$defs/level" } },
+    "assets": {
+      "type": "object",
+      "description": "Files keyed by portable ID. HTML refers to them as asset:ID. Empty map means no packaged files.",
+      "propertyNames": { "$ref": "#/$defs/key" },
+      "additionalProperties": { "$ref": "#/$defs/asset" }
+    },
+    "extensions": { "$ref": "#/$defs/extensions" }
+  },
+  "$defs": {
+    "key": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
+    "nonNegativeInteger": { "type": "integer", "minimum": 0 },
+    "html": {
+      "type": "string",
+      "description": "Text or HTML, preserved verbatim. Asset URLs use asset:ID. Empty string explicitly clears the content."
+    },
+    "difficulty": { "type": "string", "enum": ["", "null", "1", "1+", "2", "2+", "3", "3+"] },
+    "synonyms": { "type": "string", "description": "Alternative spellings separated by #, as in the current engine API. Empty string means none." },
+    "extensions": {
+      "type": "object",
+      "description": "Namespaced application-specific data. Preserve on re-export; never automatically post to the engine.",
+      "propertyNames": { "pattern": "^[A-Za-z0-9_-]+[.:][A-Za-z0-9_.:-]+$" },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine", "base_url", "project", "game_id"],
+      "properties": {
+        "engine": { "const": "classic.dzzzr" },
+        "base_url": { "type": "string", "format": "uri", "pattern": "^https?://" },
+        "project": { "type": "string", "description": "Original Project query parameter, including an empty string." },
+        "game_id": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "game": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["params"],
+      "properties": {
+        "params": { "$ref": "#/$defs/gameParams" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      }
+    },
+    "gameParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "number", "date", "time", "author", "league", "other_league", "zone", "legend", "legend_comment", "anons", "clue_min", "clue_min2", "clue_min3", "master_code", "master_code_shtraf", "clue_before_shtraf", "penalty", "price", "breaf_place", "greeting", "duration", "bonus_after", "publish", "finished", "invitation"],
+      "properties": {
+        "name": { "type": "string" },
+        "number": { "type": "string" },
+        "date": { "type": "string", "pattern": "^(|00\\.00\\.0000|(?:0[1-9]|[12][0-9]|3[01])\\.(?:0[1-9]|1[0-2])\\.[0-9]{4})$", "description": "DD.MM.YYYY; empty or 00.00.0000 preserves an unset engine date. Calendar validity is checked by the importer." },
+        "time": { "type": "string", "pattern": "^(|(?:[01][0-9]|2[0-3]):[0-5][0-9])$", "description": "Local engine time HH:MM; empty means unset." },
+        "author": { "type": "string", "description": "Engine author field, preserved verbatim." },
+        "league": { "$ref": "#/$defs/nonNegativeInteger", "description": "Engine league ID; mapping to another project is an import concern." },
+        "other_league": { "type": "boolean" },
+        "zone": { "type": "string" },
+        "legend": { "$ref": "#/$defs/html" },
+        "legend_comment": { "$ref": "#/$defs/html" },
+        "anons": { "$ref": "#/$defs/html" },
+        "clue_min": { "$ref": "#/$defs/nonNegativeInteger", "description": "First hint interval in minutes." },
+        "clue_min2": { "$ref": "#/$defs/nonNegativeInteger", "description": "Second hint interval in minutes." },
+        "clue_min3": { "$ref": "#/$defs/nonNegativeInteger", "description": "Third engine interval in minutes; not a third hint text." },
+        "master_code": { "type": "string" },
+        "master_code_shtraf": { "$ref": "#/$defs/nonNegativeInteger", "description": "Master-code penalty in minutes." },
+        "clue_before_shtraf": { "$ref": "#/$defs/nonNegativeInteger", "description": "Early-hint penalty in minutes." },
+        "penalty": { "$ref": "#/$defs/nonNegativeInteger", "description": "Unfinished-level penalty in minutes." },
+        "price": { "type": "string", "description": "Participation price as engine text, without currency conversion." },
+        "breaf_place": { "$ref": "#/$defs/html", "description": "Briefing place. Spelling follows the existing API." },
+        "greeting": { "$ref": "#/$defs/html" },
+        "duration": { "$ref": "#/$defs/nonNegativeInteger", "description": "Native engine duration value, without unit conversion." },
+        "bonus_after": { "$ref": "#/$defs/nonNegativeInteger", "description": "Native engine bonus_after value." },
+        "publish": { "type": "boolean" },
+        "finished": { "type": "boolean" },
+        "invitation": { "type": "boolean", "description": "Whether applications are open." }
+      }
+    },
+    "level": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "params"],
+      "properties": {
+        "key": { "$ref": "#/$defs/key", "description": "Portable identity, unique within levels. Does not change when the level moves." },
+        "source_id": { "type": "integer", "minimum": 1, "description": "Original engine ID; never implicitly a destination update ID." },
+        "source_order": { "type": "integer", "description": "Original order_p for diagnostics only. The levels array controls import order." },
+        "params": { "$ref": "#/$defs/levelParams" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      }
+    },
+    "levelParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "subtitle", "question", "hint1", "hint2", "location", "location_comment", "comment", "time_add_bonus_all", "codes", "sector_names", "bonus_codes", "fake_codes", "spoilers", "clue_min", "clue_min2", "clue_min3", "hint1_on_request", "hint1_interval", "hint1_penalty", "hint2_on_request", "hint2_interval", "hint2_penalty", "code_count", "try_limit", "penalty", "no_master_code", "is_sabotage", "bonus", "bonus_time", "skvoz", "skvoz_min", "skvoz_start", "lat", "lon", "radius", "show_coord_with_hint2", "no_break", "clue_before", "reserve", "publish"],
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "question": { "$ref": "#/$defs/html" },
+        "hint1": { "$ref": "#/$defs/html" },
+        "hint2": { "$ref": "#/$defs/html" },
+        "location": { "$ref": "#/$defs/html" },
+        "location_comment": { "$ref": "#/$defs/html" },
+        "comment": { "$ref": "#/$defs/html", "description": "Organizer commentary, including code photos." },
+        "time_add_bonus_all": { "$ref": "#/$defs/nonNegativeInteger", "description": "Extra minutes for collecting all bonus codes." },
+        "codes": { "type": "array", "items": { "$ref": "#/$defs/levelCode" } },
+        "sector_names": { "type": "array", "items": { "type": "string" }, "description": "Ordered sector names; sector N refers to index N-1." },
+        "bonus_codes": { "type": "array", "items": { "$ref": "#/$defs/bonusCode" } },
+        "fake_codes": { "type": "array", "items": { "$ref": "#/$defs/fakeCode" } },
+        "spoilers": { "type": "array", "items": { "$ref": "#/$defs/spoiler" } },
+        "clue_min": { "$ref": "#/$defs/nonNegativeInteger", "description": "Native first interval in minutes, including zero." },
+        "clue_min2": { "$ref": "#/$defs/nonNegativeInteger" },
+        "clue_min3": { "$ref": "#/$defs/nonNegativeInteger" },
+        "hint1_on_request": { "type": "boolean" },
+        "hint1_interval": { "$ref": "#/$defs/nonNegativeInteger" },
+        "hint1_penalty": { "$ref": "#/$defs/nonNegativeInteger", "description": "Minutes." },
+        "hint2_on_request": { "type": "boolean" },
+        "hint2_interval": { "$ref": "#/$defs/nonNegativeInteger" },
+        "hint2_penalty": { "$ref": "#/$defs/nonNegativeInteger", "description": "Minutes." },
+        "code_count": { "$ref": "#/$defs/nonNegativeInteger", "description": "Codes required to pass; zero means all codes in this snapshot, not keep the old value." },
+        "try_limit": { "$ref": "#/$defs/nonNegativeInteger" },
+        "penalty": { "type": ["integer", "null"], "minimum": 0, "description": "Minutes; null explicitly inherits the game penalty, zero is an explicit zero penalty." },
+        "no_master_code": { "type": "boolean" },
+        "is_sabotage": { "type": "boolean" },
+        "bonus": { "type": "boolean" },
+        "bonus_time": { "$ref": "#/$defs/nonNegativeInteger" },
+        "skvoz": { "type": "boolean" },
+        "skvoz_min": { "$ref": "#/$defs/nonNegativeInteger" },
+        "skvoz_start": { "type": "string", "description": "Native engine start value, preserved without date/time conversion." },
+        "lat": { "type": "string", "description": "Native decimal latitude string or empty. Importer checks numeric range." },
+        "lon": { "type": "string", "description": "Native decimal longitude string or empty. Importer checks numeric range." },
+        "radius": { "type": "string", "description": "Native radius string or empty. Importer checks numeric range and engine units." },
+        "show_coord_with_hint2": { "type": "boolean" },
+        "no_break": { "type": "boolean" },
+        "clue_before": { "type": "boolean" },
+        "reserve": { "type": "boolean" },
+        "publish": { "type": "boolean" }
+      }
+    },
+    "levelCode": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "synonyms", "danger", "sector"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "synonyms": { "$ref": "#/$defs/synonyms" },
+        "danger": { "$ref": "#/$defs/difficulty" },
+        "sector": { "$ref": "#/$defs/nonNegativeInteger", "description": "One-based sector number; zero means no sector." }
+      }
+    },
+    "bonusCode": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "synonyms", "danger", "minutes"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "synonyms": { "$ref": "#/$defs/synonyms" },
+        "danger": { "$ref": "#/$defs/difficulty" },
+        "minutes": { "$ref": "#/$defs/nonNegativeInteger" }
+      }
+    },
+    "fakeCode": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "synonyms", "penalty"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "synonyms": { "$ref": "#/$defs/synonyms" },
+        "penalty": { "$ref": "#/$defs/nonNegativeInteger" }
+      }
+    },
+    "spoiler": {
+      "type": "object", "additionalProperties": false,
+      "required": ["text", "code", "synonyms", "penalty"],
+      "properties": {
+        "text": { "$ref": "#/$defs/html" },
+        "code": { "type": "string" },
+        "synonyms": { "$ref": "#/$defs/synonyms" },
+        "penalty": { "$ref": "#/$defs/nonNegativeInteger" }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filename", "media_type"],
+      "properties": {
+        "filename": { "type": "string", "minLength": 1, "pattern": "^[^/\\\\]+$", "not": { "enum": [".", ".."] } },
+        "media_type": { "type": "string", "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$", "examples": ["image/jpeg", "image/png"] },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$", "description": "Digest of decoded/downloaded file bytes." },
+        "size_bytes": { "$ref": "#/$defs/nonNegativeInteger" },
+        "data_base64": { "type": "string", "contentEncoding": "base64", "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$" },
+        "path": { "type": "string", "minLength": 1, "pattern": "^[^\\\\:]+$", "description": "Relative POSIX path beneath the scenario package directory; importer rejects absolute paths and dot segments and enforces containment after symlink resolution." },
+        "url": { "type": "string", "format": "uri", "pattern": "^https?://", "description": "External file; this export depends on network availability." },
+        "original_url": { "type": "string", "format": "uri", "description": "Provenance only; not a second file source." }
+      },
+      "oneOf": [
+        { "required": ["data_base64"], "not": { "anyOf": [{ "required": ["path"] }, { "required": ["url"] }] } },
+        { "required": ["path"], "not": { "anyOf": [{ "required": ["data_base64"] }, { "required": ["url"] }] } },
+        { "required": ["url"], "not": { "anyOf": [{ "required": ["data_base64"] }, { "required": ["path"] }] } }
+      ]
+    }
+  }
+}

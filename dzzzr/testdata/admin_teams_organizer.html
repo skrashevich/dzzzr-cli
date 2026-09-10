@@ -1,0 +1,53 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1251"></head><body>
+<table cellpadding=0 cellspacing=0 border=0 width=100%>
+<tr align=center class=news style="color:white" bgcolor=a1a1a1> <td height=47 width=10><img src=../ICONS-01/inv.gif style="width=5px; height=2px" alt=""></td> <td><b>Капитан</b></td> <td width=10><img src=../ICONS-01/inv.gif width=10 height=2></td> <td align=left><b style='padding-left:30px;'>Команда</b></td> <td width=10></td> <td><b>Статус заявки</b></td> <td width=10></td> <td></td> <td></td> <td><strong>Сыграно игр<br></strong>с учетом предстоящей</td> <td></td> <td nowrap><b>Скидка</b></td> <td width=10></td> <td nowrap><b>PIN <a href=printPIN.php?gm=1383&Project= class=news target=printpin><img src=../ICONS-01/b_print.png border=0 width=16 height=16></a></b></td> <td width=10></td> <td nowrap><b>рейтинговые<br>очки</b></td> <td width=10></td> <td nowrap><b>лига</b></td> <td nowrap><b>Отряд</b></td> <td colspan=3><img src=../ICONS-01/inv.gif style="width=10px; height=2px" alt=""></td> </tr>
+<tr valign=top bgcolor=FFFEDE><td></td><td class=news><a href=?action=users&edit=1&login=Kamrad_anin&categoryValue=Site&Project= class=news>Kamrad_anin</a></td><td width=10></td><td><table cellpadding=0 cellspacing=0><tr><td valign=top width=20><img src=../ICONS-01/arrow-1.gif width=17 height=11><td class=news width=400>[31] <b>Стальные Яйца</b> </td></tr></table></td><td width=10></td><td class=news>принята</td><td width=10></td><td></td><td></td><td align=center class=news>344</td><td></td><td class=news align=right nowrap></td><td width=10></td><td class=news>877548</td><td width=10></td><td class=news align=right>0</td><td width=10></td><td class=news nowrap>высшая лига</td><td style='width: 57px; text-align: center'>---</td><td width=20 align=right></td><td width=70 class=news align=left></td><td width=10></td></tr>
+</table>
+
+<form method=post name=add action=admin.php>
+<input type=hidden name=Project value=><input type=hidden name=categoryValue value=1383><input type=hidden name=action value=addTeamToGame>
+<select name=team><option value=1573><option value=979> альфа x3m &amp; A.<option value=1349> КИПИШ</select>
+<input type=submit value="Добавить">
+</form>
+
+<form method=post name=store action=admin.php>
+<div class=h3>Создать новую команду</div>
+<table><tr><td class=news>
+<input type=hidden name=Project value=><input type=hidden name=categoryValue value=1383><input type=hidden name=ofset value=0><input type=hidden name=action value=newTeam>
+<strong>Название</strong><br><input type=text size=45 name=name value=''>
+<strong>Капитан</strong><br><input type=text size=45 name=captain value=''>
+</td></tr></table>
+
+<table width=100%><tr><td>
+<form onSubmit="document.frm.discount.value=document.frm.discountText.value" method=post name=frm action=admin.php>
+<input type=hidden name=Project value=>
+<input type=hidden name=categoryValue value=1383>
+<input type=hidden name=captain value=Kamrad_anin>
+<input type=hidden name=ofset value=0>
+<input type=hidden name=action value=updateTeam>
+<table cellpadding=5 cellspacing=0 border=0>
+<tr><td>
+<input type=hidden name=id value=31>
+<input type=text name=name value='Стальные Яйца'>
+<select name=league><option value=1>первая лига<option value=3 selected>высшая лига</select>
+<select name=newCap><option value='Kamrad_anin' selected>Kamrad_anin</select>
+<select name=shtab><option value='BuMa6ka' selected>BuMa6ka</select>
+<select name=captainHelper><option value='Ballbot2' selected>Ballbot2</select>
+<input type=text name=deviz value='Яица, яица, яица-сука стальные!!!!'>
+<input type=text name=website value='steelballs.ru'>
+<input type=text name=pinlogin value=877548>
+<input type=text name=points value=0>
+<input type=checkbox name=novice>
+<input type=checkbox name=blocked>
+<select name=status><option value=0>не рассмотрена<option value=1 selected>принята</select>
+</td></tr>
+<tr><td colspan=3 valign=top><b class=news>Полный состав команды</b><BR>
+<input type=checkbox name=pl[]><a href=?action=users&edit=1&login=&categoryValue=Site&Project= class=news></a><br />
+<input type=checkbox name=pl[4r2na] checked><a href=?action=users&edit=1&login=4r2na>4r2na</a><br />
+<input type=checkbox name=pl[Ballbot2] checked><a href=?action=users&edit=1&login=Ballbot2>Ballbot2</a><br />
+<input type=checkbox name=pl[zoya_O]><a href=?action=users&edit=1&login=zoya_O>zoya_O</a><br />
+</td></tr>
+</table>
+</form>
+</td></tr></table>
+</body></html>

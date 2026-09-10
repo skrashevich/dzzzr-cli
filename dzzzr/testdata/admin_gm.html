@@ -1,0 +1,22 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1251"><title>Мониторинг</title></head><body>
+<form name=fnsh method=get>
+<select name=finished onChange="document.fnsh.submit()">
+<option value=4242 selected>2026-09-08 - Ночной дозор: Осень  (Первая лига)
+<option value=4243>2026-09-15 - Будущая игра  (Первая лига)
+</select>
+<select name=refresh onChange="document.LogFrame.LastLog.refresh.value=this.value;document.LogFrame.LastLog.submit()"><option value=0>не обновлять<option value=15 selected>15 сек.<option value=30>30 сек.</select>
+</form>
+<form method=post name=gmform>
+<input type=hidden name=finished value=4242>
+<select name=team><option value=0>-- команда --<option value=5150>MockTeam<option value=5151>Ночные совы</select>
+<select name=level><option value=0>-- уровень --<option value=1>1. Гаражи<option value=2>2. Пустырь<option value=3>3. Сквозной бонус</select>
+<input type=text name=time value="2026-09-08 22:30:00">
+<input type=submit name=go value="выдать">
+</form>
+<form method=post><input type=hidden name=action value=switchRobot><input type=hidden name=finished value=4242><input type=submit value="остановить движок"></form>
+<table id=suxx>
+<tr id=team5150><td onclick="showTeam(5150)">MockTeam</td><td id=cell_5150_1>21:00:05<br>21:12:40<br>00:12:35</td><td id=cell_5150_2>21:12:40</td><td id=cell_5150_3></td></tr>
+<tr id=team5151><td onclick="showTeam(5151)">Ночные совы</td><td id=cell_5151_1>21:00:05</td><td id=cell_5151_2></td><td id=cell_5151_3></td></tr>
+</table>
+<iframe name=LogFrame src=lookLog.php?gmid=4242&Project=&refresh=15 width=100 height=100 border=0 scrolling=no onLoad='LogLoad()'></iframe>
+</body></html>
