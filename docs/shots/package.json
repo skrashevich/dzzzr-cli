@@ -8,6 +8,6 @@
     "shoot": "node shoot.mjs"
   },
   "dependencies": {
-    "playwright": "1.48.2"
+    "playwright": "1.55.1"
   }
 }
