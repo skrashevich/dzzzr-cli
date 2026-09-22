@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"fmt"
@@ -90,16 +92,28 @@ func (h *webHub) httpAdminLogin(w http.ResponseWriter, r *http.Request) {
 	if !webReadJSON(w, r, &body) {
 		return
 	}
-	login := strings.TrimSpace(body.Login)
-	if login == "" || body.Password == "" {
-		webError(w, http.StatusBadRequest, "укажите логин и пароль организатора")
+	if code, err := h.loginOrganizer(r.Context(), body.Login, body.Password); err != nil {
+		webError(w, code, "%v", err)
 		return
+	}
+	h.clientMu.Lock()
+	defer h.clientMu.Unlock()
+	webWriteJSON(w, http.StatusOK, h.adminStatusNow())
+}
+
+// loginOrganizer stores the organizer credentials once the engine accepted
+// them, and reports the HTTP status a refusal deserves. The onboarding wizard
+// shares it with httpAdminLogin.
+func (h *webHub) loginOrganizer(ctx context.Context, login, password string) (int, error) {
+	login = strings.TrimSpace(login)
+	if login == "" || password == "" {
+		return http.StatusBadRequest, errors.New("укажите логин и пароль организатора")
 	}
 
 	h.clientMu.Lock()
 	prevLogin, prevPassword := h.cfg.adminLogin, h.cfg.adminPassword
-	h.cfg.adminLogin, h.cfg.adminPassword = login, body.Password
-	h.client.SetAdminCredentials(login, body.Password)
+	h.cfg.adminLogin, h.cfg.adminPassword = login, password
+	h.client.SetAdminCredentials(login, password)
 	h.clientMu.Unlock()
 
 	// The proof is a request to the engine, and clientMu is the lock every
@@ -108,7 +122,7 @@ func (h *webHub) httpAdminLogin(w http.ResponseWriter, r *http.Request) {
 	// polls to find out what is happening. The client guards its own state, so
 	// the request needs no lock; the lock only comes back to put the previous
 	// organizer in place when these credentials are refused.
-	if _, err := h.client.AdminListGames(r.Context()); err != nil {
+	if _, err := h.client.AdminListGames(ctx); err != nil {
 		h.clientMu.Lock()
 		// Put the previous organizer back only if these credentials are still
 		// the ones in place. A logout landing while the engine was answering
@@ -119,8 +133,7 @@ func (h *webHub) httpAdminLogin(w http.ResponseWriter, r *http.Request) {
 			h.client.SetAdminCredentials(prevLogin, prevPassword)
 		}
 		h.clientMu.Unlock()
-		webError(w, adminStatusCode(err), "%v", err)
-		return
+		return adminStatusCode(err), err
 	}
 
 	h.clientMu.Lock()
@@ -130,7 +143,7 @@ func (h *webHub) httpAdminLogin(w http.ResponseWriter, r *http.Request) {
 	if _, err := saveSession(h.cfg, h.client); err != nil {
 		h.cfg.debugf("сессия не сохранена: %v", err)
 	}
-	webWriteJSON(w, http.StatusOK, h.adminStatusNow())
+	return http.StatusOK, nil
 }
 
 // httpAdminLogout forgets the organizer both in memory and in the session

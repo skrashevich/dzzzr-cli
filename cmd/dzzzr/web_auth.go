@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"os"
@@ -29,10 +30,21 @@ func (h *webHub) httpAuthLogin(w http.ResponseWriter, r *http.Request) {
 	if !webReadJSON(w, r, &body) {
 		return
 	}
-	login := strings.TrimSpace(body.Login)
-	if login == "" || body.Password == "" {
-		webError(w, http.StatusBadRequest, "укажите логин и пароль")
+	if code, err := h.loginPlayer(r.Context(), body.Login, body.Password); err != nil {
+		webError(w, code, "%v", err)
 		return
+	}
+	h.clientMu.Lock()
+	defer h.clientMu.Unlock()
+	webWriteJSON(w, http.StatusOK, h.status())
+}
+
+// loginPlayer signs the player in and reports the HTTP status a refusal
+// deserves. The onboarding wizard shares it with httpAuthLogin.
+func (h *webHub) loginPlayer(ctx context.Context, login, password string) (int, error) {
+	login = strings.TrimSpace(login)
+	if login == "" || password == "" {
+		return http.StatusBadRequest, errors.New("укажите логин и пароль")
 	}
 
 	h.clientMu.Lock()
@@ -40,12 +52,11 @@ func (h *webHub) httpAuthLogin(w http.ResponseWriter, r *http.Request) {
 
 	// The credentials go on the config because signIn — and the automatic
 	// re-authentication the tools rely on — read them from there.
-	h.cfg.login, h.cfg.password = login, body.Password
-	if err := signIn(r.Context(), h.cfg, h.client); err != nil {
-		webError(w, loginStatusCode(err), "%v", err)
-		return
+	h.cfg.login, h.cfg.password = login, password
+	if err := signIn(ctx, h.cfg, h.client); err != nil {
+		return loginStatusCode(err), err
 	}
-	webWriteJSON(w, http.StatusOK, h.status())
+	return http.StatusOK, nil
 }
 
 // loginStatusCode separates a login the engine refused from an engine that
