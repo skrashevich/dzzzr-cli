@@ -47,6 +47,9 @@ type Config struct {
 	// RequestTimeout bounds each provider request, including streaming bodies.
 	// Zero uses DefaultRequestTimeout.
 	RequestTimeout time.Duration
+	// ExtraBody adds provider-specific fields to every request, such as the
+	// upstream preferences Polza.ai accepts.
+	ExtraBody map[string]any
 	// Provider replaces the HTTP provider built from the fields above. Tests
 	// and callers that already own a provider use it.
 	Provider providers.LLMProvider
@@ -175,7 +178,7 @@ func newProvider(cfg Config) providers.LLMProvider {
 		"", "",
 		userAgent,
 		int((timeout+time.Second-1)/time.Second),
-		nil, nil,
+		cfg.ExtraBody, nil,
 	)
 	// OpenRouter needs to be recognized by name for its own request fields.
 	if strings.Contains(strings.ToLower(cfg.BaseURL), "openrouter.ai") {

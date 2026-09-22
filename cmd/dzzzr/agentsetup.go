@@ -161,6 +161,16 @@ func resolveLLMConfig() (agentloop.Config, error) {
 		BaseURL:   baseURL,
 		UserAgent: "dzzzr-cli/" + version,
 	}
+	// Polza routes each model to one of several upstreams; the fastest one
+	// that handles tool calls is the one an agent wants.
+	if polzaEndpoint(out.BaseURL) {
+		out.ExtraBody = map[string]any{
+			"provider": map[string]any{
+				"sort":   "throughput",
+				"ignore": []string{"Relace", "relace/fp4"},
+			},
+		}
+	}
 	if agentConfigHook != nil {
 		agentConfigHook(&out)
 	}

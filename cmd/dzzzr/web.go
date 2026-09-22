@@ -83,6 +83,10 @@ type webHub struct {
 	// on first use, so a hub assembled as a struct literal still serves them.
 	codexMu    sync.Mutex
 	codexLogin *codexLoginManager
+
+	// polzaMu guards polza, the Polza.ai sign-ins in flight; built on first use.
+	polzaMu sync.Mutex
+	polza   *polzaManager
 }
 
 // publishSSE sends one event to everyone watching a chat.
@@ -167,6 +171,13 @@ func (h *webHub) newMux() *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/llm/codex/login/{id}", h.httpCodexLoginStatus)
 	mux.HandleFunc("POST /api/v1/llm/codex/login/{id}/code", h.httpCodexLoginCode)
 	mux.HandleFunc("DELETE /api/v1/llm/codex/login/{id}", h.httpCodexLoginCancel)
+	mux.HandleFunc("POST /api/v1/llm/polza/login", h.httpPolzaLoginStart)
+	mux.HandleFunc("GET /api/v1/llm/polza/login/{id}", h.httpPolzaLoginStatus)
+	mux.HandleFunc("DELETE /api/v1/llm/polza/login/{id}", h.httpPolzaLoginCancel)
+	mux.HandleFunc("POST /api/v1/llm/polza/login/{id}/code", h.httpPolzaLoginCode)
+	mux.HandleFunc("GET /api/v1/llm/polza/models", h.httpPolzaModels)
+	mux.HandleFunc("POST /api/v1/llm/polza/connect", h.httpPolzaConnect)
+	mux.HandleFunc("POST /api/v1/llm/polza/check", h.httpPolzaCheck)
 	h.registerAdminRoutes(mux)
 	h.registerDraftRoutes(mux)
 
@@ -217,6 +228,8 @@ func runWeb(ctx context.Context, cfg *config, c *dzzzr.Client, args []string, na
 	defer store.cancelAll()
 
 	hub := &webHub{cfg: cfg, client: c, store: store, sse: newSSEHub(), run: runWebChatTurn}
+	// A Polza sign-in holds a local callback port; stopping the server frees it.
+	defer hub.closePolza()
 	return serveWeb(ctx, hub, cfg.webAddr, webStartPage(c, editor))
 }
 
