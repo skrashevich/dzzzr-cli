@@ -142,8 +142,10 @@ await shot('login');
 await page.click('#mode-tab-editor');
 await page.waitForSelector('#editor-game-list li button');
 await page.click('#editor-game-list li button');
-await page.waitForSelector('#editor-level-list li button');
-await page.click('#editor-level-list li button');
+// Hover reveals action buttons over the row's center; select its free left edge.
+await page.locator('#editor-level-list li > button.editor-item').first().click({
+  position: { x: 10, y: 10 },
+});
 await page.waitForSelector('.editor-field-codes .editor-row-body .editor-row');
 await settle(600);
 await shot('editor');
