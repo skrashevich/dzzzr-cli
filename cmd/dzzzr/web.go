@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -142,8 +143,9 @@ func webReadJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 	return true
 }
 
-// newMux wires every endpoint plus the embedded interface.
-func (h *webHub) newMux() *http.ServeMux {
+// newMux wires every endpoint plus the embedded interface, behind the guard
+// against writes from other sites.
+func (h *webHub) newMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/chats", h.httpListChats)
 	mux.HandleFunc("POST /api/v1/chats", h.httpCreateChat)
@@ -191,7 +193,47 @@ func (h *webHub) newMux() *http.ServeMux {
 		panic("webui: " + err.Error())
 	}
 	mux.Handle("/", http.FileServer(http.FS(sub)))
-	return mux
+	return sameOriginWrites(mux)
+}
+
+// sameOriginWrites refuses requests that change state when a browser says they
+// come from another site. The server only listens on this machine, but any
+// page the user visits can still aim a form-encoded or text/plain POST at it
+// — a "simple" request the browser sends without asking first — and switch the
+// agent to an attacker's provider key or sign the user out.
+//
+// Only browsers send Origin and Sec-Fetch-Site, so scripts and tests that
+// talk to the API directly are unaffected; reads stay open because the page
+// itself issues them.
+func sameOriginWrites(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+		default:
+			if !sameOriginRequest(r) {
+				webError(w, http.StatusForbidden, "запрос с другого сайта отклонён")
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// sameOriginRequest reports whether a request came from this server's own
+// page, or from something that is not a browser at all.
+func sameOriginRequest(r *http.Request) bool {
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "", "same-origin", "none":
+	default:
+		// same-site too: another port on 127.0.0.1 is the same site.
+		return false
+	}
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	return err == nil && u.Host == r.Host
 }
 
 // cmdWeb serves the browser conversation until the run is interrupted.

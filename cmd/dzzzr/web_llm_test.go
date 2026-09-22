@@ -196,7 +196,9 @@ func TestWebLLMSettingsPutRejectsBadInput(t *testing.T) {
 // clearing has to be an explicit act.
 func TestWebLLMSettingsPutKeepsTheKeyUnlessCleared(t *testing.T) {
 	srv := newLLMSettingsTestServer(t)
-	writeTestLLMSettings(t, llmSettings{APIKey: "sk-secret-value-1234", Model: "file/model"})
+	// Same host as the form below: a key never follows a changed host (see
+	// TestWebLLMSettingsKeyDoesNotFollowANewHost).
+	writeTestLLMSettings(t, llmSettings{APIKey: "sk-secret-value-1234", BaseURL: "https://api.example.com/v1", Model: "file/model"})
 
 	status, payload, raw := llmSettingsRequest(t, srv, http.MethodPut,
 		`{"auth_method":"apikey","base_url":"https://api.example.com/v1","model":"gpt-4o","api_key":""}`)

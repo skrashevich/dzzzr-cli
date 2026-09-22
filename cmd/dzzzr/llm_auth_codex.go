@@ -147,6 +147,11 @@ type cliCodexTokenStore struct {
 	// persist a credential the issuer had already invalidated.
 	inFlight *codexRefreshAttempt
 
+	// retired is set, under codexStoresMu, once a sign-out or a new sign-in
+	// replaced this store. A renewal still in flight then keeps its token for
+	// the turn that asked, but must not write it back over what replaced it.
+	retired bool
+
 	// refresh and persist are injected so the refresh policy can be tested
 	// without an OAuth issuer.
 	refresh func(*auth.AuthCredential) (*auth.AuthCredential, error)
@@ -244,17 +249,35 @@ func (s *cliCodexTokenStore) startRefreshLocked() *codexRefreshAttempt {
 			}
 			s.cred = renewed
 			s.refreshed = true
-			// A failed write costs only the next process a refresh; the run
-			// continues on the token in memory.
-			_ = s.persist(codexCredentialFromAuth(renewed))
 		}
 		s.inFlight = nil
 		s.mu.Unlock()
+
+		// Written outside s.mu, so a slow disk does not stall every token read.
+		// A failed write costs only the next process a refresh; the run
+		// continues on the token in memory.
+		if err == nil && renewed != nil {
+			s.persistUnlessRetired(codexCredentialFromAuth(renewed))
+		}
 
 		attempt.err = err
 		close(attempt.done)
 	}()
 	return attempt
+}
+
+// persistUnlessRetired writes a renewal unless a sign-out or a new sign-in
+// has replaced this store since it started. codexStoresMu is held across the
+// check and the write, and retireCodexTokenStores takes it too, so a retirement
+// lands either before the write — which it then prevents — or after it, in
+// which case whatever retired the store writes last.
+func (s *cliCodexTokenStore) persistUnlessRetired(cred *codexCredential) {
+	codexStoresMu.Lock()
+	defer codexStoresMu.Unlock()
+	if s.retired {
+		return
+	}
+	_ = s.persist(cred)
 }
 
 // needsRefreshLocked reports whether the access token should be renewed. The
@@ -304,10 +327,16 @@ func sharedCodexTokenStore(path string, cred *codexCredential) *cliCodexTokenSto
 }
 
 // resetCodexTokenStores drops the cache: after a new sign-in or a sign-out the
-// store would otherwise keep serving the old credential.
+// store would otherwise keep serving the old credential. The dropped stores
+// are retired, so a renewal they still have in flight cannot write the old
+// credential back. Callers that change the credential file reset first and
+// write after.
 func resetCodexTokenStores() {
 	codexStoresMu.Lock()
 	defer codexStoresMu.Unlock()
+	for _, store := range codexStores {
+		store.retired = true
+	}
 	clear(codexStores)
 }
 

@@ -349,12 +349,13 @@ func (m *codexLoginManager) complete(flow *codexLoginFlow, code string) error {
 		flow.finish("", err)
 		return err
 	}
+	// A fresh sign-in must not keep serving the token cached for the old one,
+	// nor be overwritten by a renewal of it still in flight: retire first.
+	resetCodexTokenStores()
 	if err := m.persist(codexCredentialFromAuth(cred)); err != nil {
 		flow.finish("", err)
 		return err
 	}
-	// A fresh sign-in must not keep serving the token cached for the old one.
-	resetCodexTokenStores()
 	flow.finish(cred.AccountID, nil)
 	return nil
 }
@@ -515,10 +516,12 @@ func (h *webHub) httpCodexStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *webHub) httpCodexLogout(w http.ResponseWriter, r *http.Request) {
+	// Retire before deleting: a renewal landing in between would otherwise
+	// write the credential straight back.
+	resetCodexTokenStores()
 	if err := deleteCodexCredential(); err != nil {
 		webError(w, http.StatusInternalServerError, "%s", err.Error())
 		return
 	}
-	resetCodexTokenStores()
 	webWriteJSON(w, http.StatusOK, codexStatusForWeb())
 }

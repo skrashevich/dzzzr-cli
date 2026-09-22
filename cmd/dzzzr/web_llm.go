@@ -1,8 +1,10 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -186,6 +188,16 @@ func (h *webHub) httpPutLLMSettings(w http.ResponseWriter, r *http.Request) {
 		next.APIKey = ""
 	case strings.TrimSpace(req.APIKey) != "":
 		next.APIKey = strings.TrimSpace(req.APIKey)
+	case next.APIKey != "" && next.AuthMethod != authMethodCodex && !sameLLMHost(current.BaseURL, next.BaseURL):
+		// The kept key was issued by the provider the form is moving away
+		// from; carried along, it would be sent to the new one on the next
+		// turn. A server on this machine needs no key, so it is dropped there;
+		// anywhere else the user has to say which key to use.
+		if !isLocalEndpoint(cmp.Or(next.BaseURL, defaultLLMBaseURL)) {
+			webError(w, http.StatusBadRequest, "адрес API изменился: введите ключ для нового провайдера")
+			return
+		}
+		next.APIKey = ""
 	}
 
 	if err := saveLLMSettings(next); err != nil {
@@ -303,4 +315,17 @@ func agentAuthMethod(cfg agentloop.Config) string {
 	default:
 		return authMethodAPIKey
 	}
+}
+
+// sameLLMHost reports whether two stored base URLs reach the same host; an
+// empty one stands for the default endpoint.
+func sameLLMHost(a, b string) bool {
+	host := func(raw string) string {
+		u, err := url.Parse(cmp.Or(strings.TrimSpace(raw), defaultLLMBaseURL))
+		if err != nil {
+			return raw
+		}
+		return strings.ToLower(u.Host)
+	}
+	return host(a) == host(b)
 }

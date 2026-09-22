@@ -250,9 +250,11 @@ func TestWebOnboardingNotRequiredWhenAlreadyConfigured(t *testing.T) {
 	if payload.Required || payload.Completed {
 		t.Fatalf("payload %s: want not required, yet not completed either", raw)
 	}
-	// Half the setup is not enough.
-	t.Setenv("DZZZR_LLM_API_KEY", "")
+	// A model alone is not enough: the sign-in is what the wizard requires.
+	if code := webDo(t, srv, http.MethodPost, "/api/v1/auth/logout", "", nil); code != http.StatusOK {
+		t.Fatalf("logout %d", code)
+	}
 	if _, payload, raw := onboardingRequest(t, srv, http.MethodGet, "/api/v1/onboarding", ""); !payload.Required {
-		t.Fatalf("payload %s: a missing model must still require the wizard", raw)
+		t.Fatalf("payload %s: a missing sign-in must still require the wizard", raw)
 	}
 }

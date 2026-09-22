@@ -88,7 +88,7 @@ func (h *webHub) httpOnboardingReset(w http.ResponseWriter, r *http.Request) {
 
 // onboardingStatusPayload reports whether the wizard has to run and how far
 // the two things it configures already are. It has to run until it was
-// completed once or both things are configured anyway.
+// completed once or the user is signed in anyway.
 //
 // A state file that will not parse is reported rather than propagated:
 // refusing the request would make the wizard unreachable, and the user would
@@ -101,14 +101,13 @@ func (h *webHub) onboardingStatusPayload() onboardingStatusPayload {
 		h.onboardingLLMStep(),
 		h.onboardingAuthStep(),
 	}
-	// A user who configured dzzzr before the wizard existed — a model from the
-	// environment, a session on disk — has nothing left for it to do.
-	configured := true
-	for _, step := range steps {
-		configured = configured && step.Done
-	}
+	// Only the sign-in is required: the editor works without a model, so a
+	// user who is already signed in — say an organizer who configured dzzzr
+	// before the wizard existed — has nothing the wizard must make them do.
+	// The model step still reports what is missing.
+	signedIn := steps[1].Done
 	payload := onboardingStatusPayload{
-		Required:    !state.Completed && !configured,
+		Required:    !state.Completed && !signedIn,
 		Completed:   state.Completed,
 		CompletedAt: state.CompletedAt,
 		Skipped:     state.Skipped,
