@@ -48,7 +48,8 @@ Codex — только через готовый `~/.codex/auth.json` от Codex
 | model | `DZZZR_LLM_MODEL`, `LLM_MODEL`, `OPENROUTER_MODEL` |
 
 Значения auth_method: `""`/`openai`/`openrouter`/`apikey` (API-ключ), `codex`
-(синоним `chatgpt`), `polza`. `validateLLMBaseURL`, `maskAPIKey` — как в encx.
+(синоним `chatgpt`). Отдельного значения для Polza нет: как и в encx, это
+API-ключ с base URL `https://polza.ai/api/v1`. `validateLLMBaseURL`, `maskAPIKey` — как в encx.
 Нечитаемый файл настроек — ошибка резолвинга (не молча другой провайдер).
 
 `resolveLLMConfig()` переписывается на `resolveLLMField`. Без явного
@@ -63,8 +64,8 @@ auth_method, ключа и base URL при наличии входа ChatGPT в�
 `$CODEX_HOME/auth.json` / `~/.codex/auth.json` (обратная совместимость).
 Проверка совместимости модели с Codex сохраняется.
 
-### Polza.ai (`llm_polza.go`)
-OpenAI-совместимый транспорт с base URL Polza; OAuth-вход, список моделей с
+### Polza.ai (`web_llm_polza.go`)
+OpenAI-совместимый транспорт с base URL Polza (`auth_method=apikey`); OAuth-вход, список моделей с
 поддержкой инструментов, баланс, подключение по ключу — порт `web_llm_polza.go`.
 
 ### Web API (`web_llm.go`, `web_llm_codex.go`, `web_llm_polza.go`)
@@ -87,8 +88,9 @@ POST   /api/v1/llm/codex/login/{id}/code
 - `GET /api/v1/onboarding` → `{required, completed, completed_at, skipped,
   steps:[{id:"llm"},{id:"auth"}], error?}`. Шаг `llm` готов, если
   `llmConfig()` без ошибки; `auth` — если есть сессия игрока **или**
-  организаторские учётные данные. Битый файл состояния — `error` в ответе,
-  `required: true`, не 500.
+  организаторские учётные данные. `required` — мастер не пройден и вход не
+  выполнен: модель необязательна (редактору она не нужна, на шаге есть
+  «Настроить позже»). Битый файл состояния или настроек — `error` в ответе, не 500.
 - `POST /api/v1/onboarding/complete` `{role: "player"|"organizer", login,
   password}` — выполняет тот же вход, что `httpAuthLogin` / `httpAdminLogin`
   (логика выносится в общие функции), при успехе сохраняет состояние.
@@ -114,8 +116,8 @@ POST   /api/v1/llm/codex/login/{id}/code
 - `index.html` — кнопки ⚙ «Настройки LLM» и ◈ «Мастер настройки» у
   `brand-model` в сайдбаре; разметка двух модалок; подключение скриптов.
 - Автооткрытие мастера при загрузке, если `required`, в обоих режимах (чат и
-  редактор). ◈ вызывает `reset` и открывает мастер. После сохранения
-  обновляется `brand-model`.
+  редактор). ◈ открывает мастер без сброса (его можно закрыть; после сброса
+  пройденный мастер было бы не закрыть). После сохранения обновляется `brand-model`.
 
 ## Тестирование
 
