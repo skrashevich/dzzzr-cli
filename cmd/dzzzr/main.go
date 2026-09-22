@@ -368,15 +368,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	autoWeb := false
 	if len(positional) == 0 {
-		// A double-click on Windows has no command and no terminal: usage text
-		// would flash by in a console window that closes with the process.
+		// A double-click should open the editor instead of flashing usage text.
 		if !autoStartWebIfGUI() {
 			printUsage(stderr, fs)
 			return 2
 		}
 		autoWeb = true
-		_, _ = fmt.Fprintln(stderr, "dzzzr: команда не указана и терминала нет — открываю браузерный чат.")
-		positional = []string{"web"}
+		_, _ = fmt.Fprintln(stderr, "dzzzr: команда не указана — открываю редактор организатора.")
+		positional = []string{"editor"}
 	}
 
 	name := positional[0]

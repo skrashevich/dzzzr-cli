@@ -3,8 +3,11 @@
 package main
 
 import (
+	"os"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 var (
@@ -16,19 +19,8 @@ var (
 // terminal — a double-click in Explorer, a shortcut, or any parent that is not
 // a shell.
 func launchedFromGUI() bool {
-	return guiFromConsoleProcessCount(consoleProcessCount())
+	return guiFromLaunchContext(parentProcessName(), consoleProcessCount())
 }
-
-// guiFromConsoleProcessCount maps the number of processes attached to our
-// console onto the GUI verdict. Exactly one means Windows allocated a console
-// for this launch and nobody else is on it; started from cmd.exe or PowerShell
-// the shell shares the console, which puts at least two processes on it.
-//
-// Zero deliberately does NOT count as a GUI launch: it means there is no
-// console object at all, which is what a terminal that does not use one
-// reports — MSYS2 and Git Bash (mintty) run on pipes, and so does Wine. Those
-// are terminals, so they keep the usage text.
-func guiFromConsoleProcessCount(n int) bool { return n == 1 }
 
 // consoleProcessCount returns how many processes share this process's console,
 // or 0 when there is no console. Two slots are enough: GetConsoleProcessList
@@ -43,4 +35,24 @@ func consoleProcessCount() int {
 	var pids [2]uint32
 	n, _, _ := procGetConsoleProcessList.Call(uintptr(unsafe.Pointer(&pids[0])), uintptr(len(pids)))
 	return int(n)
+}
+
+// parentProcessName reads one process snapshot, so Explorer and shells can be
+// distinguished even when GetConsoleProcessList gives an ambiguous result.
+func parentProcessName() string {
+	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
+	if err != nil {
+		return ""
+	}
+	defer windows.CloseHandle(snapshot)
+	entry := windows.ProcessEntry32{Size: uint32(unsafe.Sizeof(windows.ProcessEntry32{}))}
+	var parentID uint32
+	names := make(map[uint32]string)
+	for err := windows.Process32First(snapshot, &entry); err == nil; err = windows.Process32Next(snapshot, &entry) {
+		names[entry.ProcessID] = windows.UTF16ToString(entry.ExeFile[:])
+		if entry.ProcessID == uint32(os.Getpid()) {
+			parentID = entry.ParentProcessID
+		}
+	}
+	return names[parentID]
 }
