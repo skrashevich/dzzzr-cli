@@ -13,6 +13,7 @@ import (
 
 	"github.com/sipeed/picoclaw/pkg/providers"
 	"github.com/skrashevich/dzzzr-cli/agentloop"
+	"github.com/skrashevich/dzzzr-cli/dzzzr"
 )
 
 // newTestHub builds a hub over a private HOME, with the turn runner the test
@@ -388,5 +389,52 @@ func TestWebCommandIsRegistered(t *testing.T) {
 	code, out, _ := runCLI(t, "web", "-h")
 	if code != 0 || !strings.Contains(out, "web-addr") {
 		t.Errorf("справка web не упоминает -web-addr: %s", out)
+	}
+}
+
+// «dzzzr editor» is the same server opened on the editor.
+func TestEditorCommandIsRegistered(t *testing.T) {
+	c := findCommand("editor")
+	if c == nil {
+		t.Fatal("команда editor не зарегистрирована")
+	}
+	if c.Auth != authNone {
+		t.Errorf("editor требует уровень доступа %d, ожидался authNone", c.Auth)
+	}
+	code, out, _ := runCLI(t, "editor", "-h")
+	if code != 0 || !strings.Contains(out, "web-addr") {
+		t.Errorf("справка editor не упоминает -web-addr: %s", out)
+	}
+}
+
+// The browser opens on the editor when asked to, and when the run is an
+// organizer's with no playing session behind it; otherwise the page decides.
+func TestWebStartPage(t *testing.T) {
+	cases := []struct {
+		name    string
+		session string
+		admin   bool
+		editor  bool
+		want    string
+	}{
+		{name: "bare", want: ""},
+		{name: "player", session: "TOKEN", want: ""},
+		{name: "player and organizer", session: "TOKEN", admin: true, want: ""},
+		{name: "organizer only", admin: true, want: editorFragment},
+		{name: "editor command", session: "TOKEN", editor: true, want: editorFragment},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := dzzzr.New("moscow")
+			if tc.session != "" {
+				c.SetSession(tc.session)
+			}
+			if tc.admin {
+				c.SetAdminCredentials("admin", "secret")
+			}
+			if got := webStartPage(c, tc.editor); got != tc.want {
+				t.Errorf("webStartPage = %q, ожидалось %q", got, tc.want)
+			}
+		})
 	}
 }

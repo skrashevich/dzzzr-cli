@@ -144,21 +144,37 @@ body[data-mode="editor"] .tool-chip-tooltip {
   color: var(--text-faint);
   font-size: 11px;
 }
+/* The level buttons float over the row instead of taking a column of their
+   own: a reserved column cut every title down to «1. Первый ур…» even while
+   the buttons were invisible. The title wraps to a second line instead. */
 .editor-level-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 2px;
+  position: relative;
+}
+.editor-level-row .editor-item-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
 }
 .editor-level-actions {
+  position: absolute;
+  top: 50%;
+  right: 4px;
   display: flex;
   gap: 1px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 1px var(--border-strong);
   opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
   transition: opacity 0.16s var(--ease-out);
 }
 .editor-level-row:hover .editor-level-actions,
 .editor-level-row:focus-within .editor-level-actions {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* ----------------------------------------------------------------- layout */

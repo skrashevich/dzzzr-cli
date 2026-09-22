@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -87,10 +86,9 @@ func startWeb(t *testing.T) *webHarness {
 		"HOME="+home,
 		"DZZZR_CONFIG_DIR="+filepath.Join(home, ".config", "dzzzr"),
 		"DZZZR_CITY=moscow",
-		// «dzzzr web» opens the system browser on start; shadowing the opener
-		// with a no-op keeps a local run from spawning a window. On CI neither
-		// program exists and the call fails harmlessly anyway.
-		"PATH="+noopBrowserDir(t)+string(os.PathListSeparator)+os.Getenv("PATH"),
+		// «dzzzr web» opens the system browser on start; a local run must not
+		// spawn a window on the developer's desktop.
+		"DZZZR_NO_BROWSER=1",
 	)
 	web.Stderr = os.Stderr
 	if err := web.Start(); err != nil {
@@ -104,25 +102,6 @@ func startWeb(t *testing.T) *webHarness {
 	waitForPort(t, webAddr)
 
 	return &webHarness{t: t, base: "http://" + webAddr, http: &http.Client{Timeout: 20 * time.Second}}
-}
-
-// noopBrowserDir returns a directory holding do-nothing open/xdg-open
-// programs, to be put in front of PATH.
-func noopBrowserDir(t *testing.T) string {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		// The Windows opener is rundll32, which is resolved from the system
-		// directory rather than from PATH; there is nothing to shadow.
-		return t.TempDir()
-	}
-	dir := t.TempDir()
-	for _, name := range []string{"open", "xdg-open"} {
-		path := filepath.Join(dir, name)
-		if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	return dir
 }
 
 func waitForPort(t *testing.T, addr string) {

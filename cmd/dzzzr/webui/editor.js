@@ -29,6 +29,10 @@
     levels: [],
     levelsError: '',
     levelID: null,
+    // newGame is set while «＋» composes a game that is not on the engine yet.
+    // Without it a signed-in author who has picked nothing faced the same empty
+    // form, and «Сохранить» there quietly created a game.
+    newGame: false,
     tab: 'game',
     // original is what the engine last told us; it is what «Отменить правки»
     // restores and what the empty-means-clear rule compares against.
@@ -39,7 +43,20 @@
     booting: null,
     dirty: false,
     scenario: null,
+    // routing counts the route applications in flight: while one runs, the
+    // steps it takes must not write their own intermediate addresses.
+    routing: 0,
+    // routeHash is the address the page last settled on, so an event about
+    // an address the page wrote itself is not taken for a navigation.
+    routeHash: null,
+    // pendingRoute is an address that names a game before an organizer has
+    // signed in; it is applied once the login lets the games be read.
+    pendingRoute: null,
   };
+
+  // MODE_KEY remembers the view last used, so an author who works in the
+  // editor comes back to it after restarting the program.
+  const MODE_KEY = 'dzzzr-mode';
 
   // LONG_TEXT_ROWS gives the tall fields more room than the two lines a plain
   // textarea starts with; a level's question is routinely a page of HTML.
@@ -52,25 +69,25 @@
   const ROW_COLUMNS = {
     codes: [
       { name: 'code', label: 'Код', type: 'text', width: '2fr' },
-      { name: 'synonyms', label: 'Синонимы (через #)', type: 'text', width: '2fr' },
-      { name: 'danger', label: 'Сложность', type: 'danger', width: '1fr' },
+      { name: 'synonyms', label: 'Синонимы к коду (через #)', type: 'text', width: '2fr' },
+      { name: 'danger', label: 'КО', type: 'danger', width: '1fr' },
       { name: 'sector', label: 'Сектор', type: 'int', width: '1fr' },
     ],
     bonus_codes: [
       { name: 'code', label: 'Код', type: 'text', width: '2fr' },
-      { name: 'synonyms', label: 'Синонимы (через #)', type: 'text', width: '2fr' },
-      { name: 'danger', label: 'Сложность', type: 'danger', width: '1fr' },
-      { name: 'minutes', label: 'Минуты', type: 'int', width: '1fr' },
+      { name: 'synonyms', label: 'Синонимы к коду (через #)', type: 'text', width: '2fr' },
+      { name: 'danger', label: 'КО', type: 'danger', width: '1fr' },
+      { name: 'minutes', label: 'Бонус, мин', type: 'int', width: '1fr' },
     ],
     fake_codes: [
       { name: 'code', label: 'Код', type: 'text', width: '2fr' },
-      { name: 'synonyms', label: 'Синонимы (через #)', type: 'text', width: '2fr' },
-      { name: 'penalty', label: 'Штраф, мин', type: 'int', width: '1fr' },
+      { name: 'synonyms', label: 'Синонимы к коду (через #)', type: 'text', width: '2fr' },
+      { name: 'penalty', label: 'Штраф за нахождение, мин', type: 'int', width: '1fr' },
     ],
     spoilers: [
-      { name: 'code', label: 'Код', type: 'text', width: '1.5fr' },
-      { name: 'synonyms', label: 'Синонимы (через #)', type: 'text', width: '1.5fr' },
-      { name: 'penalty', label: 'Штраф, мин', type: 'int', width: '1fr' },
+      { name: 'code', label: 'Код спойлера', type: 'text', width: '1.5fr' },
+      { name: 'synonyms', label: 'Синонимы к спойлеру (через #)', type: 'text', width: '1.5fr' },
+      { name: 'penalty', label: 'Штраф за открытие, мин', type: 'int', width: '1fr' },
       { name: 'text', label: 'Текст спойлера', type: 'text', width: '3fr' },
     ],
   };
@@ -96,6 +113,7 @@
   function setMode(mode) {
     ed.mode = mode === 'editor' ? 'editor' : 'chat';
     document.body.dataset.mode = ed.mode;
+    localStorage.setItem(MODE_KEY, ed.mode);
     for (const tab of document.querySelectorAll('.mode-tab')) {
       const active = tab.dataset.mode === ed.mode;
       tab.classList.toggle('is-active', active);
@@ -105,9 +123,113 @@
       ed.booted = true;
       ed.booting = bootEditor();
     }
+    syncRoute();
     // The caller may need the editor to be usable before it acts on it; a mode
     // switch that changes nothing resolves immediately.
     return ed.booting ?? Promise.resolve();
+  }
+
+  // ---------------------------------------------------------------- route
+
+  // The address names what is on screen: #/chat, #/editor,
+  // #/editor/game/4242, #/editor/game/4242/level/7, with «new» in place of an
+  // id for something being composed. A reload, a bookmark, the back button
+  // and «dzzzr editor» all come back to the same place through it.
+  const ROUTE = /^#\/(chat|editor)(?:\/game\/(\d+|new)(?:\/level\/(\d+|new))?)?\/?$/;
+
+  // parseRoute reads an address, or returns null for one that is not a route.
+  function parseRoute(hash) {
+    const m = ROUTE.exec(hash || '');
+    if (!m) return null;
+    const id = (v) => (v == null ? null : v === 'new' ? 'new' : Number(v));
+    return { hash, mode: m[1], game: id(m[2]), level: m[1] === 'editor' ? id(m[3]) : null };
+  }
+
+  // routeOf spells the current state as an address.
+  function routeOf() {
+    if (ed.mode !== 'editor') return '#/chat';
+    // A link waiting for the login keeps its address, so a reload before
+    // signing in still leads where the link pointed.
+    if (ed.pendingRoute && !ed.admin?.has_admin) return ed.pendingRoute.hash;
+    let hash = '#/editor';
+    if (ed.gameID != null) hash += `/game/${ed.gameID}`;
+    else if (ed.newGame) return `${hash}/game/new`;
+    else return hash;
+    if (ed.tab === 'level') hash += `/level/${ed.levelID ?? 'new'}`;
+    return hash;
+  }
+
+  // syncRoute writes the current state into the address. Each settled step
+  // gets its own history entry, so «назад» retraces what the author did;
+  // replace overwrites the entry instead, for corrections nobody chose.
+  function syncRoute(replace = false) {
+    if (ed.routing > 0) return;
+    const hash = routeOf();
+    ed.routeHash = hash;
+    if (hash === location.hash) return;
+    if (replace) history.replaceState(null, '', hash);
+    else history.pushState(null, '', hash);
+  }
+
+  // applyRoute brings the page to what an address names. Every step goes
+  // through the same functions a click does, so the unsaved-edits question
+  // is asked here too; a refused step leaves the page where it was and the
+  // address is put back to match it.
+  async function applyRoute(route) {
+    ed.routing++;
+    try {
+      await setMode(route.mode);
+      if (route.mode !== 'editor') return;
+      if (route.game != null && !ed.admin?.has_admin) {
+        // The games cannot be read yet; the login finishes the trip.
+        ed.pendingRoute = route;
+        return;
+      }
+      ed.pendingRoute = null;
+      if (route.game === 'new') {
+        if (!ed.newGame || ed.gameID != null) createGame();
+        return;
+      }
+      if (route.game == null) {
+        if (ed.gameID != null || ed.newGame) clearGame();
+        return;
+      }
+      if (route.game !== ed.gameID) {
+        // An address outlives what it names: a deleted game or one of another
+        // city would otherwise open as an empty form that «Сохранить» writes
+        // into nothing.
+        if (!ed.gamesError && !ed.games.some((g) => g.id === route.game)) {
+          toast(`Игры ${route.game} нет в списке организатора`, true);
+          return;
+        }
+        if (!(await selectGame(route.game))) return;
+      }
+      if (typeof route.level === 'number' && !ed.levelsError && !ed.levels.some((l) => l.id === route.level)) {
+        toast(`Уровня ${route.level} нет в игре ${route.game}`, true);
+        if (ed.tab !== 'game' && confirmDiscard()) setTab('game');
+        return;
+      }
+      if (route.level === 'new') {
+        if (ed.levelID != null || ed.tab !== 'level') createLevel();
+      } else if (route.level != null) {
+        if (route.level !== ed.levelID || ed.tab !== 'level') await selectLevel(route.level);
+      } else if (ed.tab !== 'game' && confirmDiscard()) {
+        setTab('game');
+      }
+    } finally {
+      ed.routing--;
+      syncRoute(true);
+    }
+  }
+
+  // onRouteEvent follows the back and forward buttons and a hand-edited
+  // address. The browser may report one navigation as both popstate and
+  // hashchange, and the page's own writes as neither; routeHash sorts both
+  // out.
+  function onRouteEvent() {
+    if (location.hash === ed.routeHash) return;
+    ed.routeHash = location.hash;
+    void applyRoute(parseRoute(location.hash) ?? { mode: 'chat', game: null, level: null });
   }
 
   // ---------------------------------------------------------------- helpers
@@ -162,7 +284,7 @@
   }
 
   // humanizeIssue prefixes a validator line with the control it is about.
-  // «codes[2].danger is required» reads as «Коды, строка 3 — «Сложность»:
+  // «codes[2].danger is required» reads as «Коды, строка 3 — «КО»:
   // codes[2].danger is required», so an author knows where to look without the
   // message itself being rewritten.
   function humanizeIssue(line) {
@@ -202,10 +324,20 @@
         ? `${ed.admin.city}: организатор ${ed.admin.login}`
         : `${ed.admin?.city ?? '—'}: организатор не задан`;
     }
-    el('editor-empty').hidden = signed;
-    el('editor-sheet').hidden = !signed;
-    el('editor-actions').hidden = !signed;
     el('editor-levels-block').hidden = !signed || ed.gameID == null;
+    renderBody();
+  }
+
+  // renderBody picks what the main area shows: the login invitation, the
+  // «pick a game» hint, or the form. The form only appears once there is
+  // something for «Сохранить» to mean.
+  function renderBody() {
+    const signed = !!ed.admin?.has_admin;
+    const editing = signed && (ed.gameID != null || ed.newGame);
+    el('editor-empty').hidden = signed;
+    el('editor-pick').hidden = !signed || editing;
+    el('editor-sheet').hidden = !editing;
+    el('editor-actions').hidden = !editing;
   }
 
   async function onAdminLogin(event) {
@@ -222,6 +354,7 @@
       renderAdminAuth();
       toast('Вход организатора выполнен');
       await loadGames();
+      if (ed.pendingRoute) await applyRoute(ed.pendingRoute);
     } catch (e) {
       // A run started with -admin-login already carries credentials, so a
       // refused browser login leaves has_admin true and the panel would
@@ -239,12 +372,16 @@
       ed.gamesError = '';
       ed.games = [];
       ed.gameID = null;
+      ed.newGame = false;
       ed.original.game = {};
       resetLevelState();
       gameActionsEnabled(false);
       renderGameList();
       el('editor-form').innerHTML = '';
+      resetTitle();
+      markDirty(false);
       renderAdminAuth();
+      syncRoute();
       toast('Организатор отключён');
     } catch (e) {
       toast(`Выход организатора: ${e.message || String(e)}`, true);
@@ -333,9 +470,12 @@
     }
   }
 
+  // selectGame reports whether the game was opened: the author may refuse to
+  // drop unsaved edits.
   async function selectGame(gameID) {
-    if (!confirmDiscard()) return;
+    if (!confirmDiscard()) return false;
     ed.gameID = gameID;
+    ed.newGame = false;
     resetLevelState();
     ed.tab = 'game';
     renderGameList();
@@ -353,11 +493,33 @@
     el('editor-subtitle').textContent = `id ${gameID}`;
     setTab('game');
     await loadLevels();
+    return true;
+  }
+
+  function resetTitle() {
+    el('editor-title').textContent = 'Редактор';
+    el('editor-subtitle').textContent = 'Ручная заливка игр, уровней и кодов';
+  }
+
+  // clearGame closes the open game without opening another, which is where
+  // #/editor leads back to.
+  function clearGame() {
+    if (!confirmDiscard()) return;
+    ed.gameID = null;
+    ed.newGame = false;
+    ed.original.game = {};
+    resetLevelState();
+    renderGameList();
+    el('editor-levels-block').hidden = true;
+    gameActionsEnabled(false);
+    resetTitle();
+    setTab('game');
   }
 
   function createGame() {
     if (!confirmDiscard()) return;
     ed.gameID = null;
+    ed.newGame = true;
     ed.gamesError = '';
     ed.original.game = {};
     resetLevelState();
@@ -392,12 +554,12 @@
       await api(`/admin/games/${ed.gameID}`, { method: 'DELETE' });
       toast('Игра удалена');
       ed.gameID = null;
+      ed.newGame = false;
       ed.original.game = {};
       resetLevelState();
       el('editor-levels-block').hidden = true;
       gameActionsEnabled(false);
-      el('editor-title').textContent = 'Редактор';
-      el('editor-subtitle').textContent = 'Ручная заливка игр, уровней и кодов';
+      resetTitle();
       setTab('game');
       await loadGames();
     } catch (e) {
@@ -493,7 +655,7 @@
   }
 
   async function selectLevel(levelID) {
-    if (!confirmDiscard()) return;
+    if (!confirmDiscard()) return false;
     ed.levelID = levelID;
     try {
       const data = await api(`/admin/games/${ed.gameID}/levels/${levelID}`);
@@ -505,6 +667,7 @@
     el('editor-tab-level').disabled = false;
     renderLevelList();
     setTab('level');
+    return true;
   }
 
   function createLevel() {
@@ -563,8 +726,10 @@
       node.setAttribute('aria-selected', active ? 'true' : 'false');
     }
     renderForm();
+    renderBody();
     setIssues(el('editor-issues'), []);
     markDirty(false);
+    syncRoute();
   }
 
   function currentSpec() {
@@ -1551,15 +1716,21 @@
       return;
     }
     const params = collectParams();
+    // Each branch clears the dirty mark as soon as the engine has taken the
+    // edits: the reload that follows asks before dropping unsaved work, and
+    // left dirty it asked whether to throw away what had just been saved — a
+    // «нет» there kept the stale form on screen.
     try {
       if (ed.tab === 'game') {
         if (ed.gameID == null) {
           const res = await api('/admin/games', { method: 'POST', body: { params } });
+          markDirty(false);
           toast(`Игра создана: ${res.id}`);
           await loadGames();
           await selectGame(res.id);
         } else {
           await api(`/admin/games/${ed.gameID}`, { method: 'PATCH', body: { params } });
+          markDirty(false);
           toast('Игра сохранена');
           await loadGames();
           await selectGame(ed.gameID);
@@ -1568,11 +1739,13 @@
       }
       if (ed.levelID == null) {
         const res = await api(`/admin/games/${ed.gameID}/levels`, { method: 'POST', body: { params } });
+        markDirty(false);
         toast(`Уровень создан: ${res.id}`);
         await loadLevels();
         await selectLevel(res.id);
       } else {
         await api(`/admin/games/${ed.gameID}/levels/${ed.levelID}`, { method: 'PATCH', body: { params } });
+        markDirty(false);
         toast('Уровень сохранён');
         await loadLevels();
         await selectLevel(ed.levelID);
@@ -1825,5 +1998,15 @@
   window.dzzzrEditor = { setMode, openScenarioFromChatFile, parseBulk, humanizeIssue };
 
   bindEditor();
-  setMode('chat');
+  // An address that names a view wins; a bare one returns to the view last
+  // used, so an author who works in the editor is not sent to the chat by
+  // every restart.
+  const initial = parseRoute(location.hash) ?? {
+    mode: localStorage.getItem(MODE_KEY) === 'editor' ? 'editor' : 'chat',
+    game: null,
+    level: null,
+  };
+  window.addEventListener('popstate', onRouteEvent);
+  window.addEventListener('hashchange', onRouteEvent);
+  void applyRoute(initial);
 })();

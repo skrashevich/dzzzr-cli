@@ -38,8 +38,23 @@ func init() {
 		Auth:  authNone,
 		Run:   cmdWeb,
 		Help:  "Браузерный интерфейс: тот же агент, что и «dzzzr chat», и редактор игр рядом с ним",
+	}, command{
+		Name:  "editor",
+		Usage: "editor [-web-addr АДРЕС]",
+		Auth:  authNone,
+		Run:   cmdEditor,
+		Help:  "Тот же браузерный интерфейс, что и «dzzzr web», но открытый сразу в редакторе игр",
 	})
 }
+
+// noBrowserEnv keeps «dzzzr web» from opening a browser window. A test or a
+// server run has nobody to show the window to, and on a desktop every run of
+// the e2e suite would otherwise pop a tab in the developer's browser.
+const noBrowserEnv = "DZZZR_NO_BROWSER"
+
+// editorFragment is the address of the editor inside the page; editor.js reads
+// it on load, so a browser opened on it lands in the editor rather than chat.
+const editorFragment = "#/editor"
 
 // webRunTurnFn carries out one turn of one chat. It is a field of the hub so
 // a test can drive the HTTP surface without a model behind it.
@@ -153,8 +168,20 @@ func (h *webHub) newMux() *http.ServeMux {
 
 // cmdWeb serves the browser conversation until the run is interrupted.
 func cmdWeb(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) error {
+	return runWeb(ctx, cfg, c, args, "web", false)
+}
+
+// cmdEditor is «dzzzr web» opened on the editor: the same server, the same
+// chats beside it, only the first screen differs.
+func cmdEditor(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) error {
+	return runWeb(ctx, cfg, c, args, "editor", true)
+}
+
+// runWeb serves the browser interface until the run is interrupted. editor
+// asks for the browser to open on the editor.
+func runWeb(ctx context.Context, cfg *config, c *dzzzr.Client, args []string, name string, editor bool) error {
 	if len(args) > 0 {
-		return fatal("команда web не принимает аргументов")
+		return fatal("команда %s не принимает аргументов", name)
 	}
 	if _, err := agenttools.ParsePolicy(cfg.security); err != nil {
 		return fatal("неверное значение -security %q: допустимы readonly, approve и full", cfg.security)
@@ -176,7 +203,19 @@ func cmdWeb(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) er
 	defer store.cancelAll()
 
 	hub := &webHub{cfg: cfg, client: c, store: store, sse: newSSEHub(), run: runWebChatTurn}
-	return serveWeb(ctx, hub, cfg.webAddr)
+	return serveWeb(ctx, hub, cfg.webAddr, webStartPage(c, editor))
+}
+
+// webStartPage picks the fragment the browser opens on. Besides an explicit
+// «dzzzr editor», a run that carries organizer credentials and no playing
+// session is an organizer at work: the chat there can only ask for a player
+// login, so the editor is the screen that has something to show. An empty
+// result leaves the choice to the page, which returns to the view last used.
+func webStartPage(c *dzzzr.Client, editor bool) string {
+	if editor || (c.Session() == "" && c.HasAdminCredentials()) {
+		return editorFragment
+	}
+	return ""
 }
 
 // webAuthorize prepares the client the browser will use, and never refuses to
@@ -221,17 +260,19 @@ func webAuthorize(ctx context.Context, cfg *config, c *dzzzr.Client) error {
 }
 
 // serveWeb runs the HTTP server until ctx is canceled, announcing the address
-// and opening a browser on it.
-func serveWeb(ctx context.Context, hub *webHub, addr string) error {
+// and opening a browser on it; page is the fragment the browser opens on.
+func serveWeb(ctx context.Context, hub *webHub, addr, page string) error {
 	if strings.TrimSpace(addr) == "" {
 		addr = defaultWebAddr
 	}
 	srv := &http.Server{Addr: addr, Handler: hub.newMux()}
 
-	url := "http://" + addr
+	url := "http://" + addr + "/" + page
 	_, _ = fmt.Fprintf(hub.cfg.stderr, "dzzzr web: %s (Ctrl+C — выход)\n", url)
-	if err := openBrowser(url); err != nil {
-		hub.cfg.debugf("браузер не открыт: %v", err)
+	if os.Getenv(noBrowserEnv) == "" {
+		if err := openBrowser(url); err != nil {
+			hub.cfg.debugf("браузер не открыт: %v", err)
+		}
 	}
 
 	errCh := make(chan error, 1)
