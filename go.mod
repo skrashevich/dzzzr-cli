@@ -16,7 +16,7 @@ require (
 	golang.org/x/image v0.46.0
 	golang.org/x/mobile v0.0.0-20260821190718-4776eadac327
 	golang.org/x/net v0.58.0
-	golang.org/x/term v0.45.0
+	golang.org/x/term v0.46.0
 	golang.org/x/text v0.42.0
 )
 
