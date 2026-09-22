@@ -1,5 +1,7 @@
 # dzzzr-cli
 
+[![Скачать последний билд — dawnl.ink](https://img.shields.io/badge/dawnl.ink-download_latest-blue)](https://dawnl.ink/skrashevich/dzzzr-cli/workflows/nightly/main)
+
 Go-библиотека и консольная утилита для движка городской игры **«Дозор Классик»**
 (`classic.dzzzr.ru`). Позволяет играть и администрировать игру без браузера, а также
 встраивать клиент движка в свой код.
