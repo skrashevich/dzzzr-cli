@@ -19,6 +19,13 @@ const state = {
   approvalPrompt: null,
   searchQuery: '',
   attachments: [],
+  // Настройки LLM (llm.js): снимок /llm/settings, выбранная вкладка, правки
+  // формы и поток входа через ChatGPT.
+  llm: null,
+  llmAuth: '',
+  llmEdited: { base_url: false, model: false },
+  codexFlow: null,
+  codexPoll: null,
 };
 
 const ROLE_RU = {
@@ -324,7 +331,7 @@ async function loadAgentConfig() {
     } else {
       const err = String(data?.error || '').trim();
       el.textContent = err ? 'модель не настроена' : '—';
-      el.title = err || 'Задайте DZZZR_LLM_API_KEY и DZZZR_LLM_MODEL';
+      el.title = err || 'Откройте ⚙ «Настройки LLM» или задайте DZZZR_LLM_API_KEY';
       el.classList.add('is-missing');
     }
   } catch (e) {
@@ -1254,6 +1261,7 @@ async function boot() {
   const savedTheme = localStorage.getItem('dzzzr-theme');
   if (savedTheme) document.documentElement.dataset.theme = savedTheme;
   bindUI();
+  bindLLMSettings();
   syncPolicyVisual();
   window.addEventListener(
     'scroll',
