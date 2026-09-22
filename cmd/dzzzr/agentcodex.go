@@ -19,27 +19,14 @@ import (
 )
 
 // codexLLMConfig uses the subscription endpoint, never the generic API key or
-// base URL. Credentials remain owned by Codex and are reread before each call.
+// base URL. The token comes from codexTokenSource and is reread before each call.
 //
 // model is the configured name, empty for the provider's default. A name the
 // user exported (strict) that the ChatGPT backend cannot serve is an error: the
 // user asked for it by name. One that only survived in the settings file from
 // an earlier transport falls back to the default instead.
 func codexLLMConfig(model string, strict bool) (agentloop.Config, error) {
-	path := os.Getenv("DZZZR_CODEX_AUTH_FILE")
-	if path == "" {
-		dir := os.Getenv("CODEX_HOME")
-		if dir == "" {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return agentloop.Config{}, err
-			}
-			dir = filepath.Join(home, ".codex")
-		}
-		path = filepath.Join(dir, "auth.json")
-	}
-	source := func() (string, string, error) { return readCodexAuth(path) }
-	token, account, err := source()
+	token, account, source, err := codexCredentials()
 	if err != nil {
 		return agentloop.Config{}, err
 	}
@@ -66,9 +53,53 @@ func codexServesModel(model string) bool {
 		(strings.HasPrefix(model, "gpt-") || strings.HasPrefix(model, "o3") || strings.HasPrefix(model, "o4"))
 }
 
-// hasCodexCredential reports whether dzzzr holds a ChatGPT sign-in of its own.
-// The web sign-in arrives with the settings panel; until then there is none.
-func hasCodexCredential() bool { return false }
+// codexCredentials picks the credential: an explicit Codex CLI file, then
+// dzzzr's own sign-in, then the file Codex CLI keeps — the path every earlier
+// release read. It returns the token to start from and the source the provider
+// rereads before each call.
+//
+// dzzzr's own sign-in starts from the shared store's snapshot: resolving the
+// configuration — which the web interface does on every status poll — must not
+// be what renews a token.
+func codexCredentials() (token, account string, source func() (string, string, error), err error) {
+	fromFile := func(path string) (string, string, func() (string, string, error), error) {
+		source := func() (string, string, error) { return readCodexAuth(path) }
+		token, account, err := source()
+		return token, account, source, err
+	}
+	if path := os.Getenv("DZZZR_CODEX_AUTH_FILE"); path != "" {
+		return fromFile(path)
+	}
+	store, err := ownCodexTokenStore()
+	if err == nil {
+		token, account := store.snapshot()
+		return token, account, store.tokenSource(), nil
+	}
+	if !errors.Is(err, errNoCodexCredential) {
+		return "", "", nil, err
+	}
+	path, err := codexCLIAuthFile()
+	if err != nil {
+		return "", "", nil, err
+	}
+	if _, statErr := os.Stat(path); statErr != nil {
+		return "", "", nil, errNoCodexCredential
+	}
+	return fromFile(path)
+}
+
+// codexCLIAuthFile is where Codex CLI keeps its sign-in.
+func codexCLIAuthFile() (string, error) {
+	dir := os.Getenv("CODEX_HOME")
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		dir = filepath.Join(home, ".codex")
+	}
+	return filepath.Join(dir, "auth.json"), nil
+}
 
 // Codex returns some failures as {"detail": ...}, whereas the SDK expects
 // {"error": ...}. Recover just that message, never dump request credentials.
