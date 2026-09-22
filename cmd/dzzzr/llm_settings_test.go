@@ -27,6 +27,15 @@ func writeTestLLMSettings(t *testing.T, s llmSettings) {
 	}
 }
 
+func mustLLMSettingsFile(t *testing.T) string {
+	t.Helper()
+	path, err := llmSettingsFile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
 // useCodexCLIFixture signs Codex CLI in, the way every dzzzr release before the
 // web sign-in expected to find it.
 func useCodexCLIFixture(t *testing.T) {

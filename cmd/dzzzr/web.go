@@ -78,6 +78,11 @@ type webHub struct {
 
 	approvalMu sync.Mutex
 	approvals  map[string]*approvalGate
+
+	// codexMu guards codexLogin, the ChatGPT sign-ins in flight. It is built
+	// on first use, so a hub assembled as a struct literal still serves them.
+	codexMu    sync.Mutex
+	codexLogin *codexLoginManager
 }
 
 // publishSSE sends one event to everyone watching a chat.
@@ -155,6 +160,13 @@ func (h *webHub) newMux() *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/auth/status", h.httpAuthStatus)
 	mux.HandleFunc("GET /api/v1/catalog/games", h.httpCatalogGames)
 	mux.HandleFunc("GET /api/v1/agent/config", h.httpAgentConfig)
+	mux.HandleFunc("/api/v1/llm/settings", h.httpLLMSettings)
+	mux.HandleFunc("GET /api/v1/llm/codex/status", h.httpCodexStatus)
+	mux.HandleFunc("POST /api/v1/llm/codex/logout", h.httpCodexLogout)
+	mux.HandleFunc("POST /api/v1/llm/codex/login", h.httpCodexLoginStart)
+	mux.HandleFunc("GET /api/v1/llm/codex/login/{id}", h.httpCodexLoginStatus)
+	mux.HandleFunc("POST /api/v1/llm/codex/login/{id}/code", h.httpCodexLoginCode)
+	mux.HandleFunc("DELETE /api/v1/llm/codex/login/{id}", h.httpCodexLoginCancel)
 	h.registerAdminRoutes(mux)
 	h.registerDraftRoutes(mux)
 

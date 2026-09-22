@@ -42,10 +42,13 @@ func codexLLMConfig(model string, strict bool) (agentloop.Config, error) {
 	}
 	return agentloop.Config{
 		Model:    cmp.Or(model, p.GetDefaultModel()),
-		BaseURL:  "https://chatgpt.com/backend-api/codex",
+		BaseURL:  codexBaseURL,
 		Provider: &codexErrorProvider{LLMProvider: p},
 	}, nil
 }
+
+// codexBaseURL is the ChatGPT backend a subscription run talks to.
+const codexBaseURL = "https://chatgpt.com/backend-api/codex"
 
 // codexServesModel reports whether the ChatGPT backend serves a model name.
 func codexServesModel(model string) bool {
