@@ -432,6 +432,13 @@ func TestChatModelListNavigation(t *testing.T) {
 	m.submit("/new")
 	second := m.chatID
 
+	// Fix the order explicitly: consecutive clock reads can be equal on Windows.
+	m.store.mu.Lock()
+	m.store.chats[first].UpdatedAt = time.Unix(1, 0).UTC()
+	m.store.chats[second].UpdatedAt = time.Unix(2, 0).UTC()
+	m.store.mu.Unlock()
+	m.refreshChats()
+
 	m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	if m.focus != focusList {
 		t.Fatal("Tab не перевёл фокус на список")
