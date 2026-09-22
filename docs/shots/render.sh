@@ -61,6 +61,11 @@ done
 echo "==> Signing in a throwaway session against the mock..."
 "$BIN_DIR/dzzzr" login -login demo -password demo -captain demo -pin 1234 >/dev/null
 
+# The screenshots show a machine already set up: the first-run wizard would
+# otherwise cover any shot taken while signed out (the login screenshot).
+mkdir -p "$DZZZR_CONFIG_DIR/onboarding"
+printf '{"completed":true}\n' >"$DZZZR_CONFIG_DIR/onboarding/state.json"
+
 echo "==> Seeding web chat fixtures..."
 CHATS_DIR="$DZZZR_CONFIG_DIR/web/chats"
 mkdir -p "$CHATS_DIR"

@@ -87,7 +87,8 @@ func (h *webHub) httpOnboardingReset(w http.ResponseWriter, r *http.Request) {
 }
 
 // onboardingStatusPayload reports whether the wizard has to run and how far
-// the two things it configures already are.
+// the two things it configures already are. It has to run until it was
+// completed once or both things are configured anyway.
 //
 // A state file that will not parse is reported rather than propagated:
 // refusing the request would make the wizard unreachable, and the user would
@@ -96,15 +97,22 @@ func (h *webHub) httpOnboardingReset(w http.ResponseWriter, r *http.Request) {
 // once more.
 func (h *webHub) onboardingStatusPayload() onboardingStatusPayload {
 	state, loadErr := loadOnboardingState()
+	steps := []onboardingStep{
+		h.onboardingLLMStep(),
+		h.onboardingAuthStep(),
+	}
+	// A user who configured dzzzr before the wizard existed — a model from the
+	// environment, a session on disk — has nothing left for it to do.
+	configured := true
+	for _, step := range steps {
+		configured = configured && step.Done
+	}
 	payload := onboardingStatusPayload{
-		Required:    !state.Completed,
+		Required:    !state.Completed && !configured,
 		Completed:   state.Completed,
 		CompletedAt: state.CompletedAt,
 		Skipped:     state.Skipped,
-		Steps: []onboardingStep{
-			h.onboardingLLMStep(),
-			h.onboardingAuthStep(),
-		},
+		Steps:       steps,
 	}
 	if loadErr != nil {
 		payload.Error = loadErr.Error()

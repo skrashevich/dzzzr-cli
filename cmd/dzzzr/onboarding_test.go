@@ -236,3 +236,23 @@ func TestWebOnboardingBrokenStateStillAnswers(t *testing.T) {
 		t.Fatalf("status %d payload %s", status, raw)
 	}
 }
+
+// A user who already runs dzzzr — a model from the environment and a session
+// on disk — upgrades without being walked through setup they have done.
+func TestWebOnboardingNotRequiredWhenAlreadyConfigured(t *testing.T) {
+	hub := playerOnboardingHub(t)
+	srv := onboardingServer(t, hub)
+	t.Setenv("DZZZR_LLM_API_KEY", "sk-env")
+	if code := webDo(t, srv, http.MethodPost, "/api/v1/auth/login", `{"login":"demo","password":"secret"}`, nil); code != http.StatusOK {
+		t.Fatalf("login %d", code)
+	}
+	_, payload, raw := onboardingRequest(t, srv, http.MethodGet, "/api/v1/onboarding", "")
+	if payload.Required || payload.Completed {
+		t.Fatalf("payload %s: want not required, yet not completed either", raw)
+	}
+	// Half the setup is not enough.
+	t.Setenv("DZZZR_LLM_API_KEY", "")
+	if _, payload, raw := onboardingRequest(t, srv, http.MethodGet, "/api/v1/onboarding", ""); !payload.Required {
+		t.Fatalf("payload %s: a missing model must still require the wizard", raw)
+	}
+}
