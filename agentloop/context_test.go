@@ -2,13 +2,76 @@ package agentloop
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"unicode/utf8"
 
 	"github.com/sipeed/picoclaw/pkg/providers"
+	"github.com/skrashevich/dzzzr-cli/agentfiles"
 )
+
+func TestLocalHTMLSourceBudgetCountsFileBytes(t *testing.T) {
+	root := t.TempDir()
+	const row = "<p>код & \"42\"</p>\n"
+	body := strings.Repeat(row, DefaultSourceContextBytes/len(row))
+	body += strings.Repeat(" ", DefaultSourceContextBytes-len(body))
+	if err := os.WriteFile(filepath.Join(root, "scenario.html"), []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	files, err := agentfiles.Tools(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result string
+	for _, tool := range files {
+		if tool.Name() == "read_local_file" {
+			r := tool.Execute(t.Context(), map[string]any{"path": "scenario.html", "max_bytes": float64(DefaultSourceContextBytes)})
+			if r.IsError {
+				t.Fatal(r.Content)
+			}
+			result = r.Content
+		}
+	}
+	var decoded struct {
+		Content   string `json:"content"`
+		Truncated bool   `json:"truncated"`
+	}
+	if err := json.Unmarshal([]byte(result), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Content != body || decoded.Truncated {
+		t.Fatal("file content lost during read")
+	}
+	if strings.Contains(result, `\u003c`) {
+		t.Fatal("HTML needlessly expanded in tool JSON")
+	}
+	messages := []providers.Message{
+		{Role: "assistant", ToolCalls: []providers.ToolCall{{ID: "html", Name: "read_local_file"}}},
+		{Role: "tool", ToolCallID: "html", Content: result},
+	}
+	p := &contextCheckingProvider{fakeProvider: fakeProvider{turns: []turn{{content: "read"}}}}
+	o := &observer{delegate: p, stats: &stats{}}
+	if _, err := o.Chat(t.Context(), messages, nil, "fake", nil); err != nil {
+		t.Fatalf("file at the documented limit rejected: %v", err)
+	}
+	if p.seen[1].Content != result {
+		t.Fatal("source result changed")
+	}
+	if _, err := boundToolHistory(messages, DefaultSourceContextBytes-1); err == nil {
+		t.Fatal("oversized source accepted")
+	}
+	messages = append(messages,
+		providers.Message{Role: "assistant", ToolCalls: []providers.ToolCall{{ID: "other", Name: "read_local_file"}}},
+		providers.Message{Role: "tool", ToolCallID: "other", Content: `{"content":"additional source"}`},
+	)
+	if _, err := boundToolHistory(messages, DefaultSourceContextBytes); err == nil {
+		t.Fatal("aggregate source overflow accepted")
+	}
+}
 
 func TestBoundToolHistoryPreservesConversationAndCallIDs(t *testing.T) {
 	messages := []providers.Message{{Role: "system", Content: "instructions"}, {Role: "user", Content: "find my games"}}

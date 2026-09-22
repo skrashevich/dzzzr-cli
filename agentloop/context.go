@@ -20,7 +20,7 @@ func boundToolHistory(messages []providers.Message, sourceBudget int) ([]provide
 	if sourceBudget <= 0 {
 		sourceBudget = DefaultSourceContextBytes
 	}
-	sourceCalls := map[string]bool{}
+	sourceCalls := map[string]string{}
 	for _, message := range messages {
 		for _, call := range message.ToolCalls {
 			name := call.Name
@@ -28,7 +28,7 @@ func boundToolHistory(messages []providers.Message, sourceBudget int) ([]provide
 				name = call.Function.Name
 			}
 			if name == "read_pdf" || name == "index_pdf" || name == "read_local_file" {
-				sourceCalls[call.ID] = true
+				sourceCalls[call.ID] = name
 			}
 		}
 	}
@@ -47,7 +47,7 @@ func boundToolHistory(messages []providers.Message, sourceBudget int) ([]provide
 	const suffix = "\n[Remaining tool result omitted from model context. This is an incomplete excerpt, not a complete JSON document. Request narrower filters or pagination for missing data.]"
 	remaining := totalBudget
 	for i := len(out) - 1; i >= 0; i-- {
-		if out[i].Role != "tool" || sourceCalls[out[i].ToolCallID] {
+		if out[i].Role != "tool" || sourceCalls[out[i].ToolCallID] != "" {
 			continue
 		}
 		text := out[i].Content
@@ -70,12 +70,25 @@ func boundToolHistory(messages []providers.Message, sourceBudget int) ([]provide
 	return out, nil
 }
 
-func sourceBytes(messages []providers.Message, sourceCalls map[string]bool) int {
+func sourceBytes(messages []providers.Message, sourceCalls map[string]string) int {
 	total := 0
 	for _, message := range messages {
-		if message.Role == "tool" && sourceCalls[message.ToolCallID] {
-			total += len(message.Content)
+		if message.Role != "tool" || sourceCalls[message.ToolCallID] == "" {
+			continue
 		}
+		// read_local_file's max_bytes limits file bytes, not the JSON envelope
+		// or escape sequences. Count that same payload here so a permitted
+		// read at the limit is not rejected on the next model call.
+		if sourceCalls[message.ToolCallID] == "read_local_file" {
+			var result struct {
+				Content *string `json:"content"`
+			}
+			if json.Unmarshal([]byte(message.Content), &result) == nil && result.Content != nil {
+				total += len(*result.Content)
+				continue
+			}
+		}
+		total += len(message.Content)
 	}
 	return total
 }
@@ -88,11 +101,11 @@ const duplicateSource = "[Identical to an earlier read of the same source; omitt
 // Only exact repeats are redundant: every source tool reads a window (a page
 // range, a byte offset), so two different results for one path are two
 // different parts of it and both must survive.
-func compactSourceResults(out []providers.Message, sourceCalls map[string]bool) {
+func compactSourceResults(out []providers.Message, sourceCalls map[string]string) {
 	paths := sourcePaths(out, sourceCalls)
 	seen := map[string]bool{}
 	for i, message := range out {
-		if message.Role != "tool" || !sourceCalls[message.ToolCallID] || message.Content == "" {
+		if message.Role != "tool" || sourceCalls[message.ToolCallID] == "" || message.Content == "" {
 			continue
 		}
 		// Two files can legitimately read alike, so the path joins the key
@@ -106,11 +119,11 @@ func compactSourceResults(out []providers.Message, sourceCalls map[string]bool) 
 	}
 }
 
-func sourcePaths(messages []providers.Message, sourceCalls map[string]bool) map[string]string {
+func sourcePaths(messages []providers.Message, sourceCalls map[string]string) map[string]string {
 	paths := map[string]string{}
 	for _, message := range messages {
 		for _, call := range message.ToolCalls {
-			if !sourceCalls[call.ID] {
+			if sourceCalls[call.ID] == "" {
 				continue
 			}
 			if path := callPath(call); path != "" {

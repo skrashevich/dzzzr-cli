@@ -96,7 +96,13 @@ func (h *webHub) turn(ctx context.Context, chatID string, policy agenttools.Poli
 		Messages:     history,
 		SystemPrompt: systemPrompt,
 	}, agentloop.Callbacks{
-		OnEvent: func(ev agentloop.Event) { h.applyEvent(chatID, ev) },
+		OnEvent: func(ev agentloop.Event) {
+			// Run returns the same failure it emits. The turn runner records
+			// it once, including setup failures that emit no event.
+			if ev.Type != agentloop.EventError {
+				h.applyEvent(chatID, ev)
+			}
+		},
 		OnStatus: func(phase, message string) {
 			h.publishSSE(chatID, "status", map[string]any{
 				"phase": phase, "message": strings.TrimSpace(message),

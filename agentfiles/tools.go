@@ -2,6 +2,7 @@ package agentfiles
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -55,11 +56,15 @@ func (t *Tool) Execute(ctx context.Context, raw map[string]any) agenttools.Resul
 	if err != nil {
 		return agenttools.Result{Content: fmt.Sprintf("%s failed: %v", t.name, err), IsError: true}
 	}
-	data, err := json.Marshal(value)
-	if err != nil {
+	var data bytes.Buffer
+	encoder := json.NewEncoder(&data)
+	// Tool results are JSON, not inline HTML. Escaping every HTML tag
+	// needlessly expands saved scenarios before they reach the model.
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(value); err != nil {
 		return agenttools.Result{Content: fmt.Sprintf("%s: cannot encode result: %v", t.name, err), IsError: true}
 	}
-	return agenttools.Result{Content: string(data)}
+	return agenttools.Result{Content: strings.TrimSuffix(data.String(), "\n")}
 }
 
 // Tools returns the file tools bound to one root directory.

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json/v2"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +17,43 @@ import (
 	"github.com/skrashevich/dzzzr-cli/agentloop"
 	"github.com/skrashevich/dzzzr-cli/dzzzr"
 )
+
+func TestWebRunTurnRecordsFailureOnce(t *testing.T) {
+	for _, setupFailure := range []bool{false, true} {
+		t.Run(fmt.Sprint(setupFailure), func(t *testing.T) {
+			hub := newTestHub(t, runWebChatTurn)
+			t.Setenv("DZZZR_LLM_API_KEY", "test")
+			useProvider(t, &scriptedProvider{failure: errors.New("source failure")})
+			if setupFailure {
+				t.Setenv("DZZZR_LLM_SOURCE_CONTEXT_BYTES", "invalid")
+			}
+			snap := hub.store.create("moscow", "readonly")
+			room := hub.sse.room(snap.ID)
+			stream := room.subscribe(32)
+			defer room.unsubscribe(stream)
+			runWebChatTurn(t.Context(), hub, snap.ID)
+			snap, _ = hub.store.get(snap.ID)
+			count := 0
+			for _, line := range snap.Lines {
+				if line.Role == chatRoleSystem && strings.HasPrefix(line.Content, "Ошибка: ") {
+					count++
+				}
+			}
+			if count != 1 || snap.Running {
+				t.Fatalf("want one error and a finished run, got %+v", snap)
+			}
+			streamErrors := 0
+			for len(stream) > 0 {
+				if strings.HasPrefix(string(<-stream), "event: error\n") {
+					streamErrors++
+				}
+			}
+			if streamErrors != 1 {
+				t.Fatalf("browser received %d errors, want one", streamErrors)
+			}
+		})
+	}
+}
 
 // newTestHub builds a hub over a private HOME, with the turn runner the test
 // asks for. A nil runner leaves the real one in place.
