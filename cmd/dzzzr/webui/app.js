@@ -1025,6 +1025,10 @@ function renderComposerPlaceholder() {
     input.placeholder = state.agentStatus.message || 'Агент отвечает…';
     return;
   }
+  if (state.detail?.draft_id) {
+    input.placeholder = 'Что изменить в общем черновике? (Enter — отправить)';
+    return;
+  }
   if (!isLoggedIn()) {
     input.placeholder = 'Войдите на сайт, чтобы агент видел игру…';
     return;
@@ -1097,6 +1101,7 @@ async function sendMessage() {
   }
   clearToolChips();
   try {
+    await window.dzzzrEditor?.flushDraft();
     const files = ready.map((a) => ({ path: a.path, name: a.name }));
     const detail = await api(`/chats/${encodeURIComponent(state.activeId)}/messages`, {
       method: 'POST',
@@ -1235,10 +1240,11 @@ window.dzzzrChat = {
   api,
   toast,
   toggleTheme,
+  activeDraft: () => state.detail?.draft_id,
   // openChat switches to the chat view and opens one chat, which is what a
   // handoff from the editor ends with.
   async openChat(chatId) {
-    window.dzzzrEditor?.setMode('chat');
+    await window.dzzzrEditor?.setMode('chat');
     await loadChats();
     await selectChat(String(chatId));
   },

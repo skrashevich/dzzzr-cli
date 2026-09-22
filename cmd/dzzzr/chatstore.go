@@ -46,6 +46,7 @@ type chatFile struct {
 // chatThread is one conversation: what the model was told, what the user saw,
 // and whether a run is in flight.
 type chatThread struct {
+	DraftID   string
 	ID        string
 	Title     string
 	City      string
@@ -63,6 +64,7 @@ type chatThread struct {
 // chatSnapshot is a copy of a thread taken under the store's lock, so a caller
 // can read it without holding anything.
 type chatSnapshot struct {
+	DraftID   string            `json:"draft_id,omitempty"`
 	ID        string            `json:"id"`
 	Title     string            `json:"title"`
 	City      string            `json:"city"`
@@ -325,6 +327,7 @@ func (s *chatStore) cancelAll() {
 // snapshotOf copies a thread. The caller must hold the store's lock.
 func snapshotOf(t *chatThread) chatSnapshot {
 	return chatSnapshot{
+		DraftID:   t.DraftID,
 		ID:        t.ID,
 		Title:     t.Title,
 		City:      t.City,

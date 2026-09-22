@@ -105,12 +105,127 @@
     spoilers: 'КОД#синоним | штраф | текст спойлера',
   };
 
+  let formValues = null;
+  let documentForLevel = null;
+  let rememberedDraft = null;
+  const selectionKey = 'dzzzr-editor-selection';
+  const drafts = window.createDraftSync({
+    api,
+    read: collectDraftParams,
+    render(params) {
+      const active = document.activeElement;
+      const field = active?.closest('.editor-field');
+      const index = field ? [...field.querySelectorAll('input,textarea,[contenteditable]')].indexOf(active) : -1;
+      const range = [active?.selectionStart, active?.selectionEnd];
+      const fieldName = field?.dataset.field;
+      const sourceFields = [...el('editor-form').querySelectorAll('.editor-rich-source')].filter((node) => !node.hidden).map((node) => node.closest('.editor-field').dataset.field);
+      formValues = params;
+      renderForm();
+      for (const name of sourceFields) {
+        const wrap = el('editor-form').querySelector(`[data-field="${name}"]`);
+        const source = wrap?.querySelector('.editor-rich-source');
+        if (source?.hidden) [...wrap.querySelectorAll('button')].find((button) => button.textContent === 'HTML')?.click();
+      }
+      if (fieldName && index >= 0) {
+        const next = el('editor-form').querySelector(`[data-field="${fieldName}"]`)?.querySelectorAll('input,textarea,[contenteditable]')[index];
+        next?.focus({ preventScroll: true });
+        if (range[0] != null && next?.setSelectionRange) next.setSelectionRange(...range);
+      }
+    },
+    status(text) {
+      const node = el('editor-dirty');
+      node.hidden = false;
+      node.textContent = text;
+    },
+    changed(draft, doc) {
+      ed.gameID = draft.game_id || null;
+      ed.newGame = !draft.game_id;
+      if (doc.kind === 'level') ed.levelID = doc.level_id || null;
+      ed.original[doc.kind] = structuredClone(doc.base);
+      localStorage.setItem(selectionKey, JSON.stringify({ draft: draft.id, document: doc.id }));
+      el('btn-editor-ask').disabled = false;
+      renderDraftLevels();
+    },
+  });
+
+  function collectDraftParams() {
+    const params = {};
+    for (const wrap of el('editor-form').querySelectorAll('.editor-field')) {
+      const name = wrap.dataset.field;
+      const type = wrap.dataset.type;
+      if (type === 'bool') params[name] = wrap.querySelector('input').checked;
+      else if (ROW_COLUMNS[type]) params[name] = collectRows(wrap, ROW_COLUMNS[type]);
+      else if (type === 'strings') {
+        params[name] = [...wrap.querySelectorAll('input[data-col=value]')].map((i) => i.value);
+      } else if (type === 'html') params[name] = wrap.querySelector('.editor-rich-source').value;
+      else {
+        const value = wrap.querySelector('input,textarea').value;
+        params[name] = type === 'int' && value !== '' ? Number(value) : value;
+      }
+    }
+    return params;
+  }
+
+  async function openDocument() {
+    if (!ed.newGame && ed.gameID == null) { formValues = null; return; }
+    const existing = drafts.draft;
+    const sameGame = existing && existing.game_id === (ed.gameID ?? 0);
+    const data = await api('/admin/drafts/open', { method: 'POST', body: {
+      draft_id: sameGame ? existing.id : rememberedDraft ?? '',
+      game_id: ed.gameID ?? 0, kind: ed.tab, level_id: ed.tab === 'level' ? ed.levelID ?? 0 : 0,
+      document_id: ed.tab === 'level' ? documentForLevel ?? '' : '',
+      params: currentValues() ?? {},
+    } });
+    rememberedDraft = null;
+    await drafts.attach(data);
+    if (ed.tab === 'level') documentForLevel = drafts.doc.id;
+  }
+
+  async function openDraftSelection(draftID, documentID) {
+    if (!(await confirmDiscard())) return;
+    const data = await api(`/admin/drafts/${draftID}`);
+    const doc = data.documents[documentID ?? data.active];
+    if (!doc) throw new Error('Документ черновика не найден');
+    await drafts.detach();
+    ed.gameID = data.game_id || null;
+    ed.newGame = !data.game_id;
+    ed.levelID = doc.level_id || null;
+    ed.original[doc.kind] = structuredClone(doc.base);
+    documentForLevel = doc.kind === 'level' ? doc.id : null;
+    rememberedDraft = data.id;
+    ed.tab = doc.kind;
+    el('editor-tab-level').disabled = doc.kind !== 'level';
+    el('editor-title').textContent = data.game_id ? `Игра ${data.game_id}` : 'Новая игра';
+    gameActionsEnabled(!!data.game_id);
+    await setTab(doc.kind);
+    await loadLevels();
+  }
+
+  function renderDraftLevels() {
+    const old = el('editor-level-list').querySelectorAll('[data-draft-document]');
+    for (const node of old) node.remove();
+    if (!drafts.draft) return;
+    for (const doc of Object.values(drafts.draft.documents)) {
+      if (doc.kind !== 'level' || doc.level_id) continue;
+      const li = document.createElement('li');
+      li.dataset.draftDocument = doc.id;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'editor-item';
+      btn.textContent = `${doc.params.title || 'Новое задание'} · черновик`;
+      btn.addEventListener('click', () => void openDraftSelection(drafts.draft.id, doc.id).catch((e) => toast(e.message, true)));
+      li.append(btn); el('editor-level-list').append(li);
+    }
+    el('editor-levels-block').hidden = false;
+  }
+
   // ---------------------------------------------------------------- mode
 
   // setMode swaps the whole page between the chat and the editor. The two views
   // share the sidebar and the window, so the switch is a body attribute the
   // stylesheet reads rather than a re-render.
-  function setMode(mode) {
+  async function setMode(mode) {
+    const previousMode = ed.mode;
+    if (mode !== ed.mode && !(await confirmDiscard())) return;
     ed.mode = mode === 'editor' ? 'editor' : 'chat';
     document.body.dataset.mode = ed.mode;
     localStorage.setItem(MODE_KEY, ed.mode);
@@ -126,7 +241,12 @@
     syncRoute();
     // The caller may need the editor to be usable before it acts on it; a mode
     // switch that changes nothing resolves immediately.
-    return ed.booting ?? Promise.resolve();
+    await (ed.booting ?? Promise.resolve());
+    if (ed.mode === 'editor') {
+      const linked = window.dzzzrChat.activeDraft?.();
+      if (previousMode === 'chat' && linked && linked !== drafts.draft?.id) await openDraftSelection(linked);
+      else await drafts.flush();
+    }
   }
 
   // ---------------------------------------------------------------- route
@@ -187,11 +307,11 @@
       }
       ed.pendingRoute = null;
       if (route.game === 'new') {
-        if (!ed.newGame || ed.gameID != null) createGame();
+        if (!ed.newGame || ed.gameID != null) await createGame();
         return;
       }
       if (route.game == null) {
-        if (ed.gameID != null || ed.newGame) clearGame();
+        if (ed.gameID != null || ed.newGame) await clearGame();
         return;
       }
       if (route.game !== ed.gameID) {
@@ -206,15 +326,15 @@
       }
       if (typeof route.level === 'number' && !ed.levelsError && !ed.levels.some((l) => l.id === route.level)) {
         toast(`Уровня ${route.level} нет в игре ${route.game}`, true);
-        if (ed.tab !== 'game' && confirmDiscard()) setTab('game');
+        if (ed.tab !== 'game' && await confirmDiscard()) await setTab('game');
         return;
       }
       if (route.level === 'new') {
-        if (ed.levelID != null || ed.tab !== 'level') createLevel();
+        if (ed.levelID != null || ed.tab !== 'level') await createLevel();
       } else if (route.level != null) {
         if (route.level !== ed.levelID || ed.tab !== 'level') await selectLevel(route.level);
-      } else if (ed.tab !== 'game' && confirmDiscard()) {
-        setTab('game');
+      } else if (ed.tab !== 'game' && await confirmDiscard()) {
+        await setTab('game');
       }
     } finally {
       ed.routing--;
@@ -252,16 +372,17 @@
   function markDirty(on) {
     ed.dirty = !!on;
     const node = el('editor-dirty');
-    if (node) node.hidden = !on;
+    if (node) node.hidden = false;
+    if (on) drafts.schedule();
   }
 
   // confirmDiscard guards every path that rebuilds the form from what the
   // engine last said. Without it the «Есть несохранённые правки» banner warned
   // about a loss and was then cleared as part of causing it: switching tabs or
   // picking another level threw the work away without a word.
-  function confirmDiscard() {
-    if (!ed.dirty) return true;
-    return window.confirm('В форме есть несохранённые правки. Отбросить их?');
+  async function confirmDiscard() {
+    try { await drafts.flush(); return true; }
+    catch (e) { toast(e.message, true); return false; }
   }
 
   // ISSUE_PATH picks the «поле[строка].колонка» or «поле» a validator message
@@ -473,7 +594,9 @@
   // selectGame reports whether the game was opened: the author may refuse to
   // drop unsaved edits.
   async function selectGame(gameID) {
-    if (!confirmDiscard()) return false;
+    if (!(await confirmDiscard())) return false;
+    await drafts.detach();
+    documentForLevel = null;
     ed.gameID = gameID;
     ed.newGame = false;
     resetLevelState();
@@ -491,7 +614,7 @@
     const g = ed.games.find((x) => x.id === gameID);
     el('editor-title').textContent = g?.name || `Игра ${gameID}`;
     el('editor-subtitle').textContent = `id ${gameID}`;
-    setTab('game');
+    await setTab('game');
     await loadLevels();
     return true;
   }
@@ -503,8 +626,9 @@
 
   // clearGame closes the open game without opening another, which is where
   // #/editor leads back to.
-  function clearGame() {
-    if (!confirmDiscard()) return;
+  async function clearGame() {
+    if (!(await confirmDiscard())) return;
+    await drafts.detach();
     ed.gameID = null;
     ed.newGame = false;
     ed.original.game = {};
@@ -513,12 +637,14 @@
     el('editor-levels-block').hidden = true;
     gameActionsEnabled(false);
     resetTitle();
-    setTab('game');
+    await setTab('game');
   }
 
-  function createGame() {
-    if (!confirmDiscard()) return;
+  async function createGame() {
+    if (!(await confirmDiscard())) return;
     ed.gameID = null;
+    await drafts.detach();
+    documentForLevel = null;
     ed.newGame = true;
     ed.gamesError = '';
     ed.original.game = {};
@@ -528,7 +654,7 @@
     gameActionsEnabled(false);
     el('editor-title').textContent = 'Новая игра';
     el('editor-subtitle').textContent = 'Название, дата и время обязательны';
-    setTab('game');
+    await setTab('game');
   }
 
   async function copyGame() {
@@ -560,7 +686,7 @@
       el('editor-levels-block').hidden = true;
       gameActionsEnabled(false);
       resetTitle();
-      setTab('game');
+      await setTab('game');
       await loadGames();
     } catch (e) {
       toast(`Удаление: ${e.message || String(e)}`, true);
@@ -586,6 +712,7 @@
       toast(`Уровни: ${ed.levelsError}`, true);
     }
     renderLevelList();
+    renderDraftLevels();
   }
 
   function renderLevelList() {
@@ -655,7 +782,9 @@
   }
 
   async function selectLevel(levelID) {
-    if (!confirmDiscard()) return false;
+    if (!(await confirmDiscard())) return false;
+    await drafts.flush();
+    documentForLevel = null;
     ed.levelID = levelID;
     try {
       const data = await api(`/admin/games/${ed.gameID}/levels/${levelID}`);
@@ -666,21 +795,22 @@
     }
     el('editor-tab-level').disabled = false;
     renderLevelList();
-    setTab('level');
+    await setTab('level');
     return true;
   }
 
-  function createLevel() {
-    if (ed.gameID == null) {
+  async function createLevel() {
+    if (ed.gameID == null && !ed.newGame) {
       toast('Сначала выберите игру', true);
       return;
     }
-    if (!confirmDiscard()) return;
+    if (!(await confirmDiscard())) return;
+    documentForLevel = null;
     ed.levelID = null;
     ed.original.level = {};
     el('editor-tab-level').disabled = false;
     renderLevelList();
-    setTab('level');
+    await setTab('level');
   }
 
   async function moveLevel(levelID, up) {
@@ -708,7 +838,7 @@
         ed.levelID = null;
         ed.original.level = {};
         el('editor-tab-level').disabled = true;
-        setTab('game');
+        await setTab('game');
       }
       await loadLevels();
     } catch (e) {
@@ -718,14 +848,29 @@
 
   // ---------------------------------------------------------------- form
 
-  function setTab(tab) {
+  async function setTab(tab) {
+    el('editor-form').inert = true;
+    await drafts.pause();
     ed.tab = tab;
+    formValues = null;
     for (const node of document.querySelectorAll('.editor-tab')) {
       const active = node.dataset.target === tab;
       node.classList.toggle('is-active', active);
       node.setAttribute('aria-selected', active ? 'true' : 'false');
     }
     renderForm();
+    try {
+      await openDocument();
+    } catch (e) {
+      if (drafts.doc) {
+        ed.gameID = drafts.draft.game_id || null;
+        ed.newGame = !drafts.draft.game_id;
+        ed.tab = drafts.doc.kind;
+        ed.levelID = drafts.doc.level_id || null;
+        await drafts.attach(drafts.draft, drafts.doc.id);
+      }
+      toast(`Черновик не открыт: ${e.message}`, true);
+    } finally { el('editor-form').inert = false; }
     renderBody();
     setIssues(el('editor-issues'), []);
     markDirty(false);
@@ -745,7 +890,7 @@
     form.innerHTML = '';
     const spec = currentSpec();
     if (!spec) return;
-    const values = currentValues() ?? {};
+    const values = formValues ?? currentValues() ?? {};
     for (const group of spec.form?.groups ?? []) {
       form.appendChild(renderGroup(group, values));
     }
@@ -1711,53 +1856,28 @@
   }
 
   async function saveCurrent() {
-    if (!(await validateCurrent())) {
-      toast('Проверка не пройдена, на движок ничего не отправлено', true);
-      return;
-    }
-    const params = collectParams();
-    // Each branch clears the dirty mark as soon as the engine has taken the
-    // edits: the reload that follows asks before dropping unsaved work, and
-    // left dirty it asked whether to throw away what had just been saved — a
-    // «нет» there kept the stale form on screen.
+    el('btn-editor-save').disabled = true;
+    for (const id of ['view-editor', 'editor-nav', 'mode-switch']) el(id).inert = true;
     try {
-      if (ed.tab === 'game') {
-        if (ed.gameID == null) {
-          const res = await api('/admin/games', { method: 'POST', body: { params } });
-          markDirty(false);
-          toast(`Игра создана: ${res.id}`);
-          await loadGames();
-          await selectGame(res.id);
-        } else {
-          await api(`/admin/games/${ed.gameID}`, { method: 'PATCH', body: { params } });
-          markDirty(false);
-          toast('Игра сохранена');
-          await loadGames();
-          await selectGame(ed.gameID);
-        }
-        return;
-      }
-      if (ed.levelID == null) {
-        const res = await api(`/admin/games/${ed.gameID}/levels`, { method: 'POST', body: { params } });
-        markDirty(false);
-        toast(`Уровень создан: ${res.id}`);
-        await loadLevels();
-        await selectLevel(res.id);
-      } else {
-        await api(`/admin/games/${ed.gameID}/levels/${ed.levelID}`, { method: 'PATCH', body: { params } });
-        markDirty(false);
-        toast('Уровень сохранён');
-        await loadLevels();
-        await selectLevel(ed.levelID);
-      }
+      const data = await drafts.publish();
+      ed.gameID = data.game_id || null;
+      ed.newGame = !data.game_id;
+      ed.levelID = drafts.doc.level_id || null;
+      gameActionsEnabled(!!data.game_id);
+      syncRoute();
+      await loadGames();
+      await loadLevels();
+      toast('Изменения сохранены в игру');
     } catch (e) {
-      setIssues(el('editor-issues'), [e.message || String(e)]);
-      toast(`Сохранение: ${e.message || String(e)}`, true);
-    }
+      setIssues(el('editor-issues'), [e.message]);
+      toast(`Сохранение: ${e.message}`, true);
+    } finally { el('btn-editor-save').disabled = false; for (const id of ['view-editor', 'editor-nav', 'mode-switch']) el(id).inert = false; }
   }
 
   function revertCurrent() {
+    formValues = structuredClone(currentValues());
     renderForm();
+    drafts.schedule();
     setIssues(el('editor-issues'), []);
     markDirty(false);
     toast('Правки отменены');
@@ -1932,18 +2052,12 @@
   // askAgent hands the editor's context to the chat. The text is built on the
   // server so the two views cannot disagree about which game is meant.
   async function askAgent() {
-    if (ed.gameID == null) return;
-    const note = window.prompt('Что спросить у агента об этой игре?', '');
-    if (note === null) return;
-    const body = { game_id: ed.gameID, note };
-    if (ed.levelID != null) body.level_id = ed.levelID;
     try {
-      const chat = await api('/admin/handoff', { method: 'POST', body });
+      await drafts.flush();
+      if (!drafts.draft) return;
+      const chat = await api(`/admin/drafts/${drafts.draft.id}/chat`, { method: 'POST', body: {} });
       await window.dzzzrChat.openChat(chat.id);
-      toast('Чат с контекстом игры открыт');
-    } catch (e) {
-      toast(`Передача агенту: ${e.message || String(e)}`, true);
-    }
+    } catch (e) { toast(`Передача агенту: ${e.message}`, true); }
   }
 
   // ---------------------------------------------------------------- boot
@@ -1961,18 +2075,21 @@
       toast(`Статус организатора: ${e.message || String(e)}`, true);
     }
     if (ed.admin?.has_admin) await loadGames();
-    setTab('game');
+    await setTab('game');
   }
 
   function bindEditor() {
     for (const tab of document.querySelectorAll('.mode-tab')) {
-      tab.addEventListener('click', () => setMode(tab.dataset.mode));
+      tab.addEventListener('click', () => {
+        const action = tab.dataset.mode === 'chat' && drafts.draft ? askAgent() : setMode(tab.dataset.mode);
+        void action.catch((e) => toast(e.message, true));
+      });
     }
     for (const tab of document.querySelectorAll('.editor-tab')) {
-      tab.addEventListener('click', () => {
+      tab.addEventListener('click', async () => {
         if (tab.disabled || tab.dataset.target === ed.tab) return;
-        if (!confirmDiscard()) return;
-        setTab(tab.dataset.target);
+        if (!(await confirmDiscard())) return;
+        await setTab(tab.dataset.target);
       });
     }
     el('admin-login-form').addEventListener('submit', onAdminLogin);
@@ -1995,8 +2112,13 @@
     el('editor-form').addEventListener('input', () => markDirty(true));
   }
 
-  window.dzzzrEditor = { setMode, openScenarioFromChatFile, parseBulk, humanizeIssue };
+  window.dzzzrEditor = { flushDraft: () => drafts.flush(), setMode, openScenarioFromChatFile, parseBulk, humanizeIssue };
 
+  setInterval(() => {
+    if (ed.mode === 'editor' && drafts.doc && document.visibilityState === 'visible') {
+      void drafts.flush().catch(() => {});
+    }
+  }, 2000);
   bindEditor();
   // An address that names a view wins; a bare one returns to the view last
   // used, so an author who works in the editor is not sent to the chat by
@@ -2008,5 +2130,22 @@
   };
   window.addEventListener('popstate', onRouteEvent);
   window.addEventListener('hashchange', onRouteEvent);
-  void applyRoute(initial);
+  void (async () => {
+    const saved = localStorage.getItem(selectionKey);
+    if (saved) {
+      try {
+        const selection = JSON.parse(saved);
+        const data = await api(`/admin/drafts/${selection.draft}`);
+        const doc = data.documents[selection.document];
+        const sameLevel = initial.level === 'new' ? doc?.kind === 'level' && !doc.level_id : initial.level != null ? doc?.level_id === initial.level : doc?.kind === 'game';
+        if (initial.game == null || initial.game === 'new' && !data.game_id || initial.game === data.game_id && sameLevel) {
+          await setMode('editor');
+          await openDraftSelection(selection.draft, selection.document);
+          await setMode(initial.mode);
+          return;
+        }
+      } catch (e) { toast(`Восстановление черновика: ${e.message}`, true); }
+    }
+    await applyRoute(initial);
+  })();
 })();

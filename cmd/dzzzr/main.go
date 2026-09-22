@@ -132,7 +132,7 @@ func (cfg *config) registerFlags(fs *flag.FlagSet) {
 	fs.StringVar(&cfg.pin, "pin", os.Getenv("DZZZR_PIN"), "игровой PIN команды, env DZZZR_PIN")
 	fs.StringVar(&cfg.adminLogin, "admin-login", os.Getenv("DZZZR_ADMIN_LOGIN"), "логин организатора, env DZZZR_ADMIN_LOGIN")
 	fs.StringVar(&cfg.adminPassword, "admin-password", os.Getenv("DZZZR_ADMIN_PASSWORD"), "пароль организатора, env DZZZR_ADMIN_PASSWORD")
-	fs.StringVar(&cfg.baseURL, "base-url", os.Getenv("DZZZR_BASE_URL"), "адрес движка вместо стандартного, env DZZZR_BASE_URL")
+	fs.StringVar(&cfg.baseURL, "base-url", os.Getenv("DZZZR_BASE_URL"), "адрес движка (по умолчанию https://classic.dzzzr.ru/moscow/, путь задаётся -city), env DZZZR_BASE_URL")
 	fs.BoolVar(&cfg.useHTTP, "http", false, "обращаться к стандартному хосту по http, а не https")
 	fs.BoolVar(&cfg.insecure, "insecure", envBool("DZZZR_INSECURE"), "не проверять TLS-сертификат, env DZZZR_INSECURE")
 	fs.BoolVar(&cfg.jsonOut, "json", false, "выводить данные в JSON")

@@ -74,6 +74,7 @@ type webHub struct {
 	// for concurrent use, and holding the lock for a whole run would leave the
 	// browser unable to even ask who is signed in.
 	clientMu sync.Mutex
+	draftMu  sync.Mutex
 
 	approvalMu sync.Mutex
 	approvals  map[string]*approvalGate
@@ -155,6 +156,7 @@ func (h *webHub) newMux() *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/catalog/games", h.httpCatalogGames)
 	mux.HandleFunc("GET /api/v1/agent/config", h.httpAgentConfig)
 	h.registerAdminRoutes(mux)
+	h.registerDraftRoutes(mux)
 
 	sub, err := fs.Sub(webUIFiles, "webui")
 	if err != nil {

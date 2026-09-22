@@ -184,10 +184,10 @@
         <footer class="editor-actions" id="editor-actions" hidden>
           <div class="editor-issues" id="editor-issues" hidden role="status" aria-live="polite"></div>
           <div class="editor-actions-row">
-            <span class="editor-dirty" id="editor-dirty" hidden>Есть несохранённые правки</span>
+            <span class="editor-dirty" id="editor-dirty" hidden>Черновик</span>
             <button type="button" class="btn btn-ghost btn-sm" id="btn-editor-validate">Проверить</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-editor-revert">Отменить правки</button>
-            <button type="button" class="btn btn-primary btn-sm" id="btn-editor-save">Сохранить</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-editor-save">Сохранить в игру</button>
           </div>
         </footer>
       </section>
@@ -224,6 +224,7 @@
   <div id="tool-chip-tooltip" class="tool-chip-tooltip" hidden role="tooltip"></div>
   <div class="toast" id="toast" role="status" aria-live="assertive"></div>
   <script src="app.js" defer></script>
+  <script src="drafts.js" defer></script>
   <script src="editor.js" defer></script>
 </body>
 </html>

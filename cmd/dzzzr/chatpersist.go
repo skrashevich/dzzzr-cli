@@ -26,6 +26,7 @@ func chatsDir() (string, error) {
 
 // storedChat is a conversation as it is written to disk.
 type storedChat struct {
+	DraftID   string              `json:"draft_id,omitempty"`
 	ID        string              `json:"id"`
 	Title     string              `json:"title"`
 	City      string              `json:"city"`
@@ -80,6 +81,7 @@ func (s *chatStore) loadFromDisk(debugf func(string, ...any)) error {
 		}
 		s.chats[sc.ID] = &chatThread{
 			ID:        sc.ID,
+			DraftID:   sc.DraftID,
 			Title:     sc.Title,
 			City:      sc.City,
 			Policy:    policy,
@@ -103,6 +105,7 @@ func (s *chatStore) persist(id string) error {
 	if ok {
 		sc = storedChat{
 			ID:        t.ID,
+			DraftID:   t.DraftID,
 			Title:     t.Title,
 			City:      t.City,
 			Policy:    t.Policy,

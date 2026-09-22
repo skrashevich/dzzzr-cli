@@ -36,6 +36,9 @@ jobs:
       - name: End-to-end (CLI against the mock server)
         run: go test -tags e2e ./e2e -count=1 -v
 
+      - name: Draft synchronization
+        run: node --test scripts/test-drafts.cjs
+
       - name: Check formatting
         if: matrix.runner == 'ubuntu-latest'
         run: |
