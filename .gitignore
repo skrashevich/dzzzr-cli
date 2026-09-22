@@ -40,6 +40,7 @@ dist/
 /docs/design.md
 /docs/engine-notes.md
 /docs/implementation-plan.md
+/docs/superpowers/
 
 # Local game material: PDF scenarios, engine dumps, field mappings. This is
 # other people's game content, pulled in only for local testing — never commit
