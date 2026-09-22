@@ -2112,7 +2112,7 @@
     el('editor-form').addEventListener('input', () => markDirty(true));
   }
 
-  window.dzzzrEditor = { flushDraft: () => drafts.flush(), setMode, openScenarioFromChatFile, parseBulk, humanizeIssue };
+  window.dzzzrEditor = { flushDraft: () => drafts.flush(), setMode, openScenarioFromChatFile, parseBulk, humanizeIssue, refreshAdmin: loadAdminStatus };
 
   setInterval(() => {
     if (ed.mode === 'editor' && drafts.doc && document.visibilityState === 'visible') {

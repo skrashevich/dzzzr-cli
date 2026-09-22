@@ -111,6 +111,14 @@ func uiIDReferenced(js, id string) bool {
 	if _, field, ok := strings.Cut(id, "-override-"); ok {
 		return strings.Contains(js, "-override-") && strings.Contains(js, "'"+field+"'")
 	}
+	// A family of ids built from one template: `onboarding-llm-pane-${kind}`.
+	if i := strings.LastIndex(id, "-"); i > 0 && strings.Contains(js, id[:i+1]+"${") {
+		return strings.Contains(js, "'"+id[i+1:]+"'")
+	}
+	// A form field is read by its name: fd.get('login').
+	if i := strings.LastIndex(id, "-"); i > 0 && strings.Contains(js, "fd.get('"+id[i+1:]+"')") {
+		return true
+	}
 	return false
 }
 

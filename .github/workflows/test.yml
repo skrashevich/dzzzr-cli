@@ -39,6 +39,9 @@ jobs:
       - name: Draft synchronization
         run: node --test scripts/test-drafts.cjs
 
+      - name: Onboarding wizard
+        run: node --test cmd/dzzzr/webui_tests/onboarding.test.cjs
+
       - name: Check formatting
         if: matrix.runner == 'ubuntu-latest'
         run: |

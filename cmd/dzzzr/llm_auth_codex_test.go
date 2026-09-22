@@ -656,7 +656,6 @@ func TestCodexTokenStoreSurvivesAFailedPersist(t *testing.T) {
 	}
 }
 
-
 // --- dzzzr: which sign-in the agent runs on ---
 
 // Every dzzzr release before the web sign-in read Codex CLI's file; a user who

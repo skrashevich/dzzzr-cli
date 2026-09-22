@@ -131,7 +131,11 @@ func (m *polzaManager) start(model string) (*polzaFlow, error) {
 	f.authorizeURL = u.String()
 	m.flows[f.id] = f
 	f.mu.Lock()
-	f.timer = time.AfterFunc(m.ttl, func() { f.mu.Lock(); defer f.mu.Unlock(); m.finishLocked(f, errors.New("время входа в Polza истекло")) })
+	f.timer = time.AfterFunc(m.ttl, func() {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+		m.finishLocked(f, errors.New("время входа в Polza истекло"))
+	})
 	f.mu.Unlock()
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /auth/polza/callback", func(w http.ResponseWriter, r *http.Request) {

@@ -26,6 +26,8 @@ const state = {
   llmEdited: { base_url: false, model: false },
   codexFlow: null,
   codexPoll: null,
+  // Мастер первого запуска (onboarding.js).
+  onboarding: { step: 'welcome', status: null, llmAuth: 'polza', role: '', busy: false },
 };
 
 const ROLE_RU = {
@@ -1262,6 +1264,7 @@ async function boot() {
   if (savedTheme) document.documentElement.dataset.theme = savedTheme;
   bindUI();
   bindLLMSettings();
+  bindOnboarding();
   syncPolicyVisual();
   window.addEventListener(
     'scroll',
@@ -1290,6 +1293,7 @@ async function boot() {
   } else {
     refreshSendState();
   }
+  await initOnboarding();
 }
 
 boot();

@@ -349,7 +349,6 @@ func TestWebLLMSettingsEnvOverrideWithoutStoredValue(t *testing.T) {
 	}
 }
 
-
 func TestWebLLMSettingsRejectsOtherMethods(t *testing.T) {
 	srv := newLLMSettingsTestServer(t)
 
