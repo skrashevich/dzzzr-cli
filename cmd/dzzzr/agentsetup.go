@@ -121,45 +121,43 @@ func llmConfig() (agentloop.Config, error) {
 }
 
 func resolveLLMConfig() (agentloop.Config, error) {
-	switch provider := strings.ToLower(strings.TrimSpace(os.Getenv("DZZZR_LLM_PROVIDER"))); provider {
-	case "codex", "chatgpt":
-		out, err := codexLLMConfig()
+	stored, err := loadLLMSettings()
+	if err != nil {
+		return agentloop.Config{}, err
+	}
+	method, err := normalizeAuthMethod(resolveLLMField(llmAuthEnvVars, stored.AuthMethod, "").Value)
+	if err != nil {
+		return agentloop.Config{}, fatal("%v", err)
+	}
+	apiKey := resolveLLMField(llmAPIKeyEnvVars, stored.APIKey, "").Value
+	endpoint := resolveLLMField(llmBaseURLEnvVars, stored.BaseURL, "").Value
+
+	// Without an explicit choice a ChatGPT sign-in is used only when nothing
+	// else was configured: a key or an endpoint is a statement of intent — a
+	// local proxy needs no key — and must not be redirected to chatgpt.com.
+	if method == "" && apiKey == "" && endpoint == "" && hasCodexCredential() {
+		method = authMethodCodex
+	}
+	if method == authMethodCodex {
+		model := resolveLLMField(llmCodexModelEnvVars, stored.Model, "")
+		out, err := codexLLMConfig(model.Value, model.Source == llmSourceEnv)
 		if err == nil && agentConfigHook != nil {
 			agentConfigHook(&out)
 		}
 		return out, err
-	case "", "openai", "openrouter":
-	default:
-		return agentloop.Config{}, fatal("неизвестный DZZZR_LLM_PROVIDER %q: используйте openai, openrouter или codex", provider)
 	}
-	baseURL := cmp.Or(
-		os.Getenv("DZZZR_LLM_BASE_URL"),
-		os.Getenv("LLM_BASE_URL"),
-		os.Getenv("OPENROUTER_BASE_URL"),
-		defaultLLMBaseURL,
-	)
-	apiKey := cmp.Or(
-		os.Getenv("DZZZR_LLM_API_KEY"),
-		os.Getenv("LLM_API_KEY"),
-		os.Getenv("OPENROUTER_API_KEY"),
-	)
-	model := cmp.Or(
-		os.Getenv("DZZZR_LLM_MODEL"),
-		os.Getenv("LLM_MODEL"),
-		os.Getenv("OPENROUTER_MODEL"),
-		defaultLLMModel,
-	)
 
+	baseURL := cmp.Or(endpoint, defaultLLMBaseURL)
 	// A proxy on this machine usually wants no key at all; anywhere else a
 	// missing key only produces a rejected request several seconds later.
 	if apiKey == "" && !isLocalEndpoint(baseURL) {
 		return agentloop.Config{}, fatal(
-			"не задан ключ модели: укажите DZZZR_LLM_API_KEY (или LLM_API_KEY, OPENROUTER_API_KEY)")
+			"не задан ключ модели: настройте модель в веб-интерфейсе (⚙ Настройки LLM) или укажите DZZZR_LLM_API_KEY (или LLM_API_KEY, OPENROUTER_API_KEY)")
 	}
 
 	out := agentloop.Config{
 		APIKey:    apiKey,
-		Model:     model,
+		Model:     resolveLLMField(llmModelEnvVars, stored.Model, defaultLLMModel).Value,
 		BaseURL:   baseURL,
 		UserAgent: "dzzzr-cli/" + version,
 	}

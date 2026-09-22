@@ -20,7 +20,12 @@ import (
 
 // codexLLMConfig uses the subscription endpoint, never the generic API key or
 // base URL. Credentials remain owned by Codex and are reread before each call.
-func codexLLMConfig() (agentloop.Config, error) {
+//
+// model is the configured name, empty for the provider's default. A name the
+// user exported (strict) that the ChatGPT backend cannot serve is an error: the
+// user asked for it by name. One that only survived in the settings file from
+// an earlier transport falls back to the default instead.
+func codexLLMConfig(model string, strict bool) (agentloop.Config, error) {
 	path := os.Getenv("DZZZR_CODEX_AUTH_FILE")
 	if path == "" {
 		dir := os.Getenv("CODEX_HOME")
@@ -39,19 +44,31 @@ func codexLLMConfig() (agentloop.Config, error) {
 		return agentloop.Config{}, err
 	}
 	p := providers.NewCodexProviderWithTokenSource(token, account, source)
-	model := cmp.Or(os.Getenv("DZZZR_LLM_MODEL"), os.Getenv("LLM_MODEL"), p.GetDefaultModel())
 	model = strings.ToLower(strings.TrimSpace(model))
 	model = strings.TrimPrefix(model, "openai/")
 	// PicoClaw otherwise silently substitutes its default for another family.
-	if strings.Contains(model, "/") || (!strings.HasPrefix(model, "gpt-") && !strings.HasPrefix(model, "o3") && !strings.HasPrefix(model, "o4")) {
-		return agentloop.Config{}, fatal("модель %q несовместима с Codex: задайте DZZZR_LLM_MODEL с именем модели OpenAI", model)
+	if model != "" && !codexServesModel(model) {
+		if strict {
+			return agentloop.Config{}, fatal("модель %q несовместима с Codex: задайте DZZZR_LLM_MODEL с именем модели OpenAI", model)
+		}
+		model = ""
 	}
 	return agentloop.Config{
-		Model:    model,
+		Model:    cmp.Or(model, p.GetDefaultModel()),
 		BaseURL:  "https://chatgpt.com/backend-api/codex",
 		Provider: &codexErrorProvider{LLMProvider: p},
 	}, nil
 }
+
+// codexServesModel reports whether the ChatGPT backend serves a model name.
+func codexServesModel(model string) bool {
+	return !strings.Contains(model, "/") &&
+		(strings.HasPrefix(model, "gpt-") || strings.HasPrefix(model, "o3") || strings.HasPrefix(model, "o4"))
+}
+
+// hasCodexCredential reports whether dzzzr holds a ChatGPT sign-in of its own.
+// The web sign-in arrives with the settings panel; until then there is none.
+func hasCodexCredential() bool { return false }
 
 // Codex returns some failures as {"detail": ...}, whereas the SDK expects
 // {"error": ...}. Recover just that message, never dump request credentials.
