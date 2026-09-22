@@ -1,6 +1,15 @@
 name: Nightly build
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'cmd/dzzzr/webui/**'
+      - 'gamesource/scenario.schema.json'
+      - '.github/workflows/nightly.yml'
   schedule:
     - cron: "0 3 * * *" # daily at 03:00 UTC
   workflow_dispatch:
