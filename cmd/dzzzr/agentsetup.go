@@ -31,13 +31,33 @@ const readCacheTTL = 20 * time.Second
 // not a hard error: the agent starts anyway and its tools report the
 // authentication failure, which is more useful than a process that refuses to
 // launch.
+//
+// A run given organizer credentials of its own — -admin-login and its
+// DZZZR_ADMIN_LOGIN environment twin — is its own working mode, because the
+// administration area needs no playing session. Such a run never fails here
+// either, even when a session file is present but holds no token, which is
+// what an organizer-only login leaves behind.
+//
+// What opens that mode is the run's own flags, not what the client ended up
+// carrying: saveSession writes the organizer into the city's session file, a
+// browser login in the editor writes one there too, and every later run reads
+// it back. Keyed to the client, one editor login would silently turn a wrong
+// player password into a warning for every «dzzzr chat» in that city.
 func agentAuthorize(ctx context.Context, cfg *config, c *dzzzr.Client) error {
 	path, err := sessionPath(cfg.city)
 	if err != nil {
 		return err
 	}
 	if _, statErr := os.Stat(path); statErr == nil || canSignIn(cfg) {
-		return requireAuth(ctx, cfg, c)
+		err := requireAuth(ctx, cfg, c)
+		if err == nil || cfg.adminLogin == "" {
+			return err
+		}
+		// Whatever went wrong is printed as it came: it may be a missing
+		// session, but it may equally be an engine that did not answer, and
+		// only the admin half of the run is unaffected either way.
+		_, _ = fmt.Fprintf(cfg.stderr, "Игрок не авторизован (%v); организаторской части это не мешает.\n", err)
+		return nil
 	}
 	if _, _, err := loadSession(cfg, c); err != nil {
 		return err

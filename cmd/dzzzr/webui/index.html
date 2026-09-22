@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&family=PT+Mono&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="editor.css" />
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -21,14 +22,35 @@
           <span class="brand-model" id="brand-model" title="Модель LLM">—</span>
         </div>
       </header>
-      <button type="button" class="btn btn-primary btn-block" id="btn-new-chat">
+      <div class="mode-switch" id="mode-switch" role="tablist" aria-label="Режим работы">
+        <button type="button" class="mode-tab is-active" id="mode-tab-chat" role="tab" aria-selected="true" data-mode="chat">Чат</button>
+        <button type="button" class="mode-tab" id="mode-tab-editor" role="tab" aria-selected="false" data-mode="editor">Редактор</button>
+      </div>
+      <button type="button" class="btn btn-primary btn-block chat-only" id="btn-new-chat">
         <span class="btn-label">Новый чат</span>
       </button>
-      <label class="search-wrap">
+      <label class="search-wrap chat-only">
         <span class="visually-hidden">Поиск чатов</span>
         <input type="search" class="search-input" id="chat-search" placeholder="Поиск…" aria-label="Поиск чатов" />
       </label>
-      <ul class="chat-list" id="chat-list" aria-label="Чаты"></ul>
+      <ul class="chat-list chat-only" id="chat-list" aria-label="Чаты"></ul>
+
+      <nav class="editor-nav editor-only" id="editor-nav" aria-label="Игры и уровни">
+        <div class="editor-nav-block">
+          <div class="editor-nav-head">
+            <span class="editor-nav-title">Игры</span>
+            <button type="button" class="btn btn-ghost btn-icon btn-xs" id="btn-game-new" title="Создать игру" aria-label="Создать игру">＋</button>
+          </div>
+          <ul class="editor-list" id="editor-game-list"></ul>
+        </div>
+        <div class="editor-nav-block editor-nav-levels" id="editor-levels-block" hidden>
+          <div class="editor-nav-head">
+            <span class="editor-nav-title">Уровни</span>
+            <button type="button" class="btn btn-ghost btn-icon btn-xs" id="btn-level-new" title="Добавить уровень" aria-label="Добавить уровень">＋</button>
+          </div>
+          <ul class="editor-list editor-level-list" id="editor-level-list"></ul>
+        </div>
+      </nav>
     </aside>
 
     <div class="main">
@@ -107,10 +129,93 @@
           <span>Отправить</span>
         </button>
       </footer>
+
+      <section class="view-editor" id="view-editor" aria-label="Редактор игры">
+        <header class="editor-top">
+          <div class="editor-title-wrap">
+            <h1 class="editor-title" id="editor-title">Редактор</h1>
+            <span class="editor-subtitle" id="editor-subtitle">Ручная заливка игр, уровней и кодов</span>
+          </div>
+          <div class="editor-top-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-game-copy" disabled title="Создать копию выбранной игры">Копировать</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-game-delete" disabled title="Удалить выбранную игру">Удалить</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-scenario-export" disabled title="Скачать сценарий игры одним JSON">Экспорт</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-scenario-import">Импорт</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-editor-ask" disabled title="Открыть чат с агентом об этой игре">Спросить агента</button>
+            <button type="button" class="btn btn-ghost btn-icon" id="btn-editor-theme" title="Светлая/тёмная тема">◐</button>
+          </div>
+          <aside class="admin-auth" id="admin-auth" aria-label="Организатор">
+            <form class="login-form" id="admin-login-form" autocomplete="on">
+              <input type="text" name="login" placeholder="организатор" autocomplete="username" aria-label="Логин организатора" required />
+              <input type="password" name="password" placeholder="пароль" autocomplete="current-password" aria-label="Пароль организатора" required />
+              <button type="submit" class="btn btn-accent btn-auth">Войти</button>
+            </form>
+            <button type="button" class="btn btn-ghost btn-auth" id="btn-admin-logout" hidden>Выйти</button>
+            <span class="admin-auth-status" id="admin-auth-status" aria-live="polite"></span>
+          </aside>
+        </header>
+
+        <div class="editor-body" id="editor-body">
+          <div class="editor-empty" id="editor-empty">
+            <p class="editor-empty-title">Войдите организатором, чтобы открыть игры города.</p>
+            <p class="editor-empty-hint">
+              Редактор и агент делят одну организаторскую сессию: после входа здесь станут доступны и
+              инструменты <code>admin_*</code> в чате.
+            </p>
+          </div>
+
+          <div class="editor-sheet" id="editor-sheet" hidden>
+            <div class="editor-tabs" role="tablist" aria-label="Что редактируем">
+              <button type="button" class="editor-tab is-active" id="editor-tab-game" role="tab" aria-selected="true" data-target="game">Игра</button>
+              <button type="button" class="editor-tab" id="editor-tab-level" role="tab" aria-selected="false" data-target="level" disabled>Уровень</button>
+            </div>
+            <form class="editor-form" id="editor-form" autocomplete="off"></form>
+          </div>
+        </div>
+
+        <footer class="editor-actions" id="editor-actions" hidden>
+          <div class="editor-issues" id="editor-issues" hidden role="status" aria-live="polite"></div>
+          <div class="editor-actions-row">
+            <span class="editor-dirty" id="editor-dirty" hidden>Есть несохранённые правки</span>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-editor-validate">Проверить</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-editor-revert">Отменить правки</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-editor-save">Сохранить</button>
+          </div>
+        </footer>
+      </section>
     </div>
   </div>
+
+  <dialog class="editor-dialog" id="import-dialog" aria-label="Импорт сценария">
+    <form method="dialog" class="editor-dialog-form" id="import-form">
+      <h2 class="editor-dialog-title">Импорт сценария</h2>
+      <p class="editor-dialog-hint">
+        Файл в формате <code>dzzzr-scenario</code>: тот же, что выдаёт «Экспорт» и что агент сохраняет
+        инструментом <code>admin_export_scenario</code>.
+      </p>
+      <label class="editor-dialog-field">
+        <span>Файл сценария</span>
+        <input type="file" id="import-file" accept="application/json,.json" />
+      </label>
+      <label class="editor-dialog-field">
+        <span>Игра-получатель (пусто — создать новую)</span>
+        <input type="text" id="import-game-id" inputmode="numeric" placeholder="например 4242" />
+      </label>
+      <label class="editor-dialog-field">
+        <span>Карта уровней «ключ → id», JSON (нужна для непустой игры)</span>
+        <textarea id="import-level-ids" rows="3" placeholder='{"level_901": 901}'></textarea>
+      </label>
+      <div class="editor-issues" id="import-issues" hidden></div>
+      <div class="editor-dialog-actions">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-import-close">Закрыть</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-import-validate">Проверить</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-import-apply" disabled>Залить в движок</button>
+      </div>
+    </form>
+  </dialog>
   <div id="tool-chip-tooltip" class="tool-chip-tooltip" hidden role="tooltip"></div>
   <div class="toast" id="toast" role="status" aria-live="assertive"></div>
   <script src="app.js" defer></script>
+  <script src="editor.js" defer></script>
 </body>
 </html>

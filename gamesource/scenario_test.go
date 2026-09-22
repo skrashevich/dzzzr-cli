@@ -350,3 +350,31 @@ func TestScenarioLinkedImageRejectsLoginHTML(t *testing.T) {
 		t.Fatal("preflight wrote to engine")
 	}
 }
+
+// TestScenarioAcceptsEngineBonusAfter pins the engine's own default. A game
+// created and never touched carries bonusAfter -1, which is what tells the
+// engine to hand the next level over as soon as the main codes are in. The
+// schema used to demand a non-negative number there, so exporting an ordinary
+// game failed before it reached the file — through the CLI and through the
+// browser editor alike.
+func TestScenarioAcceptsEngineBonusAfter(t *testing.T) {
+	s := sampleScenario(t)
+	s.Game.Params["bonus_after"] = -1
+	data, err := EncodeScenario(s)
+	if err != nil {
+		t.Fatalf("bonus_after -1 не прошёл кодирование: %v", err)
+	}
+	back, err := DecodeScenario(data)
+	if err != nil {
+		t.Fatalf("bonus_after -1 не прошёл разбор: %v", err)
+	}
+	if got := fmt.Sprint(back.Game.Params["bonus_after"]); got != "-1" {
+		t.Fatalf("bonus_after = %v, ожидалось -1", got)
+	}
+
+	// Anything below that is still refused: -1 is a value, not an open range.
+	s.Game.Params["bonus_after"] = -2
+	if _, err := EncodeScenario(s); err == nil {
+		t.Fatal("bonus_after -2 принят, хотя движок такого не хранит")
+	}
+}

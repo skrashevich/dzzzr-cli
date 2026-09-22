@@ -37,7 +37,7 @@ func init() {
 		Usage: "web [-web-addr АДРЕС] [-security readonly|approve|full]",
 		Auth:  authNone,
 		Run:   cmdWeb,
-		Help:  "Диалог с агентом в браузере: тот же агент, что и «dzzzr chat»",
+		Help:  "Браузерный интерфейс: тот же агент, что и «dzzzr chat», и редактор игр рядом с ним",
 	})
 }
 
@@ -139,6 +139,7 @@ func (h *webHub) newMux() *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/auth/status", h.httpAuthStatus)
 	mux.HandleFunc("GET /api/v1/catalog/games", h.httpCatalogGames)
 	mux.HandleFunc("GET /api/v1/agent/config", h.httpAgentConfig)
+	h.registerAdminRoutes(mux)
 
 	sub, err := fs.Sub(webUIFiles, "webui")
 	if err != nil {
@@ -160,7 +161,7 @@ func cmdWeb(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) er
 	}
 	// A missing model is reported by /api/v1/agent/config rather than here:
 	// the interface is still worth serving so the user can see what is wrong.
-	if err := agentAuthorize(ctx, cfg, c); err != nil {
+	if err := webAuthorize(ctx, cfg, c); err != nil {
 		return err
 	}
 
@@ -176,6 +177,47 @@ func cmdWeb(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) er
 
 	hub := &webHub{cfg: cfg, client: c, store: store, sse: newSSEHub(), run: runWebChatTurn}
 	return serveWeb(ctx, hub, cfg.webAddr)
+}
+
+// webAuthorize prepares the client the browser will use, and never refuses to
+// start over a missing playing session.
+//
+// The terminal surfaces have to insist on one: «dzzzr chat» has no way to ask
+// for a login. The browser does — its login panel posts to
+// /api/v1/auth/login — and a run started with organizer credentials alone
+// («dzzzr -admin-login … -admin-password … web») is a whole working mode of
+// its own: the administration area needs no playing session at all. Refusing
+// to serve the interface would leave the user without the very screen that
+// fixes the problem.
+//
+// A session file that cannot be read is still an error: it is a real fault
+// with a real remedy, and silently ignoring it would sign nobody in and say
+// nothing about why.
+func webAuthorize(ctx context.Context, cfg *config, c *dzzzr.Client) error {
+	path, err := sessionPath(cfg.city)
+	if err != nil {
+		return err
+	}
+	if _, _, err := loadSession(cfg, c); err != nil {
+		return err
+	}
+	applyCredentialOverrides(cfg, c)
+
+	if c.Session() != "" {
+		return nil
+	}
+	if canSignIn(cfg) {
+		if err := signIn(ctx, cfg, c); err != nil {
+			_, _ = fmt.Fprintf(cfg.stderr, "Вход игроком не выполнен (%v): войдите в браузере.\n", err)
+		}
+		return nil
+	}
+	if c.HasAdminCredentials() {
+		_, _ = fmt.Fprintf(cfg.stderr, "Игровой сессии нет (%s); организаторской части она не нужна.\n", path)
+		return nil
+	}
+	_, _ = fmt.Fprintf(cfg.stderr, "Игровой сессии нет (%s): войдите в браузере или задайте -login и -password.\n", path)
+	return nil
 }
 
 // serveWeb runs the HTTP server until ctx is canceled, announcing the address

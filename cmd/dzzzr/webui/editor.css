@@ -1,0 +1,580 @@
+/* The game editor. It shares the page, the palette and the sidebar with the
+   agent chat; only one of the two views is visible at a time, chosen by
+   body[data-mode]. Everything here reads the variables style.css defines. */
+
+/* --------------------------------------------------------------- switching */
+
+body[data-mode="editor"] .chat-only,
+body:not([data-mode="editor"]) .editor-only {
+  display: none;
+}
+
+/* In chat mode the three rows of .main are the chat; in editor mode they step
+   aside and the editor takes the whole column. */
+body:not([data-mode="editor"]) .view-editor {
+  display: none;
+}
+body[data-mode="editor"] .main {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+body[data-mode="editor"] .top-bar,
+body[data-mode="editor"] .messages-wrap,
+body[data-mode="editor"] .composer,
+body[data-mode="editor"] .tool-chip-tooltip {
+  display: none;
+}
+
+/* The editor hides and shows panels with the `hidden` attribute, which only
+   sets `display: none` in the user-agent stylesheet: any later rule giving the
+   element a display of its own wins, and the panel stays on screen. This one
+   rule outranks the single-class layout rules below so `hidden` keeps its
+   plain meaning everywhere inside the editor. */
+.view-editor [hidden],
+.editor-nav [hidden] {
+  display: none;
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+}
+.mode-tab {
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: 500 13px/1.2 var(--font-sans);
+  cursor: pointer;
+  transition: background 0.18s var(--ease-out), color 0.18s var(--ease-out);
+}
+.mode-tab:hover {
+  color: var(--text);
+}
+.mode-tab.is-active {
+  background: var(--bg-elevated);
+  color: var(--text);
+  box-shadow: var(--shadow-inset);
+}
+
+/* ------------------------------------------------------------ sidebar nav */
+
+.editor-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow: hidden;
+}
+.editor-nav-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+.editor-nav-levels {
+  flex: 1 1 auto;
+}
+.editor-nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.editor-nav-title {
+  color: var(--text-faint);
+  font: 600 11px/1 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.editor-list-empty {
+  padding: 8px 10px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.editor-list-error {
+  border-left: 2px solid var(--danger);
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
+.editor-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s var(--ease-out), color 0.16s var(--ease-out);
+}
+.editor-item:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.editor-item.is-active {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+.editor-item-name {
+  font: 500 13px/1.3 var(--font-sans);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-item-meta {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.editor-level-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px;
+}
+.editor-level-actions {
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.16s var(--ease-out);
+}
+.editor-level-row:hover .editor-level-actions,
+.editor-level-row:focus-within .editor-level-actions {
+  opacity: 1;
+}
+
+/* ----------------------------------------------------------------- layout */
+
+.view-editor {
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.editor-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 18px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+.editor-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.editor-title {
+  margin: 0;
+  font: 600 18px/1.2 var(--font-sans);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-subtitle {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.editor-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+}
+.admin-auth-status {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.editor-body {
+  min-height: 0;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+.editor-empty {
+  max-width: 52ch;
+  margin: 12vh auto 0;
+  text-align: center;
+}
+.editor-empty-title {
+  margin: 0 0 8px;
+  font: 500 16px/1.4 var(--font-sans);
+}
+.editor-empty-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.editor-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.editor-tab {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: 500 13px/1 var(--font-sans);
+  cursor: pointer;
+}
+.editor-tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.editor-tab.is-active {
+  border-color: var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------------ form */
+
+.editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1080px;
+}
+.editor-group {
+  margin: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+.editor-group legend {
+  padding: 0 6px;
+  color: var(--text-faint);
+  font: 600 11px/1 var(--font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px 18px;
+  align-items: start;
+}
+.editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+/* The wide controls take the whole row: a code table squeezed into a third of
+   the width is unreadable, and so is a page of HTML in a narrow box. */
+.editor-field-textarea,
+.editor-field-html,
+.editor-field-codes,
+.editor-field-bonus_codes,
+.editor-field-fake_codes,
+.editor-field-spoilers,
+.editor-field-strings {
+  grid-column: 1 / -1;
+}
+.editor-field-inline {
+  flex-direction: row;
+  align-items: center;
+}
+.editor-label {
+  color: var(--text-muted);
+  font: 500 12px/1.3 var(--font-sans);
+}
+.editor-label-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+.editor-hint {
+  color: var(--text-faint);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.editor-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  color: var(--text);
+  font: 400 13px/1.45 var(--font-sans);
+}
+.editor-input:focus {
+  border-color: var(--border-strong);
+  outline: none;
+}
+.editor-check {
+  width: auto;
+  accent-color: var(--amber);
+}
+.editor-textarea {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  resize: vertical;
+}
+
+/* ---------------------------------------------------------------- tables */
+
+.editor-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.editor-row {
+  display: grid;
+  grid-template-columns: var(--row-cols, 1fr) 28px;
+  gap: 6px;
+  align-items: center;
+}
+.editor-row-single {
+  grid-template-columns: minmax(0, 1fr) 28px;
+}
+.editor-row-head {
+  color: var(--text-faint);
+  font: 600 11px/1 var(--font-sans);
+  letter-spacing: 0.04em;
+}
+.editor-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.editor-row-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+.editor-bulk {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+.editor-bulk summary {
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.editor-bulk-area {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  resize: vertical;
+}
+.editor-bulk-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* --------------------------------------------------------------- actions */
+
+.editor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+.editor-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.editor-dirty {
+  margin-right: auto;
+  color: var(--danger);
+  font-size: 12px;
+}
+.editor-issues {
+  max-height: 22vh;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  overflow-y: auto;
+}
+.editor-issues ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.editor-issues li {
+  color: var(--text);
+  font: 400 12.5px/1.6 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.editor-issues.is-err {
+  border-color: var(--danger);
+}
+.editor-issues.is-ok {
+  border-color: var(--success);
+}
+
+.btn-xs {
+  padding: 3px 8px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.session-file-open {
+  margin-left: 8px;
+}
+
+/* ---------------------------------------------------------------- dialog */
+
+.editor-dialog {
+  width: min(560px, 92vw);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-panel);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+}
+.editor-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+.editor-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+.editor-dialog-title {
+  margin: 0;
+  font: 600 16px/1.2 var(--font-sans);
+}
+.editor-dialog-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.editor-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text-muted);
+  font: 500 12px/1.3 var(--font-sans);
+}
+.editor-dialog-field input[type="text"],
+.editor-dialog-field textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+  color: var(--text);
+  font: 400 13px/1.45 var(--font-mono);
+}
+.editor-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.admin-auth-status.is-err {
+  color: var(--danger);
+}
+
+/* --------------------------------------------------------------- rich text */
+
+.editor-rich {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.editor-rich-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-deep);
+}
+.editor-rich-btn {
+  min-width: 28px;
+  font-family: var(--font-sans);
+}
+.editor-rich-toggle {
+  margin-left: auto;
+  font-family: var(--font-mono);
+}
+.editor-rich-toggle.is-active {
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+.editor-rich-area {
+  min-height: 190px;
+  max-height: 60vh;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+.editor-rich-area:focus {
+  border-color: var(--border-strong);
+  outline: none;
+}
+.editor-rich-area p {
+  margin: 0 0 0.7em;
+}
+.editor-rich-area p:last-child {
+  margin-bottom: 0;
+}
+.editor-rich-area h3,
+.editor-rich-area h4 {
+  margin: 0 0 0.5em;
+  font-size: 15px;
+}
+.editor-rich-area ul,
+.editor-rich-area ol {
+  margin: 0 0 0.7em;
+  padding-left: 22px;
+}
+.editor-rich-area img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+.editor-rich-area a {
+  color: var(--amber);
+}
+.editor-rich-source {
+  min-height: 190px;
+}

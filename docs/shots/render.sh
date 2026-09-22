@@ -71,8 +71,11 @@ export DZZZR_LLM_MODEL="openrouter/anthropic/claude-3.5-sonnet"
 export DZZZR_FILES_ROOT="$HOME/files"
 mkdir -p "$DZZZR_FILES_ROOT"
 
+# The organizer credentials are the mock's own (admin/admin). Without them the
+# editor has no games to show and its screenshots would be an empty state.
 echo "==> Serving dzzzr web on 127.0.0.1:${PORT_WEB}..."
-"$BIN_DIR/dzzzr" web -web-addr "127.0.0.1:${PORT_WEB}" >/tmp/dzzzr-shots-web.log 2>&1 &
+"$BIN_DIR/dzzzr" -admin-login admin -admin-password admin \
+  web -web-addr "127.0.0.1:${PORT_WEB}" >/tmp/dzzzr-shots-web.log 2>&1 &
 WEB_PID=$!
 for _ in $(seq 1 50); do
   curl -fsS "http://127.0.0.1:${PORT_WEB}/" >/dev/null 2>&1 && break

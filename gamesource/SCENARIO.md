@@ -53,6 +53,14 @@ Every level contains a stable portable `key` and complete `params`.
   flag; zero is a concrete value. Level `penalty: null` explicitly restores
   inheritance from the game. The import adapter must implement these semantics
   instead of forwarding the document to the existing patch API unchanged.
+- Numeric ranges follow the engine rather than intuition. `bonus_after` is `-1`
+  or greater: `-1` is the engine's own default and means the next level is
+  handed over as soon as the main codes are in. The schema demanded a
+  non-negative number there until recently, so exporting a game whose organizer
+  never changed that field failed before any file was produced — through
+  `dzzzr admin-export-scenario` and through the browser editor alike. It is
+  fixed. `-2` is still rejected: `-1` is a value, not an open range.
+  `TestScenarioAcceptsEngineBonusAfter` pins both halves.
 - `clear` is excluded because it is an edit operation, not scenario content.
   Level `greeting` is excluded because the observed level form has no such field.
 - The `levels` array defines order. `source_id` and `source_order` are optional

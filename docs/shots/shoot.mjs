@@ -135,5 +135,32 @@ await page.waitForSelector('#login-form:not(.is-collapsed)');
 await settle(600);
 await shot('login');
 
+// 8 + 9: the manual editor beside the chat — the game's levels in the sidebar
+// and one level's form, drawn from the same schema the agent's tools take.
+// Driven through the DOM rather than through page functions: editor.js keeps
+// everything inside one closure so app.js's globals stay uncontested.
+await page.click('#mode-tab-editor');
+await page.waitForSelector('#editor-game-list li button');
+await page.click('#editor-game-list li button');
+await page.waitForSelector('#editor-level-list li button');
+await page.click('#editor-level-list li button');
+await page.waitForSelector('.editor-field-codes .editor-row-body .editor-row');
+await settle(600);
+await shot('editor');
+await setTheme('dark');
+await shot('editor-dark');
+await setTheme('light');
+
+// 10: pasting a sheet of codes in one block, the reason an author would pick
+// this screen over dictating the level to the agent.
+await page.click('.editor-field-codes .editor-bulk summary');
+await page.fill(
+  '.editor-field-codes .editor-bulk-area',
+  '(112)D45R92#Д45 | 2 | 1\n(113)K21M08 | 3 | 2\n(114)B77X01#Б77 | 1+ | 2',
+);
+await page.locator('.editor-field-codes .editor-bulk').scrollIntoViewIfNeeded();
+await settle(300);
+await shot('editor-bulk');
+
 await browser.close();
 console.log('screenshots ->', OUT);

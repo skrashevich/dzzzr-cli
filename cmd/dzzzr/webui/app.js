@@ -668,6 +668,19 @@ function renderSessionFiles() {
     meta.className = 'session-file-meta';
     meta.textContent = f.tool ? `${formatFileSize(f.size)} · ${f.tool}` : formatFileSize(f.size);
     li.append(link, meta);
+    // A scenario the agent just wrote is the one file the author may want to
+    // look at by hand before it reaches the engine, so it gets a way across.
+    if (/\.json$/i.test(f.name)) {
+      const open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'btn btn-ghost btn-xs session-file-open';
+      open.textContent = 'В редакторе';
+      open.title = 'Открыть этот файл на экране импорта сценария';
+      open.addEventListener('click', () => {
+        window.dzzzrEditor?.openScenarioFromChatFile(state.activeId, f.name);
+      });
+      li.appendChild(open);
+    }
     list.appendChild(li);
   }
 }
@@ -1214,6 +1227,22 @@ function bindUI() {
     if (e.key === 'Escape' && state.agentRunning) void cancelAgent();
   });
 }
+
+// dzzzrChat is everything the editor (editor.js) is allowed to reach into.
+// The two views share one page, one HTTP helper and one theme; naming the
+// seam keeps editor.js from guessing at this file's internals.
+window.dzzzrChat = {
+  api,
+  toast,
+  toggleTheme,
+  // openChat switches to the chat view and opens one chat, which is what a
+  // handoff from the editor ends with.
+  async openChat(chatId) {
+    window.dzzzrEditor?.setMode('chat');
+    await loadChats();
+    await selectChat(String(chatId));
+  },
+};
 
 async function boot() {
   const savedTheme = localStorage.getItem('dzzzr-theme');

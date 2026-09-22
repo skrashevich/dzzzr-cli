@@ -24,6 +24,7 @@
   "$defs": {
     "key": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$" },
     "nonNegativeInteger": { "type": "integer", "minimum": 0 },
+    "bonusAfterInteger": { "type": "integer", "minimum": -1 },
     "html": {
       "type": "string",
       "description": "Text or HTML, preserved verbatim. Asset URLs use asset:ID. Empty string explicitly clears the content."
@@ -83,7 +84,7 @@
         "breaf_place": { "$ref": "#/$defs/html", "description": "Briefing place. Spelling follows the existing API." },
         "greeting": { "$ref": "#/$defs/html" },
         "duration": { "$ref": "#/$defs/nonNegativeInteger", "description": "Native engine duration value, without unit conversion." },
-        "bonus_after": { "$ref": "#/$defs/nonNegativeInteger", "description": "Native engine bonus_after value." },
+        "bonus_after": { "$ref": "#/$defs/bonusAfterInteger", "description": "Native engine bonus_after value. -1 is the engine default and means the next level is handed over as soon as the main codes are in, so the range starts below zero." },
         "publish": { "type": "boolean" },
         "finished": { "type": "boolean" },
         "invitation": { "type": "boolean", "description": "Whether applications are open." }
