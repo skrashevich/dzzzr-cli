@@ -47,3 +47,7 @@ dist/
 # pdfsource/); the repository root carries none.
 /*.pdf
 /*.json
+
+# Scratch space for local runs.
+*.tmp
+.tmp/

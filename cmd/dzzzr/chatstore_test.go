@@ -187,8 +187,12 @@ func TestChatStorePersistRoundTrip(t *testing.T) {
 	if len(got.Lines) != 2 || got.Lines[1].ToolName != "game_status" {
 		t.Errorf("лента после восстановления = %+v", got.Lines)
 	}
+	// The model's copy is stamped with the moment the message was sent, and
+	// that stamp is part of the history: it must survive a reload, or a
+	// resumed chat would lose the times the model was told about.
 	history, _ := restored.beginRun(snap.ID, nil)
-	if len(history) != 1 || history[0].Content != "что с уровнем" {
+	if len(history) != 1 || !strings.HasSuffix(history[0].Content, "\nчто с уровнем") ||
+		!strings.HasPrefix(history[0].Content, "[sent at ") {
 		t.Errorf("история для модели не восстановлена: %+v", history)
 	}
 }

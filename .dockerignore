@@ -7,3 +7,4 @@ mobile/build
 build
 dist
 *.log
+.tmp

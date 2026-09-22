@@ -366,9 +366,17 @@ func run(args []string, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintf(stdout, "dzzzr %s\n", version)
 		return 0
 	}
+	autoWeb := false
 	if len(positional) == 0 {
-		printUsage(stderr, fs)
-		return 2
+		// A double-click on Windows has no command and no terminal: usage text
+		// would flash by in a console window that closes with the process.
+		if !autoStartWebIfGUI() {
+			printUsage(stderr, fs)
+			return 2
+		}
+		autoWeb = true
+		_, _ = fmt.Fprintln(stderr, "dzzzr: команда не указана и терминала нет — открываю браузерный чат.")
+		positional = []string{"web"}
 	}
 
 	name := positional[0]
@@ -396,7 +404,23 @@ func run(args []string, stdout, stderr io.Writer) int {
 	if harErr := writeHAR(cfg, c); harErr != nil && cmdErr == nil {
 		cmdErr = harErr
 	}
-	return reportError(cfg, cmdErr)
+	code := reportError(cfg, cmdErr)
+	// The console this run was given closes with the process, and the whole
+	// point of the GUI path is that nobody is watching a terminal. Reporting
+	// the failure and exiting would take the report down with the window, so
+	// hold it open until the reader says they have seen it.
+	if autoWeb && code != 0 {
+		holdConsole(cfg)
+	}
+	return code
+}
+
+// holdConsole waits for a line on stdin so a message stays readable in a
+// window that would otherwise vanish. Closed input is not an error: there is
+// simply nobody to wait for.
+func holdConsole(cfg *config) {
+	_, _ = fmt.Fprint(cfg.stderr, "\nНажмите Enter, чтобы закрыть окно…")
+	_, _ = cfg.lineReader().ReadString('\n')
 }
 
 // authorize prepares the credentials a command needs.

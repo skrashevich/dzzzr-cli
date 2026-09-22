@@ -183,18 +183,18 @@ func agentFileTools(cfg *config) []agentloop.Tool {
 }
 
 // agentSystemPrompt opens the conversation. It states what cannot be inferred
-// from the tools — where the agent is, what time it is, and what it must not
-// invent — and then hands over to the catalog's own description of the game
-// and the active policy.
+// from the tools — where the agent is and what it must not invent — and then
+// hands over to the catalog's own description of the game and the active
+// policy.
+//
+// The clock deliberately does not appear here. See stampedUserMessage.
 func agentSystemPrompt(cfg *config, catalog *agenttools.Catalog, withFiles bool) string {
-	now := systemPromptNow()
 	var b strings.Builder
 	b.WriteString("You are an autonomous agent for dzzzr, a command-line client of the Dozor Classic city-game engine.\n")
 	_, _ = fmt.Fprintf(&b, "The city segment of this session is: %s\n", cfg.city)
-	_, _ = fmt.Fprintf(&b, "The current date and time is: %s (local, RFC3339; %s in UTC).\n",
-		now.Format(time.RFC3339), now.UTC().Format(time.RFC3339))
 	b.WriteString("\nRules:\n")
-	b.WriteString("- TIME: treat the date and time above as authoritative. Never infer today's date from memory. " +
+	b.WriteString("- TIME: every user message opens with the moment it was sent, in square brackets. " +
+		"The most recent of those stamps is now, and it is authoritative. Never infer today's date from memory. " +
 		"Resolve every relative time the user gives against that value and echo the absolute time you computed.\n")
 	b.WriteString("- NEVER FABRICATE: do not invent codes, level text, timings or tool results. " +
 		"If something is missing, call a tool for it; if the tools cannot supply it, say so plainly.\n")
@@ -215,6 +215,29 @@ func agentSystemPrompt(cfg *config, catalog *agenttools.Catalog, withFiles bool)
 	return b.String()
 }
 
-// systemPromptNow is the clock stamped into the system prompt. It is a
-// variable so a test can pin it.
-var systemPromptNow = time.Now
+// stampedUserMessage is the user's text as the model sees it: prefixed with
+// the moment it was sent.
+//
+// The stamp used to sit on the third line of the system prompt, ahead of the
+// rules and the whole tool catalog. A value that changes every message in that
+// position invalidates everything behind it, so several thousand tokens that
+// were otherwise identical from turn to turn had to be processed afresh each
+// time — paid for on every request, and waited for on every request.
+//
+// Carried on the message instead, the stamp never moves and never changes, so
+// the long prefix stays reusable both by the providers' prompt caching and by
+// a local KV cache. It also reads better: the model is told when each message
+// was sent rather than handed a single "now" that silently rewrites itself
+// underneath the conversation.
+//
+// Only the copy the model sees is stamped. The transcript and the saved chat
+// keep the text the operator typed.
+func stampedUserMessage(text string) string {
+	now := messageStampNow()
+	return fmt.Sprintf("[sent at %s / %s UTC]\n%s",
+		now.Format(time.RFC3339), now.UTC().Format(time.RFC3339), text)
+}
+
+// messageStampNow is the clock carried on each user message. It is a variable
+// so a test can pin it.
+var messageStampNow = time.Now

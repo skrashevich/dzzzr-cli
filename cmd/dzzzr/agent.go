@@ -59,7 +59,7 @@ func cmdAgent(ctx context.Context, cfg *config, c *dzzzr.Client, args []string) 
 	res, err := agentloop.Run(ctx, agentCfg, &agentloop.RunInput{
 		Catalog:      catalog,
 		Extra:        files,
-		Messages:     []agentloop.Message{{Role: agentloop.RoleUser, Content: prompt}},
+		Messages:     []agentloop.Message{{Role: agentloop.RoleUser, Content: stampedUserMessage(prompt)}},
 		SystemPrompt: agentSystemPrompt(cfg, catalog, len(files) > 0),
 	}, agentloop.Callbacks{
 		OnEvent: func(ev agentloop.Event) {

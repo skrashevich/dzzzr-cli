@@ -212,7 +212,9 @@ func (s *chatStore) appendUser(id, content string) (busy, ok bool) {
 		return true, false
 	}
 	now := time.Now().UTC()
-	t.messages = append(t.messages, agentloop.Message{Role: agentloop.RoleUser, Content: content})
+	// Only the model's copy carries the stamp; the transcript keeps what the
+	// operator typed.
+	t.messages = append(t.messages, agentloop.Message{Role: agentloop.RoleUser, Content: stampedUserMessage(content)})
 	t.lines = append(t.lines, chatLine{Role: chatRoleUser, Content: content, CreatedAt: now})
 	t.Title = autoTitle(t.Title, content)
 	t.UpdatedAt = now
