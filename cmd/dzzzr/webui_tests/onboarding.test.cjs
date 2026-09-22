@@ -11,7 +11,10 @@ function setup() {
     console, setTimeout, clearTimeout, setInterval, clearInterval,
     window: {},
     location: { hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    requestAnimationFrame: () => 0,
     document: {
+      documentElement: { dataset: {} },
       body: { dataset: {}, classList: { add() {}, remove() {} } },
       getElementById: () => null,
       querySelectorAll: () => [],
@@ -101,4 +104,39 @@ test('model step does not advance until the model step is done', async () => {
   run("api = async () => ({steps: [{id: 'llm', done: true}, {id: 'auth', done: false}]})");
   await run('onboardingNext()');
   assert.equal(run('state.onboarding.step'), 'auth');
+});
+
+test('a failed Polza catalog is fetched again only on an explicit retry', async () => {
+  const run = setup();
+  run("var catalogCalls = 0; api = async (url) => { if (url === '/llm/polza/models') catalogCalls++; throw new Error('offline'); };");
+  await run('loadPolzaModels()');
+  await run('loadPolzaModels()');
+  await run('loadPolzaModels()');
+  assert.equal(run('catalogCalls'), 1);
+  await run('loadPolzaModels(true)');
+  assert.equal(run('catalogCalls'), 2);
+});
+
+test('boot still opens the wizard when an earlier step fails', async () => {
+  const run = setup();
+  run(`
+    var opened = 0;
+    initOnboarding = async () => { opened++; };
+    bindUI = () => { throw new Error('boom'); };
+  `);
+  await run('boot().catch(() => {})');
+  assert.equal(run('opened'), 1);
+});
+
+test('the model step shows a settings file the server could not read', () => {
+  const run = setup();
+  run(`
+    var results = {};
+    setOnboardingResult = (id, text, tone) => { results[id] = {text, tone}; };
+    renderOverridesInto = () => {};
+    renderOnboardingLLMTabs = () => {};
+  `);
+  run("fillOnboardingLLM({error: 'не удалось разобрать настройки LLM /x/settings.json'})");
+  assert.match(run("results['onboarding-llm-result'].text"), /settings\.json/);
+  assert.equal(run("results['onboarding-llm-result'].tone"), 'err');
 });

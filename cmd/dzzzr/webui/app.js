@@ -1260,40 +1260,45 @@ window.dzzzrChat = {
 };
 
 async function boot() {
-  const savedTheme = localStorage.getItem('dzzzr-theme');
-  if (savedTheme) document.documentElement.dataset.theme = savedTheme;
-  bindUI();
-  bindLLMSettings();
-  bindOnboarding();
-  syncPolicyVisual();
-  window.addEventListener(
-    'scroll',
-    () => {
+  try {
+    const savedTheme = localStorage.getItem('dzzzr-theme');
+    if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+    bindUI();
+    bindLLMSettings();
+    bindOnboarding();
+    syncPolicyVisual();
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (toolTipAnchor) positionToolChipTooltip(toolTipAnchor);
+      },
+      true,
+    );
+    window.addEventListener('resize', () => {
       if (toolTipAnchor) positionToolChipTooltip(toolTipAnchor);
-    },
-    true,
-  );
-  window.addEventListener('resize', () => {
-    if (toolTipAnchor) positionToolChipTooltip(toolTipAnchor);
-  });
-  requestAnimationFrame(() => document.body.classList.add('is-ready'));
-  await loadAgentConfig();
-  try {
-    await loadAuthStatus();
-  } catch (e) {
-    toast(`Статус авторизации: ${e.message || String(e)}`, true);
+    });
+    requestAnimationFrame(() => document.body.classList.add('is-ready'));
+    await loadAgentConfig();
+    try {
+      await loadAuthStatus();
+    } catch (e) {
+      toast(`Статус авторизации: ${e.message || String(e)}`, true);
+    }
+    try {
+      await loadChats();
+    } catch (e) {
+      toast(`Чаты: ${e.message || String(e)}`, true);
+    }
+    if (state.chats.length && !state.activeId) {
+      await selectChat(String(state.chats[0].id));
+    } else {
+      refreshSendState();
+    }
+  } finally {
+    // Мастер открывается и тогда, когда что-то выше сломалось: без него
+    // первый запуск остался бы без способа настроить модель и вход.
+    await initOnboarding();
   }
-  try {
-    await loadChats();
-  } catch (e) {
-    toast(`Чаты: ${e.message || String(e)}`, true);
-  }
-  if (state.chats.length && !state.activeId) {
-    await selectChat(String(state.chats[0].id));
-  } else {
-    refreshSendState();
-  }
-  await initOnboarding();
 }
 
 boot();

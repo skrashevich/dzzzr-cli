@@ -30,21 +30,22 @@ func (h *webHub) httpAuthLogin(w http.ResponseWriter, r *http.Request) {
 	if !webReadJSON(w, r, &body) {
 		return
 	}
-	if code, err := h.loginPlayer(r.Context(), body.Login, body.Password); err != nil {
+	status, code, err := h.loginPlayer(r.Context(), body.Login, body.Password)
+	if err != nil {
 		webError(w, code, "%v", err)
 		return
 	}
-	h.clientMu.Lock()
-	defer h.clientMu.Unlock()
-	webWriteJSON(w, http.StatusOK, h.status())
+	webWriteJSON(w, http.StatusOK, status)
 }
 
 // loginPlayer signs the player in and reports the HTTP status a refusal
-// deserves. The onboarding wizard shares it with httpAuthLogin.
-func (h *webHub) loginPlayer(ctx context.Context, login, password string) (int, error) {
+// deserves, or the status as it stood the moment the sign-in succeeded — read
+// under the same lock, so a logout racing in cannot make the answer contradict
+// the login it answers. The onboarding wizard shares it with httpAuthLogin.
+func (h *webHub) loginPlayer(ctx context.Context, login, password string) (authStatus, int, error) {
 	login = strings.TrimSpace(login)
 	if login == "" || password == "" {
-		return http.StatusBadRequest, errors.New("укажите логин и пароль")
+		return authStatus{}, http.StatusBadRequest, errors.New("укажите логин и пароль")
 	}
 
 	h.clientMu.Lock()
@@ -54,9 +55,9 @@ func (h *webHub) loginPlayer(ctx context.Context, login, password string) (int, 
 	// re-authentication the tools rely on — read them from there.
 	h.cfg.login, h.cfg.password = login, password
 	if err := signIn(ctx, h.cfg, h.client); err != nil {
-		return loginStatusCode(err), err
+		return authStatus{}, loginStatusCode(err), err
 	}
-	return http.StatusOK, nil
+	return h.status(), http.StatusOK, nil
 }
 
 // loginStatusCode separates a login the engine refused from an engine that

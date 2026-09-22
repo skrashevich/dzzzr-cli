@@ -92,22 +92,22 @@ func (h *webHub) httpAdminLogin(w http.ResponseWriter, r *http.Request) {
 	if !webReadJSON(w, r, &body) {
 		return
 	}
-	if code, err := h.loginOrganizer(r.Context(), body.Login, body.Password); err != nil {
+	status, code, err := h.loginOrganizer(r.Context(), body.Login, body.Password)
+	if err != nil {
 		webError(w, code, "%v", err)
 		return
 	}
-	h.clientMu.Lock()
-	defer h.clientMu.Unlock()
-	webWriteJSON(w, http.StatusOK, h.adminStatusNow())
+	webWriteJSON(w, http.StatusOK, status)
 }
 
 // loginOrganizer stores the organizer credentials once the engine accepted
-// them, and reports the HTTP status a refusal deserves. The onboarding wizard
+// them, and reports the HTTP status a refusal deserves or the organizer status
+// read under the same lock as the save. The onboarding wizard
 // shares it with httpAdminLogin.
-func (h *webHub) loginOrganizer(ctx context.Context, login, password string) (int, error) {
+func (h *webHub) loginOrganizer(ctx context.Context, login, password string) (adminStatus, int, error) {
 	login = strings.TrimSpace(login)
 	if login == "" || password == "" {
-		return http.StatusBadRequest, errors.New("укажите логин и пароль организатора")
+		return adminStatus{}, http.StatusBadRequest, errors.New("укажите логин и пароль организатора")
 	}
 
 	h.clientMu.Lock()
@@ -133,7 +133,7 @@ func (h *webHub) loginOrganizer(ctx context.Context, login, password string) (in
 			h.client.SetAdminCredentials(prevLogin, prevPassword)
 		}
 		h.clientMu.Unlock()
-		return adminStatusCode(err), err
+		return adminStatus{}, adminStatusCode(err), err
 	}
 
 	h.clientMu.Lock()
@@ -143,7 +143,7 @@ func (h *webHub) loginOrganizer(ctx context.Context, login, password string) (in
 	if _, err := saveSession(h.cfg, h.client); err != nil {
 		h.cfg.debugf("сессия не сохранена: %v", err)
 	}
-	return http.StatusOK, nil
+	return h.adminStatusNow(), http.StatusOK, nil
 }
 
 // httpAdminLogout forgets the organizer both in memory and in the session

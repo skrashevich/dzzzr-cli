@@ -59,6 +59,8 @@ const POLZA_BASE_URL = 'https://polza.ai/api/v1';
 const POLZA_PANELS = ['llm', 'onboarding-llm'];
 let polzaCatalog = null;
 let polzaCatalogLoading = false;
+/** Каталог не загрузился: повторно — только по кнопке, а не на каждой перерисовке. */
+let polzaCatalogFailed = false;
 let polzaFlow = null;
 let polzaBusy = false;
 
@@ -95,12 +97,13 @@ function setOnboardingResult(id, text, tone) {
 }
 
 async function loadPolzaModels(retry = false) {
-  if (polzaCatalogLoading || (polzaCatalog && !retry)) return;
+  if (polzaCatalogLoading || ((polzaCatalog || polzaCatalogFailed) && !retry)) return;
   polzaCatalogLoading = true;
   try {
     const data = await api('/llm/polza/models');
     if (!data.models?.length) throw new Error('Нет доступных моделей с поддержкой инструментов.');
     polzaCatalog = data;
+    polzaCatalogFailed = false;
     for (const pre of POLZA_PANELS) {
       const select = $(`${pre}-polza-model`);
       if (!select) continue;
@@ -112,6 +115,7 @@ async function loadPolzaModels(retry = false) {
       $(`${pre}-polza-models-retry`).hidden = true;
     }
   } catch (e) {
+    polzaCatalogFailed = true;
     for (const pre of polzaPanels()) {
       polzaResult(pre, `Модели: ${e.message || String(e)}`, 'err');
       $(`${pre}-polza-models-retry`).hidden = false;
@@ -459,6 +463,7 @@ function renderCodexStatus(codex) {
     cls += ' is-ok';
     title = 'Используется вход Codex CLI';
     rows.push('Отдельный вход через dzzzr не обязателен.');
+    if (c.cli_path) rows.push(`Файл Codex CLI: ${c.cli_path}`);
   } else {
     cls += ' is-off';
   }

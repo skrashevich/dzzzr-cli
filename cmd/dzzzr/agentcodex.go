@@ -86,7 +86,7 @@ func codexCredentials() (token, account string, source func() (string, string, e
 		return "", "", nil, err
 	}
 	if _, statErr := os.Stat(path); statErr != nil {
-		return "", "", nil, errNoCodexCredential
+		return "", "", nil, fmt.Errorf("%w (файла Codex CLI %s нет)", errNoCodexCredential, path)
 	}
 	return fromFile(path)
 }

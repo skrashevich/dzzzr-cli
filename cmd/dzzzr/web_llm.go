@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -89,7 +90,9 @@ type llmCodexStatus struct {
 	SignedIn bool `json:"signed_in"`
 	// CLISignIn reports that Codex CLI is signed in on this machine. dzzzr runs
 	// on that sign-in when it has none of its own and ChatGPT is chosen.
-	CLISignIn bool   `json:"cli_signed_in"`
+	CLISignIn bool `json:"cli_signed_in"`
+	// CLIPath is the Codex CLI file that sign-in was looked for in.
+	CLIPath   string `json:"cli_path,omitempty"`
 	AccountID string `json:"account_id,omitempty"`
 	ExpiresAt string `json:"expires_at,omitempty"`
 	Expired   bool   `json:"expired"`
@@ -230,8 +233,12 @@ func (h *webHub) llmSettingsPayload() (llmSettingsPayload, error) {
 
 	authField := resolveLLMField(llmAuthEnvVars, stored.AuthMethod, "")
 	baseField := resolveLLMField(llmBaseURLEnvVars, stored.BaseURL, defaultLLMBaseURL)
-	modelField := resolveLLMField(llmModelEnvVars, stored.Model, defaultLLMModel)
 	keyField := resolveLLMField(llmAPIKeyEnvVars, stored.APIKey, "")
+	agentCfg, agentErr := llmConfig()
+	modelField := resolveLLMField(llmModelEnvVars, stored.Model, defaultLLMModel)
+	if agentAuthMethod(agentCfg) == authMethodCodex {
+		modelField = codexModelField(stored.Model, agentCfg.Model)
+	}
 
 	payload := llmSettingsPayload{
 		Effective: llmEffectiveSettings{
@@ -268,7 +275,6 @@ func (h *webHub) llmSettingsPayload() (llmSettingsPayload, error) {
 		{"api_key", keyField, stored.APIKey},
 	})
 
-	agentCfg, agentErr := llmConfig()
 	payload.Agent = llmAgentSummary{
 		AuthMethod: agentAuthMethod(agentCfg),
 		Model:      agentCfg.Model,
@@ -285,9 +291,16 @@ func (h *webHub) llmSettingsPayload() (llmSettingsPayload, error) {
 func codexStatusForWeb() llmCodexStatus {
 	var status llmCodexStatus
 	status.Path, _ = codexAuthFile()
-	if path, err := codexCLIAuthFile(); err == nil {
-		_, _, cliErr := readCodexAuth(path)
+	// The Codex CLI file the agent would fall back to: the one named by
+	// DZZZR_CODEX_AUTH_FILE when it is set, Codex's own otherwise.
+	cliPath := os.Getenv("DZZZR_CODEX_AUTH_FILE")
+	if cliPath == "" {
+		cliPath, _ = codexCLIAuthFile()
+	}
+	if cliPath != "" {
+		_, _, cliErr := readCodexAuth(cliPath)
 		status.CLISignIn = cliErr == nil
+		status.CLIPath = cliPath
 	}
 	cred, err := loadCodexCredential()
 	if err != nil {
@@ -303,6 +316,20 @@ func codexStatusForWeb() llmCodexStatus {
 		status.Expired = time.Now().After(cred.ExpiresAt)
 	}
 	return status
+}
+
+// codexModelField is the model field as a subscription run sees it: only the
+// variables it reads (not OPENROUTER_MODEL), and the model it ends up with
+// rather than an OpenRouter name it will not serve.
+func codexModelField(stored, running string) llmFieldSource {
+	if env := resolveLLMField(llmCodexModelEnvVars, "", ""); env.Source == llmSourceEnv {
+		return env
+	}
+	name := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(stored)), "openai/")
+	if name != "" && name == running {
+		return llmFieldSource{Value: running, Source: llmSourceSettings}
+	}
+	return llmFieldSource{Value: running, Source: llmSourceDefault}
 }
 
 // agentAuthMethod names the transport a resolved configuration runs on.

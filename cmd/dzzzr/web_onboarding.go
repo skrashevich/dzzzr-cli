@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -55,9 +56,9 @@ func (h *webHub) httpOnboardingComplete(w http.ResponseWriter, r *http.Request) 
 	)
 	switch strings.TrimSpace(body.Role) {
 	case onboardingRolePlayer:
-		code, err = h.loginPlayer(r.Context(), body.Login, body.Password)
+		_, code, err = h.loginPlayer(r.Context(), body.Login, body.Password)
 	case onboardingRoleOrganizer:
-		code, err = h.loginOrganizer(r.Context(), body.Login, body.Password)
+		_, code, err = h.loginOrganizer(r.Context(), body.Login, body.Password)
 	default:
 		webError(w, http.StatusBadRequest, "укажите роль: player или organizer")
 		return
@@ -112,6 +113,11 @@ func (h *webHub) onboardingStatusPayload() onboardingStatusPayload {
 		CompletedAt: state.CompletedAt,
 		Skipped:     state.Skipped,
 		Steps:       steps,
+	}
+	// The model step's detail already carries a broken settings file, but the
+	// wizard shows the top-level error before the user tries to go on.
+	if _, settingsErr := loadLLMSettings(); settingsErr != nil {
+		loadErr = errors.Join(loadErr, settingsErr)
 	}
 	if loadErr != nil {
 		payload.Error = loadErr.Error()

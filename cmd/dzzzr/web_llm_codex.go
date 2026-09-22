@@ -56,6 +56,9 @@ type codexLoginFlow struct {
 	errMsg    string
 	accountID string
 	settledAt time.Time
+	// exchanging is set while one completion trades the code for tokens, so
+	// the redirect and a pasted code cannot both run that exchange.
+	exchanging bool
 
 	// stop closes the callback listener exactly once, whichever of the redirect,
 	// the manual paste or the timeout finishes the flow first.
@@ -108,16 +111,23 @@ func (f *codexLoginFlow) settled() bool {
 // completed the sign-in must not overwrite it with a state-mismatch error.
 func (f *codexLoginFlow) finish(accountID string, err error) {
 	f.mu.Lock()
-	if f.status == codexLoginPending {
-		if err != nil {
-			f.status, f.errMsg = codexLoginError, err.Error()
-		} else {
-			f.status, f.accountID = codexLoginSuccess, accountID
-		}
-		f.settledAt = time.Now()
-	}
+	f.settleLocked(accountID, err)
 	f.mu.Unlock()
 	f.release()
+}
+
+// settleLocked records the outcome if none was recorded yet. The caller holds
+// f.mu.
+func (f *codexLoginFlow) settleLocked(accountID string, err error) {
+	if f.status != codexLoginPending {
+		return
+	}
+	if err != nil {
+		f.status, f.errMsg = codexLoginError, err.Error()
+	} else {
+		f.status, f.accountID = codexLoginSuccess, accountID
+	}
+	f.settledAt = time.Now()
 }
 
 // settledFor reports how long the flow has been finished. The sweep measures the
@@ -336,28 +346,50 @@ func (m *codexLoginManager) callbackHandler(flow *codexLoginFlow) http.Handler {
 
 // complete exchanges the authorization code and stores the credential.
 func (m *codexLoginManager) complete(flow *codexLoginFlow, code string) error {
-	if flow.settled() {
+	flow.mu.Lock()
+	switch {
+	case flow.status != codexLoginPending:
+		flow.mu.Unlock()
 		return errors.New("этот вход уже завершён")
+	case flow.exchanging:
+		// The other completion owns the outcome; recording an error here
+		// would overwrite a sign-in that may well succeed.
+		flow.mu.Unlock()
+		return errors.New("вход уже подтверждается")
 	}
+	flow.exchanging = true
+	flow.mu.Unlock()
+
 	cred, err := m.exchange(m.oauthConfig(), code, flow.verifier, flow.RedirectURI)
-	if err != nil {
-		flow.finish("", err)
+	if err == nil && (cred == nil || strings.TrimSpace(cred.AccessToken) == "") {
+		err = errors.New("сервер ChatGPT не вернул токен доступа")
+	}
+
+	flow.mu.Lock()
+	flow.exchanging = false
+	if err == nil && flow.status != codexLoginPending {
+		// Cancelled or timed out while the issuer was answering: the user was
+		// told the sign-in failed, so it must not be saved after all.
+		err = errors.New("вход отменён или время ожидания истекло")
+		flow.mu.Unlock()
 		return err
 	}
-	if cred == nil || strings.TrimSpace(cred.AccessToken) == "" {
-		err := errors.New("сервер ChatGPT не вернул токен доступа")
-		flow.finish("", err)
-		return err
+	if err == nil {
+		// Held across the write so a cancel cannot slip in between the check
+		// above and the save. A fresh sign-in must not keep serving the token
+		// cached for the old one, nor be overwritten by a renewal of it still
+		// in flight: retire first.
+		resetCodexTokenStores()
+		err = m.persist(codexCredentialFromAuth(cred))
 	}
-	// A fresh sign-in must not keep serving the token cached for the old one,
-	// nor be overwritten by a renewal of it still in flight: retire first.
-	resetCodexTokenStores()
-	if err := m.persist(codexCredentialFromAuth(cred)); err != nil {
-		flow.finish("", err)
-		return err
+	accountID := ""
+	if err == nil {
+		accountID = cred.AccountID
 	}
-	flow.finish(cred.AccountID, nil)
-	return nil
+	flow.settleLocked(accountID, err)
+	flow.mu.Unlock()
+	flow.release()
+	return err
 }
 
 // submitCode finishes a flow from a pasted redirect URL or bare code, which is

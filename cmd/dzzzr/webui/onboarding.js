@@ -197,6 +197,11 @@ function fillOnboardingLLM(data, opts = {}) {
 
   renderOverridesInto('onboarding-llm-overrides', data?.env_overrides, LLM_OVERRIDE_FLAGS, LLM_OVERRIDE_FIELD_RU);
   renderOnboardingLLMTabs();
+  // Файл настроек не читается — шаг сохранит его заново; сказать об этом сразу,
+  // а не после «Далее».
+  if (data?.error) {
+    setOnboardingResult('onboarding-llm-result', `${data.error}. Сохранение на этом шаге заменит файл.`, 'err');
+  }
 }
 
 async function loadOnboardingLLM() {

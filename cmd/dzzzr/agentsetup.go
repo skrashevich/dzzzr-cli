@@ -3,6 +3,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -135,8 +136,14 @@ func resolveLLMConfig() (agentloop.Config, error) {
 	// Without an explicit choice a ChatGPT sign-in is used only when nothing
 	// else was configured: a key or an endpoint is a statement of intent — a
 	// local proxy needs no key — and must not be redirected to chatgpt.com.
-	if method == "" && apiKey == "" && endpoint == "" && hasCodexCredential() {
-		method = authMethodCodex
+	if method == "" && apiKey == "" && endpoint == "" {
+		switch _, credErr := loadCodexCredential(); {
+		case credErr == nil:
+			method = authMethodCodex
+		case !errors.Is(credErr, errNoCodexCredential):
+			// A damaged sign-in is reported, not mistaken for none at all.
+			return agentloop.Config{}, credErr
+		}
 	}
 	if method == authMethodCodex {
 		model := resolveLLMField(llmCodexModelEnvVars, stored.Model, "")
