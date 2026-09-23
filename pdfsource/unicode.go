@@ -2,6 +2,7 @@ package pdfsource
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -105,12 +106,9 @@ func newFontDecoder(ctx context.Context, font *pdf.Font, data []byte) (*fontDeco
 				return nil, errors.New("ToUnicode range exceeds limit")
 			}
 			for n := from; n <= to; n++ {
-				key := make([]byte, len(low))
-				v := n
-				for j := len(key) - 1; j >= 0; j-- {
-					key[j] = byte(v)
-					v >>= 8
-				}
+				var encoded [4]byte
+				binary.BigEndian.PutUint32(encoded[:], uint32(n))
+				key := encoded[4-len(low):]
 				value := dst
 				if string(dst) == "[" {
 					if i >= len(tokens) || string(tokens[i]) == "]" {

@@ -4,11 +4,36 @@ import (
 	"context"
 	"encoding/json/v2"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/skrashevich/dzzzr-cli/agenttools"
 )
+
+func TestReadDraftRejectsSymlinkOutsideDraftDir(t *testing.T) {
+	hub := newTestHub(t, nil)
+	hub.store.dir = t.TempDir()
+	if err := os.Mkdir(hub.draftDir(), sessionDirPerm); err != nil {
+		t.Fatal(err)
+	}
+	id := newChatID()
+	outside := filepath.Join(hub.store.dir, "outside.json")
+	data, err := json.Marshal(editorDraft{ID: id, BaseURL: hub.client.BaseURL(), Documents: map[string]*draftDocument{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(outside, data, sessionFilePerm); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(hub.draftDir(), id+".json")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	if _, err := hub.readDraft(id); err == nil {
+		t.Fatal("readDraft followed a symlink outside the draft directory")
+	}
+}
 
 func TestDraftRoundTripConflictAndChat(t *testing.T) {
 	_, base := newAdminEngine(t)

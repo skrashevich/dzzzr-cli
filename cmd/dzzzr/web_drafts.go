@@ -42,7 +42,12 @@ func (h *webHub) readDraft(id string) (*editorDraft, error) {
 	if !validChatID(id) {
 		return nil, errors.New("неверный идентификатор черновика")
 	}
-	data, err := os.ReadFile(filepath.Join(h.draftDir(), id+".json"))
+	root, err := os.OpenRoot(h.draftDir())
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	data, err := root.ReadFile(id + ".json")
 	if err != nil {
 		return nil, err
 	}
