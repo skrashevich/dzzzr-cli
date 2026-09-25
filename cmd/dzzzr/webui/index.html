@@ -13,7 +13,6 @@
   <link rel="stylesheet" href="onboarding.css" />
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
   <div class="app">
     <aside class="sidebar">
       <header class="sidebar-brand">
@@ -21,182 +20,243 @@
         <div class="brand-text">
           <span class="brand-name">dzzzr</span>
           <span class="brand-tag">агент Dozor</span>
-          <span class="brand-model" id="brand-model" title="Модель LLM">—</span>
         </div>
-        <div class="brand-actions">
-          <button type="button" class="btn btn-ghost btn-icon" id="btn-llm-settings" title="Настройки LLM" aria-label="Настройки LLM" aria-haspopup="dialog">⚙</button>
-          <button type="button" class="btn btn-ghost btn-icon" id="btn-onboarding-open" title="Мастер настройки" aria-label="Мастер настройки" aria-haspopup="dialog">◈</button>
-        </div>
+        <button type="button" class="icon-btn" id="btn-onboarding-open" title="Мастер настройки" aria-label="Мастер настройки" aria-haspopup="dialog">◈</button>
       </header>
-      <div class="mode-switch" id="mode-switch" role="tablist" aria-label="Режим работы">
-        <button type="button" class="mode-tab is-active" id="mode-tab-chat" role="tab" aria-selected="true" data-mode="chat">Чат</button>
-        <button type="button" class="mode-tab" id="mode-tab-editor" role="tab" aria-selected="false" data-mode="editor">Редактор</button>
-      </div>
-      <button type="button" class="btn btn-primary btn-block chat-only" id="btn-new-chat">
-        <span class="btn-label">Новый чат</span>
-      </button>
-      <label class="search-wrap chat-only">
-        <span class="visually-hidden">Поиск чатов</span>
-        <input type="search" class="search-input" id="chat-search" placeholder="Поиск…" aria-label="Поиск чатов" />
-      </label>
-      <ul class="chat-list chat-only" id="chat-list" aria-label="Чаты"></ul>
 
-      <nav class="editor-nav editor-only" id="editor-nav" aria-label="Игры и уровни">
+      <div class="mode-switch-wrap">
+        <div class="segmented mode-switch" id="mode-switch" role="tablist" aria-label="Режим работы">
+          <button type="button" class="segmented-item mode-tab is-active" id="mode-tab-chat" role="tab" aria-selected="true" data-mode="chat">Чат</button>
+          <button type="button" class="segmented-item mode-tab" id="mode-tab-editor" role="tab" aria-selected="false" data-mode="editor">Редактор</button>
+        </div>
+      </div>
+
+      <div class="sidebar-tools chat-only">
+        <label class="search-wrap">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <span class="visually-hidden">Поиск чатов</span>
+          <input type="search" class="search-input" id="chat-search" placeholder="Поиск чатов" aria-label="Поиск чатов" />
+        </label>
+        <button type="button" class="btn btn-primary btn-new" id="btn-new-chat" title="Новый чат (⌘N)">＋ Новый</button>
+      </div>
+      <div class="sidebar-scroll chat-only">
+        <ul class="chat-list" id="chat-list" aria-label="Чаты"></ul>
+      </div>
+
+      <nav class="sidebar-scroll editor-nav editor-only" id="editor-nav" aria-label="Игры и уровни">
         <div class="editor-nav-block">
           <div class="editor-nav-head">
-            <span class="editor-nav-title">Игры</span>
-            <button type="button" class="btn btn-ghost btn-icon btn-xs" id="btn-game-new" title="Создать игру" aria-label="Создать игру">＋</button>
+            <span class="kicker" id="editor-games-title">Игры</span>
+            <button type="button" class="icon-btn icon-btn-sm" id="btn-game-new" title="Создать игру" aria-label="Создать игру">＋</button>
           </div>
           <ul class="editor-list" id="editor-game-list"></ul>
         </div>
         <div class="editor-nav-block editor-nav-levels" id="editor-levels-block" hidden>
           <div class="editor-nav-head">
-            <span class="editor-nav-title">Уровни</span>
-            <button type="button" class="btn btn-ghost btn-icon btn-xs" id="btn-level-new" title="Добавить уровень" aria-label="Добавить уровень">＋</button>
+            <span class="kicker" id="editor-levels-title">Уровни</span>
+            <button type="button" class="icon-btn icon-btn-sm" id="btn-level-new" title="Добавить уровень" aria-label="Добавить уровень">＋</button>
           </div>
           <ul class="editor-list editor-level-list" id="editor-level-list"></ul>
         </div>
       </nav>
+
+      <section class="sessions" id="sessions" aria-label="Вход в Дозор">
+        <span class="kicker" id="sessions-title">Вход в Дозор</span>
+        <div class="session-row" id="player-session">
+          <span class="session-dot" id="player-dot" aria-hidden="true"></span>
+          <span class="session-text">
+            <span class="session-role">Игрок</span>
+            <span class="session-sub" id="auth-status" aria-live="polite">не выполнен вход</span>
+          </span>
+          <button type="button" class="session-btn session-btn-in" id="btn-login-toggle" aria-expanded="false" aria-controls="player-auth-pop">Войти</button>
+          <button type="button" class="session-btn" id="btn-logout" hidden>Выйти</button>
+        </div>
+        <div class="session-row" id="organizer-session">
+          <span class="session-dot" id="admin-dot" aria-hidden="true"></span>
+          <span class="session-text">
+            <span class="session-role">Организатор</span>
+            <span class="session-sub" id="admin-auth-status" aria-live="polite">не выполнен вход</span>
+          </span>
+          <button type="button" class="session-btn session-btn-in" id="btn-admin-login-toggle" aria-expanded="false" aria-controls="admin-auth-pop">Войти</button>
+          <button type="button" class="session-btn" id="btn-admin-logout" hidden>Выйти</button>
+        </div>
+        <div class="auth-pop" id="player-auth-pop" hidden>
+          <form class="login-form" id="login-form" autocomplete="on">
+            <input type="text" name="login" placeholder="логин игрока" autocomplete="username" aria-label="Логин игрока" required />
+            <input type="password" name="password" placeholder="пароль" autocomplete="current-password" aria-label="Пароль игрока" required />
+            <button type="submit" class="btn btn-accent">Войти игроком</button>
+          </form>
+          <span class="auth-pop-hint">Агент увидит задания вашей команды.</span>
+        </div>
+        <div class="auth-pop" id="admin-auth-pop" hidden>
+          <form class="login-form" id="admin-login-form" autocomplete="on">
+            <input type="text" name="login" placeholder="логин организатора" autocomplete="username" aria-label="Логин организатора" required />
+            <input type="password" name="password" placeholder="пароль" autocomplete="current-password" aria-label="Пароль организатора" required />
+            <button type="submit" class="btn btn-accent">Войти организатором</button>
+          </form>
+          <span class="auth-pop-hint">Откроет редактор и инструменты admin_* в чате.</span>
+        </div>
+      </section>
+
+      <footer class="sidebar-foot">
+        <button type="button" class="model-btn" id="btn-llm-settings" title="Настройки LLM" aria-label="Настройки LLM" aria-haspopup="dialog">
+          <span class="model-dot" aria-hidden="true"></span>
+          <span class="brand-model" id="brand-model">—</span>
+          <span class="model-gear" aria-hidden="true">⚙</span>
+        </button>
+        <button type="button" class="icon-btn" id="btn-theme" title="Светлая/тёмная тема" aria-label="Светлая/тёмная тема">◐</button>
+      </footer>
     </aside>
 
-    <div class="main">
-      <header class="top-bar">
-        <section class="chat-context" id="chat-context" aria-label="Контекст чата">
-          <div class="context-group">
-            <div class="field-inline">
-              <label for="field-city">Город</label>
-              <output class="field-readonly" id="field-city">—</output>
-            </div>
+    <main class="main view-chat" id="view-chat" aria-label="Чат агента">
+      <header class="chat-head">
+        <div class="chat-head-text">
+          <h1 class="chat-title" id="chat-title">Чат не выбран</h1>
+          <div class="chat-chips">
+            <output class="chip chip-mono" id="field-city" title="Город">—</output>
             <details class="games-info" id="games-info">
-              <summary title="Игры города; агент работает с текущей игрой">Игры</summary>
+              <summary class="chip chip-mono chip-btn" title="Игры города; агент работает с текущей игрой">Игры города <span class="chip-caret" aria-hidden="true">▾</span></summary>
               <ul class="games-list" id="games-list"></ul>
             </details>
           </div>
-          <div class="context-actions">
-            <button type="button" class="btn btn-ghost btn-icon" id="btn-export" disabled title="Экспорт чата">↗</button>
-            <button type="button" class="btn btn-ghost btn-icon" id="btn-cancel" disabled title="Отменить ответ агента">✕</button>
-            <button type="button" class="btn btn-ghost btn-icon" id="btn-theme" title="Светлая/тёмная тема">◐</button>
-            <span class="running-pill" id="running-pill" hidden>
-              <span class="running-dot" aria-hidden="true"></span>
-              <span id="running-pill-label">Агент</span>
-            </span>
-          </div>
-        </section>
-
-        <aside class="auth-panel" id="auth-panel" aria-label="Авторизация">
-          <form class="login-form" id="login-form" autocomplete="on">
-            <input type="text" name="login" placeholder="логин" autocomplete="username" aria-label="Логин" required />
-            <input type="password" name="password" placeholder="пароль" autocomplete="current-password" aria-label="Пароль" required />
-            <button type="submit" class="btn btn-accent btn-auth">Войти</button>
-          </form>
-          <button type="button" class="btn btn-ghost btn-auth" id="btn-logout" hidden>Выйти</button>
-          <ul class="auth-sessions" id="auth-status" aria-live="polite"></ul>
-        </aside>
+        </div>
+        <span class="running-pill" id="running-pill" hidden>
+          <span class="running-dot" aria-hidden="true"></span>
+          <span id="running-pill-label">Агент</span>
+        </span>
+        <span class="approval-pill" id="approval-pill" hidden>
+          <span class="approval-pill-dot" aria-hidden="true"></span>Ждёт вашего решения
+        </span>
+        <div class="chat-head-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel" disabled hidden title="Остановить агента (Esc)">■ Стоп</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-export" disabled title="Экспорт чата в Markdown">↗ Экспорт</button>
+        </div>
       </header>
 
-      <div class="messages-wrap">
-        <div class="agent-status-bar" id="agent-status-bar" hidden role="status" aria-live="polite">
-          <span class="agent-status-dot" aria-hidden="true"></span>
-          <span class="agent-status-text" id="agent-status-text"></span>
-        </div>
-        <div class="messages" id="messages" aria-live="polite"></div>
-        <div class="tool-chips" id="tool-chips" aria-label="Инструменты"></div>
-        <div class="session-files" id="session-files" hidden aria-label="Файлы сессии">
-          <span class="session-files-title">Файлы сессии</span>
-          <ul class="session-files-list" id="session-files-list"></ul>
-        </div>
-        <div id="approval-bar" class="approval-bar" hidden role="region" aria-label="Согласование действия">
-          <div class="approval-body" id="approval-body"></div>
-          <div class="approval-actions">
-            <button type="button" class="btn btn-primary btn-sm" id="btn-approval-yes">Применить</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-approval-no">Пропустить</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-approval-quit">Стоп</button>
+      <div class="thread-scroll" id="thread-scroll">
+        <div class="thread">
+          <div class="messages" id="messages" aria-live="polite"></div>
+          <div class="agent-turn live-turn" id="live-turn" hidden>
+            <span class="avatar" aria-hidden="true">◉</span>
+            <div class="turn-body">
+              <div class="tool-chips" id="tool-chips" aria-label="Инструменты"></div>
+              <div class="msg-text streaming" id="msg-streaming" hidden></div>
+              <div class="agent-status-bar" id="agent-status-bar" hidden role="status" aria-live="polite">
+                <span class="agent-status-dot" aria-hidden="true"></span>
+                <span class="agent-status-text" id="agent-status-text"></span>
+              </div>
+              <div id="approval-bar" class="approval-card" hidden role="region" aria-label="Согласование действия">
+                <div class="approval-body" id="approval-body"></div>
+                <div class="approval-actions">
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-approval-yes">Применить <kbd>⏎</kbd></button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-approval-no">Пропустить</button>
+                  <button type="button" class="btn btn-link btn-sm" id="btn-approval-quit">Остановить агента</button>
+                  <span class="approval-hint">Esc — пропустить</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="session-files" id="session-files" hidden aria-label="Файлы сессии">
+            <span class="kicker">Файлы сессии</span>
+            <ul class="session-files-list" id="session-files-list"></ul>
           </div>
         </div>
       </div>
 
-      <footer class="composer" aria-label="Ввод сообщения">
-        <div class="composer-attachments" id="composer-attachments" hidden></div>
-        <div class="composer-mode field-inline field-security" id="composer-mode">
-          <label for="field-policy">Права агента</label>
-          <select id="field-policy" name="policy" aria-label="Права агента" disabled>
-            <option value="readonly">Только чтение</option>
-            <option value="approve" selected>С согласованием</option>
-            <option value="full">Полный доступ</option>
-          </select>
-        </div>
-        <input type="file" id="file-input" multiple hidden />
-        <button type="button" class="btn btn-ghost btn-icon" id="btn-attach" title="Прикрепить файл" aria-label="Прикрепить файл" disabled>📎</button>
-        <label class="composer-field">
-          <span class="visually-hidden">Сообщение</span>
-          <textarea id="message-input" rows="2" placeholder="Напишите задачу агенту…" aria-label="Сообщение" disabled></textarea>
-        </label>
-        <button type="button" class="btn btn-primary btn-send" id="btn-send" disabled>
-          <span>Отправить</span>
-        </button>
-      </footer>
-
-      <section class="view-editor" id="view-editor" aria-label="Редактор игры">
-        <header class="editor-top">
-          <div class="editor-title-wrap">
-            <h1 class="editor-title" id="editor-title">Редактор</h1>
-            <span class="editor-subtitle" id="editor-subtitle">Ручная заливка игр, уровней и кодов</span>
-          </div>
-          <div class="editor-top-actions">
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-game-copy" disabled title="Создать копию выбранной игры">Копировать</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-game-delete" disabled title="Удалить выбранную игру">Удалить</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-scenario-export" disabled title="Скачать сценарий игры одним JSON">Экспорт</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-scenario-import">Импорт</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-editor-ask" disabled title="Открыть чат с агентом об этой игре">Спросить агента</button>
-            <button type="button" class="btn btn-ghost btn-icon" id="btn-editor-theme" title="Светлая/тёмная тема">◐</button>
-          </div>
-          <aside class="admin-auth" id="admin-auth" aria-label="Организатор">
-            <form class="login-form" id="admin-login-form" autocomplete="on">
-              <input type="text" name="login" placeholder="организатор" autocomplete="username" aria-label="Логин организатора" required />
-              <input type="password" name="password" placeholder="пароль" autocomplete="current-password" aria-label="Пароль организатора" required />
-              <button type="submit" class="btn btn-accent btn-auth">Войти</button>
-            </form>
-            <button type="button" class="btn btn-ghost btn-auth" id="btn-admin-logout" hidden>Выйти</button>
-            <span class="admin-auth-status" id="admin-auth-status" aria-live="polite"></span>
-          </aside>
-        </header>
-
-        <div class="editor-body" id="editor-body">
-          <div class="editor-empty" id="editor-empty">
-            <p class="editor-empty-title">Войдите организатором, чтобы открыть игры города.</p>
-            <p class="editor-empty-hint">
-              Редактор и агент делят одну организаторскую сессию: после входа здесь станут доступны и
-              инструменты <code>admin_*</code> в чате.
-            </p>
-          </div>
-
-          <div class="editor-empty" id="editor-pick" hidden>
-            <p class="editor-empty-title">Выберите игру в списке слева.</p>
-            <p class="editor-empty-hint">
-              Кнопка «＋» над списком начинает новую игру, «Импорт» заливает готовый сценарий.
-            </p>
-          </div>
-
-          <div class="editor-sheet" id="editor-sheet" hidden>
-            <div class="editor-tabs" role="tablist" aria-label="Что редактируем">
-              <button type="button" class="editor-tab is-active" id="editor-tab-game" role="tab" aria-selected="true" data-target="game">Игра</button>
-              <button type="button" class="editor-tab" id="editor-tab-level" role="tab" aria-selected="false" data-target="level" disabled>Уровень</button>
+      <footer class="composer-wrap" aria-label="Ввод сообщения">
+        <div class="composer" id="composer">
+          <div class="composer-attachments" id="composer-attachments" hidden></div>
+          <label class="composer-field">
+            <span class="visually-hidden">Сообщение</span>
+            <textarea id="message-input" rows="2" placeholder="Напишите задачу агенту…" aria-label="Сообщение" disabled></textarea>
+          </label>
+          <div class="composer-bar">
+            <input type="file" id="file-input" multiple hidden />
+            <button type="button" class="icon-btn" id="btn-attach" title="Прикрепить файл" aria-label="Прикрепить файл" disabled>📎</button>
+            <div class="segmented policy-switch" id="field-policy" role="radiogroup" aria-label="Права агента" data-mode="approve">
+              <button type="button" class="segmented-item" role="radio" aria-checked="false" data-policy="readonly" title="Агент только читает — ничего не отправляет"><span class="policy-dot" aria-hidden="true"></span>Чтение</button>
+              <button type="button" class="segmented-item is-active" role="radio" aria-checked="true" data-policy="approve" title="Отправку кодов и правки игры вы подтверждаете"><span class="policy-dot" aria-hidden="true"></span>С согласованием</button>
+              <button type="button" class="segmented-item" role="radio" aria-checked="false" data-policy="full" title="Агент действует без подтверждений"><span class="policy-dot" aria-hidden="true"></span>Полный доступ</button>
             </div>
+            <span class="policy-hint" id="policy-hint">Отправку кодов и правки игры вы подтверждаете</span>
+            <button type="button" class="btn btn-primary btn-send" id="btn-send" disabled>Отправить <kbd>⏎</kbd></button>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <main class="main view-editor" id="view-editor" aria-label="Редактор игры">
+      <header class="editor-top">
+        <div class="editor-title-wrap">
+          <div class="editor-crumb"><span id="editor-crumb-game">Редактор</span><span class="editor-crumb-sep" aria-hidden="true">›</span><span id="editor-subtitle">Ручная заливка игр, уровней и кодов</span></div>
+          <h1 class="editor-title" id="editor-title">Редактор</h1>
+        </div>
+        <div class="segmented editor-tabs" role="tablist" aria-label="Что редактируем">
+          <button type="button" class="segmented-item editor-tab is-active" id="editor-tab-game" role="tab" aria-selected="true" data-target="game">Игра</button>
+          <button type="button" class="segmented-item editor-tab" id="editor-tab-level" role="tab" aria-selected="false" data-target="level" disabled>Уровень</button>
+        </div>
+        <div class="editor-top-actions">
+          <button type="button" class="btn btn-steel btn-sm" id="btn-editor-ask" disabled title="Открыть чат с агентом об этой игре">Спросить агента</button>
+          <div class="menu-wrap">
+            <button type="button" class="icon-btn icon-btn-bordered" id="btn-editor-menu" title="Ещё" aria-label="Ещё" aria-haspopup="menu" aria-expanded="false" aria-controls="editor-menu">⋯</button>
+            <div class="menu" id="editor-menu" role="menu" hidden>
+              <button type="button" class="menu-item" role="menuitem" id="btn-scenario-export" disabled title="Скачать сценарий игры одним JSON">Экспорт сценария (JSON)</button>
+              <button type="button" class="menu-item" role="menuitem" id="btn-scenario-import">Импорт сценария…</button>
+              <button type="button" class="menu-item" role="menuitem" id="btn-game-copy" disabled title="Создать копию выбранной игры">Создать копию игры</button>
+              <div class="menu-sep" role="separator"></div>
+              <button type="button" class="menu-item menu-item-danger" role="menuitem" id="btn-game-delete" disabled title="Удалить выбранную игру">Удалить игру</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="editor-body" id="editor-body">
+        <div class="editor-empty" id="editor-empty">
+          <div class="login-card">
+            <div class="login-card-text">
+              <span class="login-card-title">Войдите организатором</span>
+              <span class="login-card-hint">Редактор и агент делят одну организаторскую сессию: после входа в чате станут доступны инструменты <code>admin_*</code>.</span>
+            </div>
+            <form class="login-card-form" id="editor-login-form" autocomplete="on">
+              <input type="text" name="login" placeholder="логин организатора" autocomplete="username" aria-label="Логин организатора" required />
+              <input type="password" name="password" placeholder="пароль" autocomplete="current-password" aria-label="Пароль организатора" required />
+              <button type="submit" class="btn btn-primary">Войти</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="editor-empty" id="editor-pick" hidden>
+          <div class="login-card">
+            <span class="login-card-title">Выберите игру в списке слева</span>
+            <span class="login-card-hint">Кнопка «＋» над списком начинает новую игру, «⋯ → Импорт сценария» заливает готовый сценарий.</span>
+          </div>
+        </div>
+
+        <div class="editor-sheet" id="editor-sheet" hidden>
+          <nav class="editor-sections" id="editor-sections-nav" aria-label="Разделы">
+            <span class="kicker">Разделы</span>
+            <ul class="editor-sections-list" id="editor-sections"></ul>
+            <div class="editor-legend" aria-hidden="true">
+              <span><i class="status-dot is-ok"></i>заполнено</span>
+              <span><i class="status-dot is-edit"></i>есть правки</span>
+              <span><i class="status-dot is-err"></i>ошибка</span>
+            </div>
+          </nav>
+          <div class="editor-scroll" id="editor-scroll">
             <form class="editor-form" id="editor-form" autocomplete="off"></form>
           </div>
         </div>
+      </div>
 
-        <footer class="editor-actions" id="editor-actions" hidden>
-          <div class="editor-issues" id="editor-issues" hidden role="status" aria-live="polite"></div>
-          <div class="editor-actions-row">
-            <span class="editor-dirty" id="editor-dirty" hidden>Черновик</span>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-editor-validate">Проверить</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-editor-revert">Отменить правки</button>
-            <button type="button" class="btn btn-primary btn-sm" id="btn-editor-save">Сохранить в игру</button>
-          </div>
-        </footer>
-      </section>
-    </div>
+      <footer class="editor-actions" id="editor-actions" hidden>
+        <span class="editor-dirty" id="editor-dirty" hidden><span class="status-dot" aria-hidden="true"></span><span id="editor-dirty-text">Черновик</span></span>
+        <div class="editor-issues" id="editor-issues" hidden role="status" aria-live="polite"></div>
+        <span class="editor-actions-gap"></span>
+        <button type="button" class="btn btn-link btn-sm" id="btn-editor-revert">Отменить правки</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-editor-validate">Проверить</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-editor-save">Сохранить в игру</button>
+      </footer>
+    </main>
   </div>
 
   <dialog class="editor-dialog" id="import-dialog" aria-label="Импорт сценария">

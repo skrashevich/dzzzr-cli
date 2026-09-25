@@ -19,6 +19,9 @@ const state = {
   approvalPrompt: null,
   searchQuery: '',
   attachments: [],
+  // Права агента для нового чата и зеркало выбранного чата: переключатель —
+  // группа кнопок, а не <select>, поэтому значение живёт здесь.
+  policy: 'approve',
   // Настройки LLM (llm.js): снимок /llm/settings, выбранная вкладка, правки
   // формы и поток входа через ChatGPT.
   llm: null,
@@ -252,38 +255,49 @@ function isLoggedIn() {
 
 async function loadAuthStatus() {
   state.auth = await api('/auth/status');
+  const city = state.auth?.city || '';
   const cityEl = $('field-city');
-  if (cityEl) cityEl.textContent = state.auth?.city || '—';
+  if (cityEl) cityEl.textContent = city || '—';
+  const title = $('sessions-title');
+  if (title) title.textContent = city ? `Вход в Дозор · ${city}` : 'Вход в Дозор';
   renderAuth();
 }
 
 function renderAuth() {
-  const box = $('auth-status');
-  const form = $('login-form');
-  const logoutBtn = $('btn-logout');
+  const row = $('player-session');
+  const sub = $('auth-status');
   const online = isLoggedIn();
-
-  if (form) form.classList.toggle('is-collapsed', online);
+  row?.classList.toggle('is-online', online);
+  const logoutBtn = $('btn-logout');
   if (logoutBtn) logoutBtn.hidden = !online;
-  if (!box) return;
+  const loginBtn = $('btn-login-toggle');
+  if (loginBtn) loginBtn.hidden = online;
+  if (online) closeAuthPopovers();
+  if (!sub) return;
+  const city = String(state.auth?.city || '');
+  const login = String(state.auth?.login || '').trim();
+  sub.textContent = online ? login || 'сессия без имени' : 'не выполнен вход';
+  sub.title = online ? `${city} — ${login || 'сессия без имени'}` : `${city || 'город'} — нет сессии`;
+}
 
-  if (!state.auth) {
-    box.innerHTML = '';
-    return;
+// The two logins live in popovers above the sessions box; one open at a time.
+function toggleAuthPopover(popID, btnID) {
+  const pop = $(popID);
+  if (!pop) return;
+  const open = pop.hidden;
+  closeAuthPopovers();
+  if (!open) return;
+  pop.hidden = false;
+  $(btnID)?.setAttribute('aria-expanded', 'true');
+  pop.querySelector('input')?.focus();
+}
+
+function closeAuthPopovers() {
+  for (const [popID, btnID] of [['player-auth-pop', 'btn-login-toggle'], ['admin-auth-pop', 'btn-admin-login-toggle']]) {
+    const pop = $(popID);
+    if (pop) pop.hidden = true;
+    $(btnID)?.setAttribute('aria-expanded', 'false');
   }
-  const city = String(state.auth.city || '');
-  const login = String(state.auth.login || '').trim();
-  const userText = login || (online ? '…' : '—');
-  const title = login
-    ? `${city} — ${login}`
-    : online
-      ? `${city} — сессия без имени`
-      : `${city} — нет сессии`;
-  box.innerHTML = `<li class="auth-session-chip is-active${online ? '' : ' is-offline'}" title="${escapeHtml(title)}">
-      <span class="auth-session-dot" aria-hidden="true"></span>
-      <span class="auth-session-city">${escapeHtml(city)}</span>
-      <span class="auth-session-user${login ? '' : ' is-missing'}">${escapeHtml(userText)}</span>
-    </li>`;
 }
 
 async function onLoginSubmit(ev) {
@@ -320,6 +334,7 @@ async function logout() {
 
 async function loadAgentConfig() {
   const el = $('brand-model');
+  const btn = $('btn-llm-settings');
   try {
     const data = await api('/agent/config');
     state.filesEnabled = !!data?.files_enabled;
@@ -329,19 +344,19 @@ async function loadAgentConfig() {
       const base = String(data?.base_url || '').trim();
       el.textContent = model;
       el.title = base ? `Модель: ${model}\nAPI: ${base}` : `Модель: ${model}`;
-      el.classList.remove('is-missing');
+      btn?.classList.remove('is-missing');
     } else {
       const err = String(data?.error || '').trim();
       el.textContent = err ? 'модель не настроена' : '—';
       el.title = err || 'Откройте ⚙ «Настройки LLM» или задайте DZZZR_LLM_API_KEY';
-      el.classList.add('is-missing');
+      btn?.classList.add('is-missing');
     }
   } catch (e) {
     state.filesEnabled = false;
     if (el) {
       el.textContent = 'модель ?';
       el.title = e.message || String(e);
-      el.classList.add('is-missing');
+      btn?.classList.add('is-missing');
     }
   }
 }
@@ -351,57 +366,69 @@ async function loadAgentConfig() {
 async function loadGames() {
   const list = $('games-list');
   if (!list) return;
-  list.innerHTML = '<li>Загрузка…</li>';
+  list.innerHTML = '<li class="games-empty">Загрузка…</li>';
   try {
     const data = await api('/catalog/games');
     const games = Array.isArray(data?.games) ? data.games : [];
     if (!games.length) {
-      list.innerHTML = '<li>Игр не найдено</li>';
+      list.innerHTML = '<li class="games-empty">Игр не найдено</li>';
       return;
     }
     list.innerHTML = games
       .map((g) => {
         const when = String(g.start || g.date || '').trim();
-        return `<li><strong>#${escapeHtml(g.id)}</strong> ${escapeHtml(g.name || '')}${
+        return `<li><span>${escapeHtml(g.name || `Игра ${g.id}`)}</span><span class="game-meta">№${escapeHtml(g.id)}${
           when ? ` · ${escapeHtml(when)}` : ''
-        }</li>`;
+        }</span></li>`;
       })
       .join('');
   } catch (e) {
-    list.innerHTML = `<li>${escapeHtml(e.message || String(e))}</li>`;
+    list.innerHTML = `<li class="games-empty">${escapeHtml(e.message || String(e))}</li>`;
   }
 }
 
 /* ---------- права агента ---------- */
 
+const POLICIES = ['readonly', 'approve', 'full'];
+
 function getSelectedPolicy() {
-  return ($('field-policy')?.value || 'approve').trim();
+  return state.policy || 'approve';
 }
 
 function syncPolicyFromDetail(detail) {
-  const sel = $('field-policy');
-  if (!sel) return;
   const policy = detail?.policy || 'approve';
-  if ([...sel.options].some((o) => o.value === policy)) sel.value = policy;
+  if (POLICIES.includes(policy)) state.policy = policy;
   syncPolicyVisual();
 }
 
 function syncPolicyVisual() {
-  const sel = $('field-policy');
-  if (sel) sel.dataset.mode = sel.value || 'approve';
+  const group = $('field-policy');
+  if (!group) return;
+  group.dataset.mode = state.policy;
+  for (const btn of group.querySelectorAll('[data-policy]')) {
+    const on = btn.dataset.policy === state.policy;
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    btn.tabIndex = on ? 0 : -1;
+    if (on) {
+      const hint = $('policy-hint');
+      if (hint) hint.textContent = btn.title;
+    }
+  }
 }
 
 function flashPolicyApplied() {
-  const sel = $('field-policy');
-  if (!sel) return;
-  sel.classList.remove('is-applied');
-  void sel.offsetWidth;
-  sel.classList.add('is-applied');
-  window.setTimeout(() => sel.classList.remove('is-applied'), 700);
+  const group = $('field-policy');
+  if (!group) return;
+  group.classList.remove('is-applied');
+  void group.offsetWidth;
+  group.classList.add('is-applied');
+  window.setTimeout(() => group.classList.remove('is-applied'), 700);
 }
 
-async function applyPolicy() {
-  const policy = getSelectedPolicy();
+async function applyPolicy(policy) {
+  if (!POLICIES.includes(policy) || policy === state.policy) return;
+  state.policy = policy;
   syncPolicyVisual();
   if (state.detail) state.detail.policy = policy;
   if (!state.activeId) return;
@@ -436,11 +463,46 @@ async function loadChats() {
   renderChatList();
 }
 
+// chatDayGroup files a chat under «Сегодня», «Вчера» or «Ранее» by its last
+// change, which is also the order the list is sorted in.
+function chatDayGroup(date) {
+  if (!date) return 'Ранее';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(date);
+  day.setHours(0, 0, 0, 0);
+  const diff = Math.round((today - day) / 86400000);
+  if (diff <= 0) return 'Сегодня';
+  if (diff === 1) return 'Вчера';
+  return 'Ранее';
+}
+
+// chatStamp is the time for today's chats and the date for older ones.
+function chatStamp(date) {
+  if (!date) return '';
+  const two = (n) => String(n).padStart(2, '0');
+  if (chatDayGroup(date) === 'Сегодня') return `${two(date.getHours())}:${two(date.getMinutes())}`;
+  return `${two(date.getDate())}.${two(date.getMonth() + 1)}`;
+}
+
 function renderChatList() {
   const ul = $('chat-list');
   ul.innerHTML = '';
+  let group = null;
   for (const c of state.chats) {
     const id = String(c.id);
+    const updated = c.updated_at ? new Date(c.updated_at) : null;
+    const when = updated && !Number.isNaN(updated.getTime()) ? updated : null;
+    const g = chatDayGroup(when);
+    if (g !== group) {
+      group = g;
+      const head = document.createElement('li');
+      head.className = 'chat-group-title kicker';
+      head.setAttribute('role', 'presentation');
+      head.textContent = g;
+      ul.appendChild(head);
+    }
+
     const li = document.createElement('li');
     li.className = 'chat-list-item';
 
@@ -449,16 +511,18 @@ function renderChatList() {
     btn.className = 'chat-item' + (id === state.activeId ? ' active' : '');
     const title = c.title || `Чат ${id}`;
     const running = !!c.running;
-    btn.innerHTML = `<span class="chat-item-title">${escapeHtml(title)}</span>
-      <span class="chat-item-meta">
-        ${running ? '<span class="dot-running" aria-hidden="true"></span>' : ''}
-        <span>${escapeHtml(c.city || '')}</span>
-      </span>`;
+    const awaiting = id === state.activeId && !!state.approvalPrompt;
+    const status = awaiting ? 'ждёт согласования' : running ? 'агент работает' : '';
+    const meta = [chatStamp(when), c.city, status].filter(Boolean);
+    btn.innerHTML = `<span class="chat-item-head"><span class="chat-item-title">${escapeHtml(title)}</span>${
+      running || awaiting ? '<span class="dot-running" aria-hidden="true"></span>' : ''
+    }</span>
+      <span class="chat-item-meta">${meta.map((m) => `<span>${escapeHtml(m)}</span>`).join('<span aria-hidden="true">·</span>')}</span>`;
     btn.addEventListener('click', () => switchChat(id));
 
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'chat-item-delete btn btn-ghost';
+    del.className = 'chat-item-delete';
     del.title = 'Удалить чат';
     del.setAttribute('aria-label', `Удалить чат: ${title}`);
     del.innerHTML = '<span aria-hidden="true">✕</span>';
@@ -534,43 +598,136 @@ function getLinesFromDetail() {
   return Array.isArray(lines) ? lines : [];
 }
 
+function scrollThread() {
+  const box = $('thread-scroll');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+
+function renderChatTitle() {
+  const el = $('chat-title');
+  if (!el) return;
+  if (!state.activeId) {
+    el.textContent = 'Чат не выбран';
+    return;
+  }
+  const chat = state.chats.find((c) => String(c.id) === state.activeId);
+  el.textContent = state.detail?.title || chat?.title || 'Новый чат';
+}
+
+// firstLine is what a collapsed tool row shows of a result.
+function firstLine(text, max = 160) {
+  const line = String(text ?? '').trim().split('\n').find((l) => l.trim()) ?? '';
+  return line.length > max ? `${line.slice(0, max)}…` : line;
+}
+
+// toolRowHistory is one finished tool call from the transcript: the result
+// folds away and opens on click, so a long JSON answer does not bury the text.
+function toolRowHistory(name, content) {
+  const row = document.createElement('details');
+  row.className = 'tool-row';
+  row.innerHTML = `<summary><span class="tool-mark" aria-hidden="true">✓</span><span class="tool-name">${escapeHtml(
+    name,
+  )}</span><span class="tool-summary">${escapeHtml(firstLine(content))}</span><span class="tool-meta">${
+    content ? '▸' : ''
+  }</span></summary>`;
+  if (content) {
+    const pre = document.createElement('pre');
+    pre.className = 'tool-output';
+    pre.textContent = content;
+    row.appendChild(pre);
+    row.addEventListener('toggle', () => {
+      const meta = row.querySelector('.tool-meta');
+      if (meta) meta.textContent = row.open ? '▾' : '▸';
+    });
+  }
+  return row;
+}
+
+function agentTurn() {
+  const turn = document.createElement('div');
+  turn.className = 'agent-turn';
+  turn.innerHTML = '<span class="avatar" aria-hidden="true">◉</span><div class="turn-body"></div>';
+  return turn;
+}
+
 function renderMessages() {
   const wrap = $('messages');
   wrap.innerHTML = '';
   renderSessionFiles();
+  renderChatTitle();
 
   if (!state.activeId) {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
     empty.innerHTML =
-      '<p class="empty-hint-title">Чат не выбран</p>' +
+      '<span class="avatar" aria-hidden="true">◉</span><p class="empty-hint-title">Чат не выбран</p>' +
       (isLoggedIn()
-        ? '<p class="empty-hint">Нажмите <strong>Новый чат</strong> слева или просто напишите задачу агенту.</p>'
-        : '<p class="empty-hint">Войдите на сайт в панели справа — иначе инструменты агента не увидят игру.</p>');
+        ? '<p class="empty-hint">Нажмите <strong>＋ Новый</strong> слева или просто напишите задачу агенту.</p>'
+        : '<p class="empty-hint">Войдите в Дозор в блоке «Вход в Дозор» слева — иначе инструменты агента не увидят игру.</p>');
     wrap.appendChild(empty);
+    renderLiveTurn();
     return;
   }
 
+  // Everything between two user messages is one agent turn: tool calls,
+  // notes and text sit under a single avatar, the way the agent produced them.
+  let body = null;
   for (const line of getLinesFromDetail()) {
     const role = String(line.role || 'assistant').toLowerCase();
-    const roleLabel = line.tool_name ? `инстр. ${line.tool_name}` : ROLE_RU[role] || role;
-    const content = line.content ?? '';
-    const div = document.createElement('div');
-    div.className = `msg ${role}`;
-    const body = role === 'assistant' || role === 'user' ? renderMarkdown(content) : escapeHtml(content);
-    div.innerHTML = `<span class="msg-role">${escapeHtml(roleLabel)}</span><span class="msg-body">${body}</span>`;
-    wrap.appendChild(div);
+    const content = String(line.content ?? '');
+    if (role === 'user') {
+      body = null;
+      const div = document.createElement('div');
+      div.className = 'msg-user';
+      div.innerHTML = renderMarkdown(content);
+      wrap.appendChild(div);
+      continue;
+    }
+    if (!body) {
+      const turn = agentTurn();
+      wrap.appendChild(turn);
+      body = turn.querySelector('.turn-body');
+    }
+    if (role === 'tool') {
+      body.appendChild(toolRowHistory(line.tool_name || ROLE_RU.tool, content));
+    } else if (role === 'system') {
+      const note = document.createElement('div');
+      note.className = 'tool-row tool-note' + (/^Ошибка/.test(content) ? ' is-error' : '');
+      note.innerHTML = `<div class="tool-row-head"><span class="tool-mark" aria-hidden="true">${
+        /^Ошибка/.test(content) ? '!' : 'i'
+      }</span><span class="tool-name">${escapeHtml(ROLE_RU.system)}</span><span class="tool-summary" title="${escapeHtml(
+        content,
+      )}">${escapeHtml(content)}</span><span></span></div>`;
+      body.appendChild(note);
+    } else {
+      const div = document.createElement('div');
+      div.className = 'msg-text';
+      div.innerHTML = renderMarkdown(content);
+      body.appendChild(div);
+    }
   }
-  if (state.agentRunning || state.streamBuf) {
-    const div = document.createElement('div');
-    div.className = 'msg assistant streaming';
-    div.id = 'msg-streaming';
-    div.innerHTML = `<span class="msg-role">${escapeHtml(ROLE_RU.assistant)}</span><span class="msg-body">${renderMarkdown(
-      state.streamBuf,
-    )}</span>`;
-    wrap.appendChild(div);
-  }
-  wrap.scrollTop = wrap.scrollHeight;
+  renderStreaming();
+  renderLiveTurn();
+  scrollThread();
+}
+
+function renderStreaming() {
+  const el = $('msg-streaming');
+  if (!el) return;
+  el.hidden = !state.streamBuf;
+  el.innerHTML = renderMarkdown(state.streamBuf);
+}
+
+// renderLiveTurn shows the running turn — tool calls, status, streamed text
+// and the approval card — only while there is something in it.
+function renderLiveTurn() {
+  const turn = $('live-turn');
+  if (!turn) return;
+  const active =
+    !!state.activeId &&
+    (state.agentRunning || !!state.streamBuf || state.pendingTools.length > 0 || !!state.approvalPrompt);
+  turn.hidden = !active;
+  turn.classList.toggle('is-continuation', !!$('messages').lastElementChild?.classList.contains('agent-turn'));
 }
 
 /* ---------- состояние выполнения ---------- */
@@ -643,6 +800,7 @@ function clearToolChips() {
   hideToolChipTooltip();
   $('tool-chips').innerHTML = '';
   state.pendingTools = [];
+  renderLiveTurn();
 }
 
 /* ---------- вложения ---------- */
@@ -831,22 +989,28 @@ function bindToolChipTooltip(el, meta) {
 function onToolStart(p) {
   const meta = buildToolChipMeta(p);
   setAgentStatus('tool', `Вызов инструмента: ${meta.name}`);
-  const el = document.createElement('span');
-  el.className = 'tool-chip pending';
-  el.innerHTML = `<span class="tool-chip-label">инстр.</span> <strong class="tool-chip-name">${escapeHtml(
+  const args = String(p.args ?? '').trim();
+  const el = document.createElement('div');
+  el.className = 'tool-row is-pending';
+  el.innerHTML = `<div class="tool-row-head"><span class="tool-mark" aria-hidden="true">●</span><span class="tool-name">${escapeHtml(
     meta.name,
-  )}</strong>`;
+  )}</span><span class="tool-summary">${escapeHtml(firstLine(args) || 'выполняется…')}</span><span class="tool-meta">…</span></div>`;
   bindToolChipTooltip(el, meta);
   $('tool-chips').appendChild(el);
-  state.pendingTools.push({ name: meta.name, el, meta });
+  state.pendingTools.push({ name: meta.name, el, meta, started: Date.now() });
+  renderLiveTurn();
+  scrollThread();
 }
 
 function onToolDone(p) {
   const name = String(p.name ?? p.tool ?? 'tool');
-  const idx = state.pendingTools.findIndex((t) => t.name === name && !t.el.classList.contains('done'));
-  if (idx >= 0) {
-    state.pendingTools[idx].el.classList.remove('pending');
-    state.pendingTools[idx].el.classList.add('done');
+  const tool = state.pendingTools.find((t) => t.name === name && t.el.classList.contains('is-pending'));
+  if (tool) {
+    tool.el.classList.remove('is-pending');
+    const mark = tool.el.querySelector('.tool-mark');
+    if (mark) mark.textContent = '✓';
+    const took = tool.el.querySelector('.tool-meta');
+    if (took) took.textContent = `${Math.max(1, Math.round((Date.now() - tool.started) / 1000))} с`;
   }
   setAgentStatus('tool', `Готово: ${name}`);
 }
@@ -869,15 +1033,9 @@ function handleStreamEvent(kind, payload) {
       const piece = payload.text ?? payload.content ?? payload._raw ?? '';
       if (!state.streamBuf) setAgentStatus('stream', 'Модель сформировала ответ');
       state.streamBuf += String(piece);
-      const el = $('msg-streaming');
-      if (el) {
-        el.innerHTML = `<span class="msg-role">${escapeHtml(
-          ROLE_RU.assistant,
-        )}</span><span class="msg-body">${renderMarkdown(state.streamBuf)}</span>`;
-        el.parentElement.scrollTop = el.parentElement.scrollHeight;
-      } else {
-        renderMessages();
-      }
+      renderStreaming();
+      renderLiveTurn();
+      scrollThread();
       break;
     }
     case 'tool_start':
@@ -962,14 +1120,33 @@ function showApprovalPrompt(p) {
   if (!bar || !body) return;
   const args = String(p.args || '').trim();
   body.innerHTML = `<div class="approval-head">
-      <span class="approval-kicker">Согласование</span>
-      <span class="approval-tool">${escapeHtml(p.tool || '')}</span>
+      <span class="approval-kicker">Нужно согласование</span>
+      ${p.tool ? `<span class="approval-tool">${escapeHtml(p.tool)}</span>` : ''}
     </div>
     <p class="approval-action">${escapeHtml(p.action || p.tool || '')}</p>
-    ${args ? `<ul class="approval-details"><li>${escapeHtml(args)}</li></ul>` : ''}`;
+    ${args ? `<ul class="approval-details">${args
+      .split('\n')
+      .filter((l) => l.trim())
+      .map((l) => `<li>${escapeHtml(l)}</li>`)
+      .join('')}</ul>` : ''}`;
   bar.hidden = false;
   setApprovalButtonsDisabled(false);
+  renderApprovalChrome();
+  renderLiveTurn();
   bar.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// renderApprovalChrome is everything outside the card that says the agent is
+// waiting: the pill in the header, the composer's border and its placeholder.
+function renderApprovalChrome() {
+  const waiting = !!state.approvalPrompt;
+  const pill = $('approval-pill');
+  if (pill) pill.hidden = !waiting;
+  const running = $('running-pill');
+  if (running) running.hidden = waiting || !state.agentRunning;
+  $('composer')?.classList.toggle('is-awaiting', waiting);
+  renderComposerPlaceholder();
+  renderChatList();
 }
 
 function setApprovalButtonsDisabled(disabled) {
@@ -981,12 +1158,15 @@ function setApprovalButtonsDisabled(disabled) {
 }
 
 function hideApprovalBar() {
+  const had = !!state.approvalPrompt;
   state.approvalPrompt = null;
   const bar = $('approval-bar');
   if (bar) {
     bar.hidden = true;
     setApprovalButtonsDisabled(false);
   }
+  if (had) renderApprovalChrome();
+  renderLiveTurn();
 }
 
 async function postApproval(action) {
@@ -1011,25 +1191,28 @@ function refreshSendState() {
   const attachBtn = $('btn-attach');
   if (attachBtn) attachBtn.disabled = busy || !state.filesEnabled;
   $('btn-export').disabled = !hasChat;
-  $('btn-cancel').disabled = !hasChat || !busy;
-  const policySel = $('field-policy');
-  if (policySel) {
-    policySel.disabled = !hasChat;
-    syncPolicyVisual();
-  }
+  const cancel = $('btn-cancel');
+  cancel.disabled = !hasChat || !busy;
+  cancel.hidden = !hasChat || !busy;
+  syncPolicyVisual();
   const pill = $('running-pill');
-  if (pill) pill.hidden = !busy;
+  if (pill) pill.hidden = !busy || !!state.approvalPrompt;
   if (!busy) {
     clearAgentStatus();
   } else if (!state.agentStatus.message) {
     setAgentStatus('start', 'Агент работает…');
   }
   renderComposerPlaceholder();
+  renderLiveTurn();
 }
 
 function renderComposerPlaceholder() {
   const input = $('message-input');
   if (!input) return;
+  if (state.approvalPrompt) {
+    input.placeholder = 'Агент ждёт решения по действию выше…';
+    return;
+  }
   if (state.agentRunning) {
     input.placeholder = state.agentStatus.message || 'Агент отвечает…';
     return;
@@ -1039,7 +1222,7 @@ function renderComposerPlaceholder() {
     return;
   }
   if (!isLoggedIn()) {
-    input.placeholder = 'Войдите на сайт, чтобы агент видел игру…';
+    input.placeholder = 'Войдите в Дозор слева, чтобы агент видел игру…';
     return;
   }
   input.placeholder = 'Напишите задачу агенту… (Enter — отправить)';
@@ -1117,6 +1300,7 @@ async function sendMessage() {
       body: { content: text, files },
     });
     input.value = '';
+    autosizeComposer();
     state.attachments = failed;
     renderAttachments();
     state.detail = detail;
@@ -1200,12 +1384,26 @@ async function selectChat(chatId) {
   }
 }
 
+function autosizeComposer() {
+  const input = $('message-input');
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = `${Math.min(input.scrollHeight, 200)}px`;
+}
+
 function bindUI() {
   $('btn-new-chat').addEventListener('click', () => void createChat());
   $('btn-send').addEventListener('click', () => void sendMessage());
   $('btn-attach')?.addEventListener('click', () => $('file-input').click());
   $('file-input')?.addEventListener('change', onFilesSelected);
   $('btn-logout').addEventListener('click', () => void logout());
+  $('btn-login-toggle')?.addEventListener('click', () => toggleAuthPopover('player-auth-pop', 'btn-login-toggle'));
+  $('btn-admin-login-toggle')?.addEventListener('click', () => toggleAuthPopover('admin-auth-pop', 'btn-admin-login-toggle'));
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.auth-pop, #btn-login-toggle, #btn-admin-login-toggle')) closeAuthPopovers();
+    const games = $('games-info');
+    if (games?.open && !games.contains(e.target)) games.open = false;
+  });
   $('btn-export').addEventListener('click', () => exportChat('markdown'));
   $('btn-cancel').addEventListener('click', () => void cancelAgent());
   $('btn-theme').addEventListener('click', () => toggleTheme());
@@ -1213,7 +1411,19 @@ function bindUI() {
   $('btn-approval-no')?.addEventListener('click', () => void postApproval('no'));
   $('btn-approval-quit')?.addEventListener('click', () => void postApproval('quit'));
   $('login-form').addEventListener('submit', onLoginSubmit);
-  $('field-policy')?.addEventListener('change', () => void applyPolicy());
+  const policyGroup = $('field-policy');
+  policyGroup?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-policy]');
+    if (btn) void applyPolicy(btn.dataset.policy);
+  });
+  // Arrow keys move through a radiogroup, as they do for native radios.
+  policyGroup?.addEventListener('keydown', (e) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const next = POLICIES[(POLICIES.indexOf(state.policy) + step + POLICIES.length) % POLICIES.length];
+    void applyPolicy(next).then(() => policyGroup.querySelector(`[data-policy="${next}"]`)?.focus());
+  });
   $('games-info')?.addEventListener('toggle', (e) => {
     if (e.target.open) void loadGames();
   });
@@ -1223,8 +1433,9 @@ function bindUI() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => void loadChats(), 200);
   });
+  $('message-input').addEventListener('input', autosizeComposer);
   $('message-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       void sendMessage();
     }
@@ -1238,7 +1449,32 @@ function bindUI() {
       e.preventDefault();
       $('chat-search')?.focus();
     }
-    if (e.key === 'Escape' && state.agentRunning) void cancelAgent();
+    if (e.key === 'Escape') {
+      const pop = [...document.querySelectorAll('.auth-pop')].some((p) => !p.hidden);
+      if (pop) {
+        closeAuthPopovers();
+        return;
+      }
+      if (document.querySelector('dialog[open], .modal-overlay:not([hidden]), .onboarding-overlay:not([hidden])')) return;
+      if (state.approvalPrompt && document.body.dataset.mode !== 'editor') {
+        e.preventDefault();
+        void postApproval('no');
+        return;
+      }
+      if (state.agentRunning) void cancelAgent();
+      return;
+    }
+    // ⏎ applies a pending action unless the author is typing somewhere.
+    if (
+      e.key === 'Enter' &&
+      state.approvalPrompt &&
+      document.body.dataset.mode !== 'editor' &&
+      !e.target.closest('input, textarea, select, button, [contenteditable="true"], dialog') &&
+      !$('approval-bar').querySelector('button:disabled')
+    ) {
+      e.preventDefault();
+      void postApproval('yes');
+    }
   });
 }
 

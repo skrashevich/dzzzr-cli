@@ -133,9 +133,9 @@
       }
     },
     status(text) {
-      const node = el('editor-dirty');
-      node.hidden = false;
-      node.textContent = text;
+      draftStatus = text;
+      el('editor-dirty').hidden = false;
+      renderDirty();
     },
     changed(draft, doc) {
       ed.gameID = draft.game_id || null;
@@ -145,25 +145,28 @@
       localStorage.setItem(selectionKey, JSON.stringify({ draft: draft.id, document: doc.id }));
       el('btn-editor-ask').disabled = false;
       renderDraftLevels();
+      renderHeading();
+      scheduleStatus();
     },
   });
 
   function collectDraftParams() {
     const params = {};
     for (const wrap of el('editor-form').querySelectorAll('.editor-field')) {
-      const name = wrap.dataset.field;
-      const type = wrap.dataset.type;
-      if (type === 'bool') params[name] = wrap.querySelector('input').checked;
-      else if (ROW_COLUMNS[type]) params[name] = collectRows(wrap, ROW_COLUMNS[type]);
-      else if (type === 'strings') {
-        params[name] = [...wrap.querySelectorAll('input[data-col=value]')].map((i) => i.value);
-      } else if (type === 'html') params[name] = wrap.querySelector('.editor-rich-source').value;
-      else {
-        const value = wrap.querySelector('input,textarea').value;
-        params[name] = type === 'int' && value !== '' ? Number(value) : value;
-      }
+      params[wrap.dataset.field] = readField(wrap);
     }
     return params;
+  }
+
+  // readField is one control's value as the draft stores it.
+  function readField(wrap) {
+    const type = wrap.dataset.type;
+    if (type === 'bool') return wrap.querySelector('input').checked;
+    if (ROW_COLUMNS[type]) return collectRows(wrap, ROW_COLUMNS[type]);
+    if (type === 'strings') return [...wrap.querySelectorAll('input[data-col=value]')].map((i) => i.value);
+    if (type === 'html') return wrap.querySelector('.editor-rich-source').value;
+    const value = wrap.querySelector('input,textarea').value;
+    return type === 'int' && value !== '' ? Number(value) : value;
   }
 
   async function openDocument() {
@@ -195,7 +198,6 @@
     rememberedDraft = data.id;
     ed.tab = doc.kind;
     el('editor-tab-level').disabled = doc.kind !== 'level';
-    el('editor-title').textContent = data.game_id ? `Игра ${data.game_id}` : 'Новая игра';
     gameActionsEnabled(!!data.game_id);
     await setTab(doc.kind);
     await loadLevels();
@@ -210,8 +212,10 @@
       const li = document.createElement('li');
       li.dataset.draftDocument = doc.id;
       const btn = document.createElement('button');
-      btn.type = 'button'; btn.className = 'editor-item';
-      btn.textContent = `${doc.params.title || 'Новое задание'} · черновик`;
+      btn.type = 'button'; btn.className = 'editor-item editor-level-item';
+      btn.classList.toggle('is-active', drafts.doc?.id === doc.id);
+      btn.innerHTML = '<span class="level-num" aria-hidden="true">＋</span><span class="level-text"><span class="editor-item-name"></span><span class="level-chips"><span class="chip-sm is-warn">черновик</span></span></span>';
+      btn.querySelector('.editor-item-name').textContent = doc.params.title || 'Новое задание';
       btn.addEventListener('click', () => void openDraftSelection(drafts.draft.id, doc.id).catch((e) => toast(e.message, true)));
       li.append(btn); el('editor-level-list').append(li);
     }
@@ -374,6 +378,7 @@
     const node = el('editor-dirty');
     if (node) node.hidden = false;
     if (on) drafts.schedule();
+    scheduleStatus();
   }
 
   // confirmDiscard guards every path that rebuilds the form from what the
@@ -431,20 +436,26 @@
   }
 
   function renderAdminAuth() {
-    const form = el('admin-login-form');
-    const out = el('btn-admin-logout');
+    const row = el('organizer-session');
     const status = el('admin-auth-status');
     const signed = !!ed.admin?.has_admin;
-    form.hidden = signed;
-    out.hidden = !signed;
-    status.classList.toggle('is-err', !!ed.adminError);
+    el('btn-admin-login-toggle').hidden = signed;
+    el('btn-admin-logout').hidden = !signed;
+    row.classList.toggle('is-online', signed && !ed.adminError);
+    row.classList.toggle('is-error', !!ed.adminError);
     if (ed.adminError) {
       status.textContent = ed.adminError;
+      status.title = ed.adminError;
+    } else if (signed) {
+      const games = ed.games.length ? ` · ${ed.games.length} ${plural(ed.games.length, 'игра', 'игры', 'игр')}` : '';
+      status.textContent = `${ed.admin.login || 'организатор'}${games}`;
+      status.title = `${ed.admin.city}: организатор ${ed.admin.login}`;
     } else {
-      status.textContent = signed
-        ? `${ed.admin.city}: организатор ${ed.admin.login}`
-        : `${ed.admin?.city ?? '—'}: организатор не задан`;
+      status.textContent = 'не выполнен вход';
+      status.title = `${ed.admin?.city ?? '—'}: организатор не задан`;
     }
+    if (signed) closeAuthPopovers();
+    el('editor-games-title').textContent = ed.admin?.city ? `Игры · ${ed.admin.city}` : 'Игры';
     el('editor-levels-block').hidden = !signed || ed.gameID == null;
     renderBody();
   }
@@ -475,6 +486,7 @@
       renderAdminAuth();
       toast('Вход организатора выполнен');
       await loadGames();
+      renderAdminAuth();
       if (ed.pendingRoute) await applyRoute(ed.pendingRoute);
     } catch (e) {
       // A run started with -admin-login already carries credentials, so a
@@ -499,6 +511,7 @@
       gameActionsEnabled(false);
       renderGameList();
       el('editor-form').innerHTML = '';
+      renderSections();
       resetTitle();
       markDirty(false);
       renderAdminAuth();
@@ -548,14 +561,14 @@
       const li = document.createElement('li');
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'editor-item';
+      btn.className = 'editor-item editor-game-item';
       btn.classList.toggle('is-active', g.id === ed.gameID);
       const name = document.createElement('span');
       name.className = 'editor-item-name';
       name.textContent = g.name || `Игра ${g.id}`;
       const meta = document.createElement('span');
       meta.className = 'editor-item-meta';
-      meta.textContent = [g.date, g.status].filter(Boolean).join(' · ') || `#${g.id}`;
+      meta.textContent = [`№${g.id}`, g.date, g.status].filter(Boolean).join(' · ');
       btn.append(name, meta);
       btn.addEventListener('click', () => void selectGame(g.id));
       li.appendChild(btn);
@@ -611,17 +624,38 @@
       ed.original.game = {};
       toast(`Игра ${gameID}: ${e.message || String(e)}`, true);
     }
-    const g = ed.games.find((x) => x.id === gameID);
-    el('editor-title').textContent = g?.name || `Игра ${gameID}`;
-    el('editor-subtitle').textContent = `id ${gameID}`;
     await setTab('game');
     await loadLevels();
     return true;
   }
 
   function resetTitle() {
-    el('editor-title').textContent = 'Редактор';
-    el('editor-subtitle').textContent = 'Ручная заливка игр, уровней и кодов';
+    renderHeading();
+  }
+
+  // renderHeading spells where the author is: the game in the breadcrumb, the
+  // game or the level as the title, and the level's number on its tab.
+  function renderHeading() {
+    const game = ed.games.find((x) => x.id === ed.gameID);
+    const gameName = game?.name || (ed.gameID != null ? `Игра ${ed.gameID}` : ed.newGame ? 'Новая игра' : '');
+    const level = ed.levelID != null ? ed.levels.find((l) => l.id === ed.levelID) : null;
+    const levelLabel = level ? `Уровень ${level.order}` : ed.levelID != null ? `Уровень ${ed.levelID}` : 'Новый уровень';
+    let crumb = 'Ручная заливка игр, уровней и кодов';
+    let title = 'Редактор';
+    if (gameName) {
+      if (ed.tab === 'level') {
+        crumb = levelLabel;
+        title = level ? `${level.order}. ${level.title || 'без названия'}` : levelLabel;
+      } else {
+        crumb = ed.newGame ? 'Название, дата и время обязательны' : 'Параметры игры';
+        title = ed.gameID != null ? `${gameName} · №${ed.gameID}` : gameName;
+      }
+    }
+    el('editor-crumb-game').textContent = gameName || 'Редактор';
+    el('editor-subtitle').textContent = crumb;
+    el('editor-title').textContent = title;
+    const tab = el('editor-tab-level');
+    tab.textContent = tab.disabled ? 'Уровень' : levelLabel;
   }
 
   // clearGame closes the open game without opening another, which is where
@@ -652,8 +686,6 @@
     renderGameList();
     el('editor-levels-block').hidden = true;
     gameActionsEnabled(false);
-    el('editor-title').textContent = 'Новая игра';
-    el('editor-subtitle').textContent = 'Название, дата и время обязательны';
     await setTab('game');
   }
 
@@ -731,18 +763,30 @@
 
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'editor-item';
-      btn.classList.toggle('is-active', l.id === ed.levelID);
+      btn.className = 'editor-item editor-level-item';
+      btn.classList.toggle('is-active', l.id === ed.levelID && ed.tab === 'level');
+      const num = document.createElement('span');
+      num.className = 'level-num';
+      num.textContent = String(l.order ?? '·');
+      const text = document.createElement('span');
+      text.className = 'level-text';
       const name = document.createElement('span');
       name.className = 'editor-item-name';
-      name.textContent = `${l.order}. ${l.title || 'без названия'}`;
-      const meta = document.createElement('span');
-      meta.className = 'editor-item-meta';
+      name.textContent = l.title || 'без названия';
+      const chips = document.createElement('span');
+      chips.className = 'level-chips';
+      const chip = (label, kind) => {
+        const c = document.createElement('span');
+        c.className = `chip-sm${kind ? ` is-${kind}` : ''}`;
+        c.textContent = label;
+        chips.appendChild(c);
+      };
       const codes = Array.isArray(l.codes) ? l.codes.length : 0;
-      meta.textContent = [l.kind, codes ? `${codes} кодов` : null, l.published ? null : 'черновик']
-        .filter(Boolean)
-        .join(' · ');
-      btn.append(name, meta);
+      if (l.kind) chip(l.kind, /бонус|сквоз|bonus/i.test(l.kind) ? 'bonus' : 'kind');
+      if (codes) chip(`${codes} ${plural(codes, 'код', 'кода', 'кодов')}`);
+      if (!l.published) chip('черновик', 'warn');
+      text.append(name, chips);
+      btn.append(num, text);
       btn.addEventListener('click', () => void selectLevel(l.id));
 
       const up = document.createElement('button');
@@ -766,6 +810,7 @@
       del.title = 'Удалить уровень';
       del.addEventListener('click', () => void deleteLevel(l.id));
 
+      for (const b of [up, down, del]) b.className = 'icon-btn icon-btn-sm';
       const actions = document.createElement('span');
       actions.className = 'editor-level-actions';
       actions.append(up, down, del);
@@ -779,6 +824,8 @@
       li.textContent = ed.gameID == null ? 'Выберите игру' : 'Уровней нет';
       list.appendChild(li);
     }
+    el('editor-levels-title').textContent = ed.levels.length ? `Уровни · ${ed.levels.length}` : 'Уровни';
+    renderHeading();
   }
 
   async function selectLevel(levelID) {
@@ -872,8 +919,10 @@
       toast(`Черновик не открыт: ${e.message}`, true);
     } finally { el('editor-form').inert = false; }
     renderBody();
-    setIssues(el('editor-issues'), []);
+    setEditorIssues([]);
     markDirty(false);
+    renderLevelList();
+    renderDraftLevels();
     syncRoute();
   }
 
@@ -889,26 +938,291 @@
     const form = el('editor-form');
     form.innerHTML = '';
     const spec = currentSpec();
-    if (!spec) return;
-    const values = formValues ?? currentValues() ?? {};
-    for (const group of spec.form?.groups ?? []) {
-      form.appendChild(renderGroup(group, values));
+    if (spec) {
+      const values = formValues ?? currentValues() ?? {};
+      (spec.form?.groups ?? []).forEach((group, index) => form.appendChild(renderGroup(group, values, index)));
     }
+    refreshStatus();
   }
 
-  function renderGroup(group, values) {
-    const box = document.createElement('fieldset');
+  // collapsed remembers the sections an author folded away, per tab, so a
+  // re-render from the shared draft does not unfold them again.
+  const collapsed = new Set();
+
+  function renderGroup(group, values, index) {
+    const key = `${ed.tab}:${group.title}`;
+    const box = document.createElement('section');
     box.className = 'editor-group';
-    const legend = document.createElement('legend');
-    legend.textContent = group.title;
-    box.appendChild(legend);
+    box.id = `editor-group-${index}`;
+    box.dataset.title = group.title;
+    const head = document.createElement('button');
+    head.type = 'button';
+    head.className = 'editor-group-head';
+    head.innerHTML = '<span class="editor-group-title"></span><span class="editor-group-summary"></span><span class="editor-group-badge" hidden></span><span class="editor-group-chevron" aria-hidden="true"></span>';
+    head.querySelector('.editor-group-title').textContent = group.title;
+    const body = document.createElement('div');
+    body.className = 'editor-group-body';
+    body.id = `editor-group-${index}-body`;
+    head.setAttribute('aria-controls', body.id);
+    const setOpen = (open) => {
+      box.classList.toggle('is-collapsed', !open);
+      head.setAttribute('aria-expanded', open ? 'true' : 'false');
+      head.querySelector('.editor-group-chevron').textContent = open ? '▾' : '▸';
+      if (open) collapsed.delete(key);
+      else collapsed.add(key);
+    };
+    head.addEventListener('click', () => setOpen(box.classList.contains('is-collapsed')));
+    box.openGroup = () => setOpen(true);
     const grid = document.createElement('div');
     grid.className = 'editor-grid';
     for (const field of group.fields ?? []) {
       grid.appendChild(renderField(field, values[field.name]));
     }
-    box.appendChild(grid);
+    body.appendChild(grid);
+    box.append(head, body);
+    setOpen(!collapsed.has(key));
     return box;
+  }
+
+  // ------------------------------------------------------------ status
+
+  // baseline is what the engine last said, read back through the same
+  // controls the author edits, so «изменено» compares like with like: an
+  // untouched field never shows as changed just because the engine spells a
+  // number as a string.
+  let baseline = null;
+  let baselineSource = null;
+  let baselineTab = null;
+  // serverIssues are the validator's findings, kept until the next check.
+  let serverIssues = [];
+  let serverIssuesKind = 'err';
+  let draftStatus = '';
+  let statusFrame = 0;
+
+  function baselineValues() {
+    const source = currentValues() ?? {};
+    if (baseline && baselineSource === source && baselineTab === ed.tab) return baseline;
+    baseline = {};
+    for (const group of currentSpec()?.form?.groups ?? []) {
+      for (const field of group.fields ?? []) {
+        baseline[field.name] = readField(renderField(field, source[field.name]));
+      }
+    }
+    baselineSource = source;
+    baselineTab = ed.tab;
+    return baseline;
+  }
+
+  function plural(n, one, few, many) {
+    const d = n % 10;
+    const dd = n % 100;
+    if (d === 1 && dd !== 11) return one;
+    if (d >= 2 && d <= 4 && (dd < 12 || dd > 14)) return few;
+    return many;
+  }
+
+  function isEmptyValue(v) {
+    if (v == null || v === '' || v === false) return true;
+    if (Array.isArray(v)) return v.every((x) => isEmptyValue(x) || (typeof x === 'object' && !Object.keys(x).length));
+    return false;
+  }
+
+  function scheduleStatus() {
+    if (statusFrame) return;
+    statusFrame = requestAnimationFrame(() => {
+      statusFrame = 0;
+      refreshStatus();
+    });
+  }
+
+  // DUP_CHECKED are the tables whose codes the engine refuses to repeat.
+  const DUP_CHECKED = new Set(['codes', 'bonus_codes', 'fake_codes']);
+
+  // checkDuplicates marks a code typed twice in one table. The engine would
+  // refuse the level at «Сохранить»; saying so while the author types is
+  // cheaper than a round trip.
+  function checkDuplicates() {
+    const found = [];
+    for (const wrap of el('editor-form').querySelectorAll('.editor-field')) {
+      if (!DUP_CHECKED.has(wrap.dataset.type)) continue;
+      const seen = new Map();
+      [...wrap.querySelectorAll('.editor-row-body > .editor-row')].forEach((row, i) => {
+        const code = row.querySelector('[data-col="code"]')?.value.trim().toLowerCase() ?? '';
+        const note = row.querySelector('.editor-row-note');
+        const first = code ? seen.get(code) : undefined;
+        row.classList.toggle('is-dup', first !== undefined);
+        if (note) {
+          note.hidden = first === undefined;
+          note.textContent = first === undefined ? '' : `Код совпадает со строкой ${first + 1} — движок не примет дубликат`;
+        }
+        if (first !== undefined) {
+          found.push({ field: wrap.dataset.field, text: `${fieldLabel(wrap.dataset.field) ?? wrap.dataset.field}, строка ${i + 1}: дубликат кода` });
+        } else if (code) {
+          seen.set(code, i);
+        }
+      });
+    }
+    return found;
+  }
+
+  // refreshStatus recomputes everything that describes the form rather than
+  // being part of it: changed fields, section summaries and dots, the issue
+  // chips and the draft line in the footer.
+  function refreshStatus() {
+    const form = el('editor-form');
+    const base = baselineValues();
+    const local = checkDuplicates();
+    const issueCount = new Map();
+    for (const issue of [...serverIssues, ...local]) {
+      if (issue.field) issueCount.set(issue.field, (issueCount.get(issue.field) ?? 0) + 1);
+    }
+    let changedTotal = 0;
+    const sections = [];
+    for (const box of form.querySelectorAll('.editor-group')) {
+      let total = 0;
+      let filled = 0;
+      let changed = 0;
+      let errors = 0;
+      let rows = 0;
+      let hasRows = false;
+      for (const wrap of box.querySelectorAll('.editor-field')) {
+        const name = wrap.dataset.field;
+        const value = readField(wrap);
+        const isChanged = JSON.stringify(value) !== JSON.stringify(base[name] ?? null);
+        wrap.classList.toggle('is-changed', isChanged);
+        const errs = issueCount.get(name) ?? 0;
+        wrap.classList.toggle('has-issue', errs > 0);
+        total++;
+        if (isChanged) changed++;
+        if (!isEmptyValue(value)) filled++;
+        if (ROW_COLUMNS[wrap.dataset.type]) {
+          hasRows = true;
+          rows += value.length;
+        }
+        errors += errs;
+      }
+      changedTotal += changed;
+      const state = errors ? 'err' : changed ? 'edit' : filled ? 'ok' : 'empty';
+      const parts = [hasRows ? `${rows} ${plural(rows, 'строка', 'строки', 'строк')}` : `заполнено ${filled} из ${total}`];
+      if (changed) parts.push(`изменено ${changed}`);
+      box.querySelector('.editor-group-summary').textContent = parts.join(' · ');
+      const badge = box.querySelector('.editor-group-badge');
+      badge.hidden = !errors;
+      badge.textContent = `${errors} ${plural(errors, 'ошибка', 'ошибки', 'ошибок')}`;
+      box.dataset.state = state;
+      sections.push({ box, title: box.dataset.title, state, meta: errors ? String(errors) : hasRows ? String(rows) : `${filled}/${total}` });
+    }
+    renderSections(sections);
+    renderIssueChips(local);
+    renderDirty(changedTotal);
+  }
+
+  function renderSections(sections = []) {
+    const list = el('editor-sections');
+    list.innerHTML = '';
+    for (const s of sections) {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `editor-section-link is-${s.state}`;
+      btn.innerHTML = `<span class="status-dot is-${s.state}" aria-hidden="true"></span><span class="editor-section-title"></span><span class="editor-section-meta"></span>`;
+      btn.querySelector('.editor-section-title').textContent = s.title;
+      btn.querySelector('.editor-section-meta').textContent = s.meta;
+      btn.addEventListener('click', () => {
+        s.box.openGroup?.();
+        s.box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    }
+  }
+
+  // lastChanged is the count refreshStatus last saw, so a draft status that
+  // arrives on its own does not wipe «N правок» from the footer.
+  let lastChanged = 0;
+
+  function renderDirty(changed = lastChanged) {
+    lastChanged = changed;
+    const node = el('editor-dirty');
+    if (!node) return;
+    const failed = /не синхронизирован|Не удалось/.test(draftStatus);
+    const dot = node.querySelector('.status-dot');
+    dot.className = `status-dot ${failed ? 'is-err' : changed ? 'is-edit' : 'is-ok'}`;
+    node.classList.toggle('is-err', failed);
+    node.classList.toggle('is-edit', !failed && changed > 0);
+    const count = changed ? `${changed} ${plural(changed, 'правка', 'правки', 'правок')}` : '';
+    el('editor-dirty-text').textContent = failed
+      ? draftStatus
+      : count
+        ? `Черновик · ${count}`
+        : draftStatus || 'Совпадает с сохранённой игрой';
+    node.title = draftStatus;
+  }
+
+  // setEditorIssues keeps what the validator (or a failed save) said. Each
+  // line becomes a chip in the footer that leads to its field.
+  function setEditorIssues(lines, kind = 'err') {
+    serverIssuesKind = kind;
+    serverIssues = (lines ?? []).map((line) => {
+      const m = ISSUE_PATH.exec(line);
+      // Some findings name the field mid-sentence — «duplicate code … in
+      // codes[0]» — so the first known «поле[i]» anywhere in the line counts.
+      const inside = [...line.matchAll(/\b([a-z_]+)\[\d+\]/g)].map((x) => x[1]).find((name) => fieldLabel(name));
+      const field = m && fieldLabel(m[1]) ? m[1] : inside ?? null;
+      return { text: kind === 'ok' ? line : humanizeIssue(line), field };
+    });
+    refreshStatus();
+  }
+
+  // MAX_CHIPS keeps the footer on one line; the rest fold behind «ещё N».
+  const MAX_CHIPS = 3;
+
+  function renderIssueChips(local) {
+    const node = el('editor-issues');
+    node.innerHTML = '';
+    const ok = serverIssuesKind === 'ok' && serverIssues.length > 0;
+    const issues = ok ? local : [...serverIssues, ...local];
+    node.hidden = !ok && !issues.length;
+    node.classList.toggle('is-ok', ok && !issues.length);
+    node.classList.toggle('is-err', issues.length > 0);
+    if (ok && !issues.length) {
+      const chip = document.createElement('span');
+      chip.className = 'issue-chip is-ok';
+      chip.textContent = `✓ ${serverIssues[0].text}`;
+      node.appendChild(chip);
+      return;
+    }
+    const expanded = node.dataset.expanded === 'true';
+    const shown = expanded ? issues : issues.slice(0, MAX_CHIPS);
+    for (const issue of shown) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'issue-chip';
+      chip.textContent = issue.field ? `${issue.text} →` : issue.text;
+      chip.title = issue.text;
+      chip.disabled = !issue.field;
+      chip.addEventListener('click', () => goToField(issue.field));
+      node.appendChild(chip);
+    }
+    if (issues.length > MAX_CHIPS) {
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'issue-chip issue-chip-more';
+      more.textContent = expanded ? 'свернуть' : `ещё ${issues.length - MAX_CHIPS}`;
+      more.addEventListener('click', () => {
+        node.dataset.expanded = expanded ? 'false' : 'true';
+        refreshStatus();
+      });
+      node.appendChild(more);
+    }
+  }
+
+  function goToField(name) {
+    const wrap = el('editor-form').querySelector(`.editor-field[data-field="${name}"]`);
+    if (!wrap) return;
+    wrap.closest('.editor-group')?.openGroup?.();
+    wrap.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    wrap.querySelector('input:not([type=file]),textarea:not([hidden]),[contenteditable="true"]:not([hidden]),select')?.focus({ preventScroll: true });
   }
 
   function renderField(field, value) {
@@ -919,7 +1233,13 @@
 
     const label = document.createElement('label');
     label.className = 'editor-label';
-    label.textContent = field.label || field.name;
+    const labelText = document.createElement('span');
+    labelText.className = 'editor-label-text';
+    labelText.textContent = field.label || field.name;
+    const badge = document.createElement('span');
+    badge.className = 'field-badge';
+    badge.textContent = 'изменено';
+    label.append(labelText, badge);
     if (field.hint) label.title = field.hint;
     wrap.appendChild(label);
 
@@ -938,7 +1258,10 @@
         input.type = 'checkbox';
         input.className = 'editor-input editor-check';
         input.checked = value === true;
-        label.prepend(input);
+        const box = document.createElement('span');
+        box.className = 'editor-check-box';
+        box.setAttribute('aria-hidden', 'true');
+        label.prepend(input, box);
         label.classList.add('editor-label-check');
         wrap.classList.add('editor-field-inline');
         break;
@@ -973,7 +1296,9 @@
       }
     }
 
-    if (field.hint) {
+    // Many engine fields carry their label again as the hint; saying it twice
+    // is noise.
+    if (field.hint && field.hint !== field.label) {
       const hint = document.createElement('span');
       hint.className = 'editor-hint';
       hint.textContent = field.hint;
@@ -1339,6 +1664,9 @@
 
     const head = document.createElement('div');
     head.className = 'editor-row editor-row-head';
+    const hash = document.createElement('span');
+    hash.textContent = '#';
+    head.appendChild(hash);
     for (const c of cols) {
       const cell = document.createElement('span');
       cell.textContent = c.label;
@@ -1359,21 +1687,33 @@
 
     const add = document.createElement('button');
     add.type = 'button';
-    add.className = 'btn btn-ghost btn-xs';
-    add.textContent = '＋ строка';
+    add.className = 'btn btn-xs btn-dashed';
+    add.textContent = field.type === 'spoilers' ? '＋ Добавить спойлер' : '＋ Добавить код';
     add.addEventListener('click', () => {
       addRow({});
       markDirty(true);
+      body.lastElementChild?.querySelector('input')?.focus();
     });
     tools.appendChild(add);
 
     // Bulk entry is the reason an author would pick this screen over dictating
     // the level to the agent: a sheet of codes pastes in as one block.
-    const bulk = document.createElement('details');
+    const bulk = document.createElement('div');
     bulk.className = 'editor-bulk';
-    const summary = document.createElement('summary');
-    summary.textContent = 'Вставить списком';
-    bulk.appendChild(summary);
+    bulk.hidden = true;
+    const bulkToggle = document.createElement('button');
+    bulkToggle.type = 'button';
+    bulkToggle.className = 'btn btn-link btn-xs';
+    bulkToggle.textContent = 'Вставить списком';
+    bulkToggle.setAttribute('aria-expanded', 'false');
+    const setBulkOpen = (open) => {
+      bulk.hidden = !open;
+      bulkToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      bulkToggle.classList.toggle('is-active', open);
+      if (open) area.focus();
+    };
+    bulkToggle.addEventListener('click', () => setBulkOpen(bulk.hidden));
+    tools.appendChild(bulkToggle);
 
     const area = document.createElement('textarea');
     area.className = 'editor-input editor-bulk-area';
@@ -1433,7 +1773,7 @@
       try {
         const text = await readCodeFile(file, cols);
         area.value = area.value.trim() ? `${area.value.replace(/\n*$/, '')}\n${text}` : text;
-        bulk.open = true;
+        setBulkOpen(true);
         const lines = text.split('\n').filter((l) => l.trim()).length;
         setIssues(report, [`Файл ${file.name}: строк ${lines}. Проверьте разбор и нажмите «Добавить» или «Заменить».`], 'ok');
         toast(`Загружено строк из файла: ${lines}`);
@@ -1444,22 +1784,26 @@
 
     const fromFile = document.createElement('button');
     fromFile.type = 'button';
-    fromFile.className = 'btn btn-ghost btn-xs';
+    fromFile.className = 'btn btn-link btn-xs';
     fromFile.textContent = 'Из файла';
     fromFile.title = 'Загрузить коды из текстового файла или CSV';
     fromFile.addEventListener('click', () => picker.click());
 
-    bulkActions.append(append, replace, fromFile, picker);
+    bulkActions.append(append, replace);
     bulk.append(bulkActions, report);
-    tools.appendChild(bulk);
+    tools.append(fromFile, picker);
 
-    box.appendChild(tools);
+    box.append(tools, bulk);
     return box;
   }
 
   function buildRow(cols, values) {
     const row = document.createElement('div');
     row.className = 'editor-row';
+    const num = document.createElement('span');
+    num.className = 'editor-row-num';
+    num.setAttribute('aria-hidden', 'true');
+    row.appendChild(num);
     for (const c of cols) {
       let input;
       if (c.type === 'danger') {
@@ -1496,7 +1840,11 @@
       row.remove();
       markDirty(true);
     });
-    row.appendChild(drop);
+    drop.className = 'icon-btn icon-btn-sm editor-row-drop';
+    const note = document.createElement('span');
+    note.className = 'editor-row-note';
+    note.hidden = true;
+    row.append(drop, note);
     return row;
   }
 
@@ -1695,8 +2043,9 @@
       input.value = value == null ? '' : String(value);
       const drop = document.createElement('button');
       drop.type = 'button';
-      drop.className = 'btn btn-ghost btn-icon btn-xs';
+      drop.className = 'icon-btn icon-btn-sm editor-row-drop';
       drop.textContent = '✕';
+      drop.title = 'Убрать строку';
       drop.addEventListener('click', () => {
         row.remove();
         markDirty(true);
@@ -1708,13 +2057,16 @@
 
     const add = document.createElement('button');
     add.type = 'button';
-    add.className = 'btn btn-ghost btn-xs';
+    add.className = 'btn btn-xs btn-dashed';
     add.textContent = '＋ строка';
     add.addEventListener('click', () => {
       addRow('');
       markDirty(true);
     });
-    box.appendChild(add);
+    const tools = document.createElement('div');
+    tools.className = 'editor-row-tools';
+    tools.appendChild(add);
+    box.appendChild(tools);
     return box;
   }
 
@@ -1836,21 +2188,21 @@
   // ---------------------------------------------------------------- save
 
   async function validateCurrent() {
-    const issues = el('editor-issues');
+    el('editor-issues').dataset.expanded = 'false';
     try {
       const res = await api('/admin/validate', {
         method: 'POST',
         body: { kind: ed.tab, params: collectParams() },
       });
       if (res?.ok) {
-        setIssues(issues, ['Проверка пройдена: движок примет эти поля.'], 'ok');
+        setEditorIssues(['Проверка пройдена: движок примет эти поля.'], 'ok');
       } else {
-        const lines = (res?.errors ?? []).map(humanizeIssue);
-        setIssues(issues, lines.length ? lines : ['Проверка не пройдена']);
+        const lines = res?.errors ?? [];
+        setEditorIssues(lines.length ? lines : ['Проверка не пройдена']);
       }
       return !!res?.ok;
     } catch (e) {
-      setIssues(issues, [e.message || String(e)]);
+      setEditorIssues([e.message || String(e)]);
       return false;
     }
   }
@@ -1869,7 +2221,7 @@
       await loadLevels();
       toast('Изменения сохранены в игру');
     } catch (e) {
-      setIssues(el('editor-issues'), [e.message]);
+      setEditorIssues([e.message]);
       toast(`Сохранение: ${e.message}`, true);
     } finally { el('btn-editor-save').disabled = false; for (const id of ['view-editor', 'editor-nav', 'mode-switch']) el(id).inert = false; }
   }
@@ -1878,7 +2230,7 @@
     formValues = structuredClone(currentValues());
     renderForm();
     drafts.schedule();
-    setIssues(el('editor-issues'), []);
+    setEditorIssues([]);
     markDirty(false);
     toast('Правки отменены');
   }
@@ -2093,6 +2445,34 @@
       });
     }
     el('admin-login-form').addEventListener('submit', onAdminLogin);
+    el('editor-login-form').addEventListener('submit', onAdminLogin);
+    const menu = el('editor-menu');
+    const menuBtn = el('btn-editor-menu');
+    const setMenu = (open) => {
+      menu.hidden = !open;
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) menu.querySelector('.menu-item:not(:disabled)')?.focus();
+    };
+    menuBtn.addEventListener('click', () => setMenu(menu.hidden));
+    menu.addEventListener('click', (e) => {
+      if (e.target.closest('.menu-item')) setMenu(false);
+    });
+    menu.addEventListener('keydown', (e) => {
+      const items = [...menu.querySelectorAll('.menu-item:not(:disabled)')];
+      const at = items.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const step = e.key === 'ArrowDown' ? 1 : -1;
+        items[(at + step + items.length) % items.length]?.focus();
+      } else if (e.key === 'Escape') {
+        e.stopPropagation();
+        setMenu(false);
+        menuBtn.focus();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!menu.hidden && !e.target.closest('.menu-wrap')) setMenu(false);
+    });
     el('btn-admin-logout').addEventListener('click', () => void onAdminLogout());
     el('btn-game-new').addEventListener('click', () => createGame());
     el('btn-game-copy').addEventListener('click', () => void copyGame());
@@ -2104,7 +2484,6 @@
     el('btn-scenario-export').addEventListener('click', () => void exportScenario(false));
     el('btn-scenario-import').addEventListener('click', () => openImportDialog());
     el('btn-editor-ask').addEventListener('click', () => void askAgent());
-    el('btn-editor-theme').addEventListener('click', () => window.dzzzrChat.toggleTheme());
     el('import-file').addEventListener('change', (e) => void onImportFile(e));
     el('btn-import-validate').addEventListener('click', () => void validateScenario());
     el('btn-import-apply').addEventListener('click', () => void applyScenario());
@@ -2120,6 +2499,9 @@
     }
   }, 2000);
   bindEditor();
+  // The sidebar shows the organizer session in both views, so its status is
+  // read on load rather than when the editor first opens.
+  void loadAdminStatus().catch(() => {});
   // An address that names a view wins; a bare one returns to the view last
   // used, so an author who works in the editor is not sent to the chat by
   // every restart.
