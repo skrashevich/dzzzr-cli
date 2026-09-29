@@ -35,7 +35,7 @@ type ChatCall struct {
 // provider CORS policy applies. Local source data is sent only on tool requests.
 func (a *App) Chat(ctx context.Context, cfg ChatConfig, history []ChatMessage, emit func(string)) ([]ChatMessage, error) {
 	u, err := url.Parse(cfg.Endpoint)
-	if err != nil || u.Host == "" || (u.Scheme != "https" && !(u.Scheme == "http" && (u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1"))) {
+	if err != nil || u.Host == "" || (u.Scheme != "https" && (u.Scheme != "http" || (u.Hostname() != "localhost" && u.Hostname() != "127.0.0.1"))) {
 		return nil, fmt.Errorf("нужен HTTPS URL OpenAI-совместимого API")
 	}
 	if cfg.Model == "" {
@@ -67,7 +67,7 @@ func (a *App) Chat(ctx context.Context, cfg ChatConfig, history []ChatMessage, e
 			return nil, fmt.Errorf("LLM: %w (провайдер должен разрешать запросы из браузера через CORS)", err)
 		}
 		raw, readErr := io.ReadAll(io.LimitReader(response.Body, 4<<20))
-		response.Body.Close()
+		_ = response.Body.Close()
 		if readErr != nil {
 			return nil, readErr
 		}

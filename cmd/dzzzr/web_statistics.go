@@ -27,13 +27,13 @@ func (h *webHub) httpImportStatistics(w http.ResponseWriter, r *http.Request) {
 		webError(w, 400, "%v", err)
 		return
 	}
-	defer r.MultipartForm.RemoveAll()
+	defer func() { _ = r.MultipartForm.RemoveAll() }()
 	f, head, err := r.FormFile("file")
 	if err != nil {
 		webError(w, 400, "выберите журнал")
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := io.ReadAll(io.LimitReader(f, (32<<20)+1))
 	if err != nil {
 		webError(w, 400, "%v", err)

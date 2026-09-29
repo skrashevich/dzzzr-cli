@@ -33,19 +33,25 @@ func TestBrowserCapabilities(t *testing.T) {
 		t.Fatal(err)
 	}
 	{
-		a.put("test.pdf", pdf)
+		if err := a.put("test.pdf", pdf); err != nil {
+			t.Fatal(err)
+		}
 		if _, err = a.Dispatch(t.Context(), Request{Action: "tool", Name: "index_pdf", Args: map[string]any{"path": "test.pdf"}}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	a.put("invalid.json", []byte(`{"game_id":0}`))
+	if err := a.put("invalid.json", []byte(`{"game_id":0}`)); err != nil {
+		t.Fatal(err)
+	}
 	if _, err = a.Dispatch(t.Context(), Request{Action: "tool", Name: "validate_scenario", Args: map[string]any{"path": "invalid.json"}}); err == nil {
 		t.Fatal("invalid scenario accepted")
 	}
 }
 func TestBrowserAgentToolLoop(t *testing.T) {
 	var a App
-	a.put("source.txt", []byte("grounded source"))
+	if err := a.put("source.txt", []byte("grounded source")); err != nil {
+		t.Fatal(err)
+	}
 	calls := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
@@ -58,14 +64,14 @@ func TestBrowserAgentToolLoop(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if calls == 1 {
-			w.Write([]byte(`{"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"files","type":"function","function":{"name":"list_files","arguments":"{}"}}]}}]}`))
+			_, _ = w.Write([]byte(`{"choices":[{"message":{"role":"assistant","content":null,"tool_calls":[{"id":"files","type":"function","function":{"name":"list_files","arguments":"{}"}}]}}]}`))
 			return
 		}
 		raw, _ := json.Marshal(body)
 		if !strings.Contains(string(raw), "source.txt") {
 			t.Error("tool output missing")
 		}
-		w.Write([]byte(`{"choices":[{"message":{"role":"assistant","content":"Файл найден."}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"role":"assistant","content":"Файл найден."}}]}`))
 	}))
 	defer server.Close()
 	messages, err := a.Chat(t.Context(), ChatConfig{Endpoint: server.URL, Key: "test-key", Model: "test"}, []ChatMessage{{Role: "user", Content: "Какие файлы?"}}, func(string) {})

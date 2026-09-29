@@ -61,7 +61,7 @@ func (s *Store) load(id string) (*Log, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 	data, err := root.ReadFile(id + ".json")
 	if err != nil {
 		return nil, err
@@ -104,11 +104,11 @@ func (s *Store) save(l *Log) error {
 	if err != nil {
 		return err
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 	tmp := l.ID + ".tmp"
 	if err = root.WriteFile(tmp, data, 0600); err != nil {
 		return err
 	}
-	defer root.Remove(tmp)
+	defer func() { _ = root.Remove(tmp) }()
 	return root.Rename(tmp, l.ID+".json")
 }

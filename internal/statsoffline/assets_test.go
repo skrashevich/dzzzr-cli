@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json/v2"
-	"github.com/skrashevich/dzzzr-cli/gamestats"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/skrashevich/dzzzr-cli/gamestats"
 )
 
 func TestCalculatorMatchesSources(t *testing.T) {
@@ -24,6 +25,9 @@ func TestCalculatorMatchesSources(t *testing.T) {
 		t.Fatal(err)
 	}
 	paths = append(paths, "../../go.mod", "../../go.sum", "wasm/main.go")
+	for i := range paths {
+		paths[i] = filepath.ToSlash(paths[i])
+	}
 	slices.Sort(paths)
 	h := sha256.New()
 	for _, path := range paths {
@@ -36,7 +40,7 @@ func TestCalculatorMatchesSources(t *testing.T) {
 		}
 		h.Write([]byte(filepath.ToSlash(path)))
 		h.Write([]byte{0})
-		h.Write(data)
+		h.Write(bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n")))
 	}
 	stamp, err := os.ReadFile("sources.sha256")
 	if err != nil {

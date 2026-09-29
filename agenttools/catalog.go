@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/skrashevich/dzzzr-cli/statstore"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/skrashevich/dzzzr-cli/statstore"
 )
 
 // Options configures a catalog.
