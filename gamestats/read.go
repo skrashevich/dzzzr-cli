@@ -6,12 +6,16 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/csv"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"maps"
 	"math"
 	"path"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -40,13 +44,15 @@ func normCode(s string) string { return strings.ToUpper(strings.Join(strings.Fie
 
 var integerLevel = regexp.MustCompile(`^\d+$`)
 
-// Read supports the engine's XLSX export and UTF-8/Windows-1251 CSV/TSV files.
+// Read supports XLSX, JSON row exports and UTF-8/Windows-1251 CSV/TSV files.
 func Read(name string, data []byte) ([]Event, error) {
 	var table [][]string
 	var err error
 	switch strings.ToLower(path.Ext(name)) {
 	case ".xlsx", ".xlsm":
 		table, err = readXLSX(data)
+	case ".json":
+		table, err = readJSON(data)
 	case ".csv", ".tsv", ".txt":
 		if !utf8.Valid(data) {
 			data, err = charmap.Windows1251.NewDecoder().Bytes(data)
@@ -66,12 +72,63 @@ func Read(name string, data []byte) ([]Event, error) {
 			table, err = r.ReadAll()
 		}
 	default:
-		return nil, fmt.Errorf("поддерживаются XLSX, XLSM, CSV и TSV; сохраните журнал в одном из этих форматов")
+		return nil, fmt.Errorf("поддерживаются XLSX, XLSM, JSON, CSV и TSV; сохраните журнал в одном из этих форматов")
 	}
 	if err != nil {
 		return nil, fmt.Errorf("не удалось прочитать журнал: %w", err)
 	}
 	return rowsFromTable(table)
+}
+
+// JSON exports contain table rows keyed by their spreadsheet row number.
+// Sort these keys numerically so simultaneous events retain their log order.
+// An array of rows is accepted as the equivalent unnumbered representation.
+func readJSON(data []byte) ([][]string, error) {
+	data = bytes.TrimSpace(bytes.TrimPrefix(data, []byte("\xef\xbb\xbf")))
+	var rows [][]jsontext.Value
+	if len(data) > 0 && data[0] == '{' {
+		var numbered map[string][]jsontext.Value
+		if err := json.Unmarshal(data, &numbered); err != nil {
+			return nil, err
+		}
+		byNumber := make(map[uint64][]jsontext.Value, len(numbered))
+		for key, row := range numbered {
+			n, err := strconv.ParseUint(key, 10, 64)
+			if err != nil || strconv.FormatUint(n, 10) != key {
+				return nil, fmt.Errorf("JSON: ключ %q должен быть номером строки", key)
+			}
+			byNumber[n] = row
+		}
+		for _, n := range slices.Sorted(maps.Keys(byNumber)) {
+			rows = append(rows, byNumber[n])
+		}
+	} else {
+		if err := json.Unmarshal(data, &rows); err != nil {
+			return nil, fmt.Errorf("JSON: нужен объект с номерами строк или массив строк: %w", err)
+		}
+	}
+	table := make([][]string, len(rows))
+	for i, row := range rows {
+		table[i] = make([]string, len(row))
+		for j, raw := range row {
+			s := strings.TrimSpace(string(raw))
+			if s == "null" {
+				continue
+			}
+			if strings.HasPrefix(s, `"`) {
+				if err := json.Unmarshal(raw, &table[i][j]); err != nil {
+					return nil, err
+				}
+			} else {
+				n, err := strconv.ParseFloat(s, 64)
+				if err != nil || math.IsNaN(n) || math.IsInf(n, 0) {
+					return nil, fmt.Errorf("JSON: строка %d, столбец %d — ожидается строка, число или null", i+1, j+1)
+				}
+				table[i][j] = strconv.FormatFloat(n, 'f', -1, 64)
+			}
+		}
+	}
+	return table, nil
 }
 
 func rowsFromTable(table [][]string) ([]Event, error) {

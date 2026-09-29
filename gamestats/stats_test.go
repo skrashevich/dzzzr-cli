@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json/v2"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -149,6 +150,61 @@ func TestNegativeTotalTieMatchesReference(t *testing.T) {
 	r := Compute(g, cfg)
 	if r.Rows[0].Total != -0.5 || r.Rows[0].Place != 1 || r.Rows[1].Place != 1 {
 		t.Fatalf("negative totals must share first place: %+v %+v", r.Rows[0], r.Rows[1])
+	}
+}
+
+func TestJSONRows(t *testing.T) {
+	data := []byte(`{"10":["2026-09-26 22:00:00","выдан уровень",42,2,null,null],"1":["Время","Действие","Команда","Уровень","Данные","Данные"],"11":["2026-09-26 22:01:00","завершена игра",null,null,null,null],"2":["2026-09-26 22:00:00","выдан уровень",42,1,null,null]}`)
+	report, err := Build("log.JSON", data, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, second := report.Game.Recs["42"]["1.0"], report.Game.Recs["42"]["2.0"]
+	if first.Order != 1 || second.Order != 2 || first.ClosedAt == nil || second.ClosedAt != nil {
+		t.Fatal("numbered JSON rows lost event order")
+	}
+	table, err := readJSON(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	array, err := json.Marshal(table)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := Build("log.json", append([]byte("\xef\xbb\xbf"), array...), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(report.Result, other.Result) {
+		t.Fatal("object and array JSON results differ")
+	}
+	for _, bad := range []string{`{`, `{}`, `null`, `{"wrong":[]}`, `{"1":"row"}`, `[["Время","Действие"],[{},true]]`, `{"01":[]}`} {
+		if _, err := Build("bad.json", []byte(bad), nil); err == nil {
+			t.Errorf("accepted invalid JSON log %s", bad)
+		}
+	}
+}
+
+func TestRealJSONMatchesXLSX(t *testing.T) {
+	jsonFile, xlsxFile := os.Getenv("DZZZR_STATS_TEST_JSON"), os.Getenv("DZZZR_STATS_TEST_LOG")
+	if jsonFile == "" || xlsxFile == "" {
+		t.Skip("set DZZZR_STATS_TEST_JSON and DZZZR_STATS_TEST_LOG")
+	}
+	read := func(file string) *Report {
+		t.Helper()
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		report, err := Build(file, data, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return report
+	}
+	j, x := read(jsonFile), read(xlsxFile)
+	if j.Game.NRows != 17848 || !reflect.DeepEqual(j.Result, x.Result) {
+		t.Fatal("real JSON and XLSX results differ")
 	}
 }
 

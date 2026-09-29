@@ -444,7 +444,8 @@ async function initOnboarding() {
   try {
     const status = await api('/onboarding');
     state.onboarding.status = status;
-    if (status?.required) await openOnboarding();
+    const statistics = document.body?.dataset?.mode === 'stats' || /^#\/stats\/?$/.test(location.hash || '');
+    if (status?.required && !statistics) await openOnboarding();
   } catch (e) {
     toast(`Мастер настройки: ${e.message || String(e)}`, true);
   }

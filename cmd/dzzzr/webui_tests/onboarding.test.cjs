@@ -140,3 +140,21 @@ test('the model step shows a settings file the server could not read', () => {
   assert.match(run("results['onboarding-llm-result'].text"), /settings\.json/);
   assert.equal(run("results['onboarding-llm-result'].tone"), 'err');
 });
+
+test('statistics deep link does not require model setup or engine login', async () => {
+  const run = setup();
+  run(`
+    var opened = 0;
+    api = async () => ({required: true});
+    openOnboarding = async () => { opened++; };
+    location.hash = '#/stats';
+  `);
+  await run('initOnboarding()');
+  assert.equal(run('opened'), 0);
+  run("location.hash = ''; document.body.dataset.mode = 'stats'");
+  await run('initOnboarding()');
+  assert.equal(run('opened'), 0);
+  run("document.body.dataset.mode = 'chat'");
+  await run('initOnboarding()');
+  assert.equal(run('opened'), 1);
+});

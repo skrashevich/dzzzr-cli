@@ -10,36 +10,36 @@
 <script src="stats.js" defer></script>
 <link rel="stylesheet" href="stats.css">
 </head>
-<body>
+<body class="stats-app">
 <div class="drop-hint">Отпустите файл журнала</div>
 <div class="wrap">
 
   <div class="casebar">
     <div>
-      <a href="/" class="linkish" id="app-link">dzzzr — чат и редактор</a>
+      <a href="/" class="linkish" id="stats-app-link">dzzzr — чат и редактор</a>
       <h1>Статистика уровней DozoR</h1>
-      <p>Строит таблицу результатов по журналу игры (выгрузка «Журнал» из движка, .xlsx): время каждой команды на каждом уровне, подсказки, невыполненные уровни, штрафы, бонусы и места. Журнал обрабатывается локальным сервером dzzzr. Расчёты и экспорт выполняются в Go; вход в движок не нужен.</p>
+      <p>Строит таблицу результатов по журналу игры (выгрузка «Журнал» из движка, .xlsx или .json): время каждой команды на каждом уровне, подсказки, невыполненные уровни, штрафы, бонусы и места. Журнал обрабатывается локальным сервером dzzzr. Вход в движок не нужен.</p>
     </div>
     <div class="file-panel">
       <div class="file-status">
-        <span class="name" id="file-name">Выберите или перетащите журнал</span>
-        <span class="meta" id="file-meta"></span>
+        <span class="name" id="stats-file-name">Выберите или перетащите журнал</span>
+        <span class="meta" id="stats-file-meta"></span>
       </div>
-      <input type="file" id="file-input" accept=".xlsx,.xlsm,.csv,.tsv,.txt">
-      <button class="btn primary" id="btn-upload">Загрузить журнал</button>
+      <input type="file" id="stats-file-input" accept=".xlsx,.xlsm,.json,.csv,.tsv,.txt">
+      <button class="btn primary" id="stats-btn-upload">Загрузить журнал</button>
     </div>
   </div>
 
-  <div class="error" id="error" role="alert"></div>
+  <div class="error" id="stats-error" role="alert"></div>
 
   <div class="board-panel">
     <div class="board-top">
       <h2>Статистика</h2>
-      <button class="linkish" id="toggle-levels" data-needs-log disabled>скрыть результаты уровней</button>
-      <button class="linkish" id="toggle-stubs" data-needs-log disabled>скрыть бонусные уровни</button>
-      <button class="linkish" id="btn-export" data-needs-log disabled>скачать .xlsx</button>
+      <button class="linkish" id="stats-toggle-levels" data-needs-log disabled>скрыть результаты уровней</button>
+      <button class="linkish" id="stats-toggle-stubs" data-needs-log disabled>скрыть бонусные уровни</button>
+      <button class="linkish" id="stats-btn-export" data-needs-log disabled>скачать .xlsx</button>
     </div>
-    <div class="board-scroll"><table class="board" id="board"></table></div>
+    <div class="board-scroll"><table class="board" id="stats-board"></table></div>
     <div class="legend">
       <span class="st-h0">без подсказок</span><span class="sep">/</span>
       <span class="st-h1">первая подсказка</span><span class="sep">/</span>
@@ -63,27 +63,27 @@
     <h2>Подробности</h2>
     <span class="hint">нажмите на время в таблице, на название уровня или на команду</span>
   </div>
-  <div class="card details empty" id="details">Выберите клетку таблицы — здесь появится, из каких событий журнала получено время.</div>
+  <div class="card details empty" id="stats-details">Выберите клетку таблицы — здесь появится, из каких событий журнала получено время.</div>
 
   <div class="section-head">
     <h2>Замечания по журналу</h2>
     <span class="hint">что восстановлено автоматически и что стоит проверить</span>
   </div>
-  <div class="notes" id="notes"></div>
+  <div class="notes" id="stats-notes"></div>
 
   <div class="section-head"><h2>Параметры подсчёта</h2></div>
-  <details class="card settings" id="settings">
+  <details class="card settings" id="stats-settings">
     <summary><span class="chev">▸</span> Лимиты уровней, подсказки, бонусы и штрафы <span class="hint">лимиты восстановлены из журнала; размеры бонусов в журнале не хранятся — задайте их здесь</span></summary>
     <div class="settings-body">
-      <div class="grid-game" id="cfg-game"></div>
+      <div class="grid-game" id="stats-cfg-game"></div>
       <div class="subhead">Уровни</div>
       <p class="subnote">Пустое поле подсказки или добавочного времени — значение по умолчанию: подсказки в 1/3 и 2/3 лимита (30/60 при стандартных 90 минутах, п. 5.10), добавочное — 1/6 лимита (п. 6.5). Все значения — в минутах.</p>
-      <div class="cfg-scroll"><table class="cfg" id="cfg-levels"></table></div>
+      <div class="cfg-scroll"><table class="cfg" id="stats-cfg-levels"></table></div>
       <div class="subhead">Команды</div>
       <p class="subnote">Ручные штрафы и бонусы, назначенные организатором (п. 7), — в минутах.</p>
-      <div class="cfg-scroll"><table class="cfg" id="cfg-teams"></table></div>
+      <div class="cfg-scroll"><table class="cfg" id="stats-cfg-teams"></table></div>
       <div class="cfg-actions">
-        <button class="btn small" id="btn-reset-cfg" data-needs-log disabled>Сбросить параметры</button>
+        <button class="btn small" id="stats-btn-reset-cfg" data-needs-log disabled>Сбросить параметры</button>
       </div>
     </div>
   </details>

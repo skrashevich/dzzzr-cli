@@ -224,13 +224,13 @@
 
   // ---------------------------------------------------------------- mode
 
-  // setMode swaps the whole page between the chat and the editor. The two views
+  // setMode swaps the page between chat, editor and statistics. The views
   // share the sidebar and the window, so the switch is a body attribute the
   // stylesheet reads rather than a re-render.
   async function setMode(mode) {
     const previousMode = ed.mode;
     if (mode !== ed.mode && !(await confirmDiscard())) return;
-    ed.mode = mode === 'editor' ? 'editor' : 'chat';
+    ed.mode = ['editor', 'stats'].includes(mode) ? mode : 'chat';
     document.body.dataset.mode = ed.mode;
     localStorage.setItem(MODE_KEY, ed.mode);
     for (const tab of document.querySelectorAll('.mode-tab')) {
@@ -243,6 +243,10 @@
       ed.booting = bootEditor();
     }
     syncRoute();
+    if (ed.mode === 'stats') {
+      await window.dzzzrStats.mount(el('view-stats')).catch(error => toast(error.message, true));
+      return;
+    }
     // The caller may need the editor to be usable before it acts on it; a mode
     // switch that changes nothing resolves immediately.
     await (ed.booting ?? Promise.resolve());
@@ -263,6 +267,7 @@
 
   // parseRoute reads an address, or returns null for one that is not a route.
   function parseRoute(hash) {
+    if (/^#\/stats\/?$/.test(hash || '')) return { hash, mode: 'stats', game: null, level: null };
     const m = ROUTE.exec(hash || '');
     if (!m) return null;
     const id = (v) => (v == null ? null : v === 'new' ? 'new' : Number(v));
@@ -271,7 +276,7 @@
 
   // routeOf spells the current state as an address.
   function routeOf() {
-    if (ed.mode !== 'editor') return '#/chat';
+    if (ed.mode !== 'editor') return `#/${ed.mode}`;
     // A link waiting for the login keeps its address, so a reload before
     // signing in still leads where the link pointed.
     if (ed.pendingRoute && !ed.admin?.has_admin) return ed.pendingRoute.hash;
@@ -2506,7 +2511,7 @@
   // used, so an author who works in the editor is not sent to the chat by
   // every restart.
   const initial = parseRoute(location.hash) ?? {
-    mode: localStorage.getItem(MODE_KEY) === 'editor' ? 'editor' : 'chat',
+    mode: ['editor', 'stats'].includes(localStorage.getItem(MODE_KEY)) ? localStorage.getItem(MODE_KEY) : 'chat',
     game: null,
     level: null,
   };
@@ -2514,7 +2519,7 @@
   window.addEventListener('hashchange', onRouteEvent);
   void (async () => {
     const saved = localStorage.getItem(selectionKey);
-    if (saved) {
+    if (saved && initial.mode !== 'stats') {
       try {
         const selection = JSON.parse(saved);
         const data = await api(`/admin/drafts/${selection.draft}`);

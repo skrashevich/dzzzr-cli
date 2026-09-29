@@ -1445,7 +1445,7 @@ function bindUI() {
       e.preventDefault();
       void createChat();
     }
-    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'f' && document.body.dataset.mode !== 'stats') {
       e.preventDefault();
       $('chat-search')?.focus();
     }
@@ -1456,19 +1456,19 @@ function bindUI() {
         return;
       }
       if (document.querySelector('dialog[open], .modal-overlay:not([hidden]), .onboarding-overlay:not([hidden])')) return;
-      if (state.approvalPrompt && document.body.dataset.mode !== 'editor') {
+      if (state.approvalPrompt && !['editor', 'stats'].includes(document.body.dataset.mode)) {
         e.preventDefault();
         void postApproval('no');
         return;
       }
-      if (state.agentRunning) void cancelAgent();
+      if (state.agentRunning && document.body.dataset.mode !== 'stats') void cancelAgent();
       return;
     }
     // ⏎ applies a pending action unless the author is typing somewhere.
     if (
       e.key === 'Enter' &&
       state.approvalPrompt &&
-      document.body.dataset.mode !== 'editor' &&
+      !['editor', 'stats'].includes(document.body.dataset.mode) &&
       !e.target.closest('input, textarea, select, button, [contenteditable="true"], dialog') &&
       !$('approval-bar').querySelector('button:disabled')
     ) {

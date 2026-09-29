@@ -474,12 +474,13 @@ html[data-theme="light"] .btn-secondary:hover:not(:disabled) {
 
 .mode-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1.4fr;
 }
 
 .mode-switch .segmented-item {
   height: 30px;
-  font-size: 13px;
+  padding-inline: 6px;
+  font-size: 12px;
 }
 
 .sidebar-tools {

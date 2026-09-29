@@ -10,6 +10,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='%23e0343c' stroke-width='1.5'/%3E%3Ccircle cx='8' cy='8' r='3.5' fill='%23e0343c'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="editor.css" />
+  <link rel="stylesheet" href="stats.css" />
   <link rel="stylesheet" href="onboarding.css" />
 </head>
 <body>
@@ -28,10 +29,11 @@
         <div class="segmented mode-switch" id="mode-switch" role="tablist" aria-label="Режим работы">
           <button type="button" class="segmented-item mode-tab is-active" id="mode-tab-chat" role="tab" aria-selected="true" data-mode="chat">Чат</button>
           <button type="button" class="segmented-item mode-tab" id="mode-tab-editor" role="tab" aria-selected="false" data-mode="editor">Редактор</button>
+          <button type="button" class="segmented-item mode-tab" id="mode-tab-stats" role="tab" aria-selected="false" aria-controls="view-stats" data-mode="stats">Статистика</button>
         </div>
       </div>
 
-      <div class="mode-switch-wrap"><a class="segmented-item" href="stats.html" target="_blank" rel="noopener">Статистика по логу ↗</a></div>
+      <div class="sidebar-scroll stats-only stats-nav">Загрузите журнал игры в XLSX, JSON или CSV. Вход в движок и настройка LLM не требуются.</div>
 
       <div class="sidebar-tools chat-only">
         <label class="search-wrap">
@@ -186,6 +188,8 @@
         </div>
       </footer>
     </main>
+
+    <main class="main stats-app" id="view-stats" aria-label="Статистика игры по журналу"><p class="stats-nav" role="status">Открываем статистику…</p></main>
 
     <main class="main view-editor" id="view-editor" aria-label="Редактор игры">
       <header class="editor-top">
@@ -558,6 +562,7 @@
   <script src="onboarding.js" defer></script>
   <script src="app.js" defer></script>
   <script src="drafts.js" defer></script>
+  <script src="stats.js" defer></script>
   <script src="editor.js" defer></script>
 </body>
 </html>

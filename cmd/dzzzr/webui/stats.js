@@ -1,9 +1,10 @@
 // Statistics display adapted from dozor_stats.html.
 // Original algorithm author: Sergey <sergey@luberg.me> Luberg.
-document.addEventListener('DOMContentLoaded', function(){
+(function(){
+function initStats(root){
   'use strict';
 
-  const $ = (s, r=document)=>r.querySelector(s);
+  const $ = (s, r=root)=>r.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   // ---------------------------------------------------------------
@@ -109,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function(){
       h += `<td class="tot">${r.gapLeader===null?'-':fmtHMS(r.gapLeader)}</td><td class="tot">${r.gapPrev===null?'-':fmtHMS(r.gapPrev)}</td></tr>`;
     }
     h += '</tbody>';
-    const t = $('#board');
+    const t = $('#stats-board');
     t.innerHTML = h;
     t.classList.toggle('hide-levels', !state.showLevels);
     t.classList.toggle('hide-stubs', !state.showStubs);
@@ -241,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function renderDetails(){
-    const el = $('#details');
+    const el = $('#stats-details');
     const s = state.sel;
     if(!s || !state.res){ el.className='card details empty'; el.innerHTML='Выберите клетку таблицы — здесь появится, из каких событий журнала получено время.'; return; }
     el.className = 'card details';
@@ -315,14 +316,14 @@ document.addEventListener('DOMContentLoaded', function(){
     const noShow = [...G.plannedTeams].filter(t=>!G.teams.includes(t));
     if(noShow.length) add('info', `Запланированы, но не получили ни одного уровня (в таблицу не включены): ${noShow.map(esc).join(', ')}.`);
 
-    $('#notes').innerHTML = notes.map(n=>`<div class="card note ${n.sev}"><span class="dot"></span><div>${n.html}</div></div>`).join('');
+    $('#stats-notes').innerHTML = notes.map(n=>`<div class="card note ${n.sev}"><span class="dot"></span><div>${n.html}</div></div>`).join('');
   }
 
   // ---------- параметры ----------
   function renderSettings(){
     const G = state.game, cfg = state.cfg, R = state.res.R;
     const g = cfg.game;
-    $('#cfg-game').innerHTML = `
+    $('#stats-cfg-game').innerHTML = `
       <label class="field"><span>Стоп-игра</span><input type="datetime-local" step="1" data-g="stopAt" value="${esc(g.stopAt || toLocalInput(G.endAt))}"></label>
       <label class="field"><span>Лимит уровня по умолчанию, мин</span><input type="number" min="1" step="1" data-g="defaultDur" value="${esc(g.defaultDur ?? '')}" placeholder="90"></label>
       <label class="field"><span>Бонус за приквел, мин</span><input type="number" min="0" step="1" data-g="prequelMin" value="${esc(g.prequelMin ?? '')}" placeholder="0"></label>
@@ -361,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <td>${inp('cap', '0', false)}</td>
         <td class="${thr?'src':srcCls}">${thr ? 'сквозной — лимит не нужен' : esc(L.durSrc==='manual' ? 'задан вручную (авто: '+fmtMin(L.autoDur)+' мин)' : L.durSrcText||'')}</td></tr>`;
     }
-    $('#cfg-levels').innerHTML = h + '</tbody>';
+    $('#stats-cfg-levels').innerHTML = h + '</tbody>';
 
     let t = '<thead><tr><th>Команда</th><th>Приквел</th><th>Штраф, мин</th><th>Бонус, мин</th><th>Скрыть</th></tr></thead><tbody>';
     for(const team of [...G.teams].sort((a,b)=>a.localeCompare(b,'ru'))){
@@ -371,13 +372,13 @@ document.addEventListener('DOMContentLoaded', function(){
         <td><input type="number" min="0" step="any" data-team="${esc(team)}" data-f="bonus" value="${esc(o.bonus ?? '')}" placeholder="0"></td>
         <td><input type="checkbox" data-team="${esc(team)}" data-f="hidden"${o.hidden?' checked':''}></td></tr>`;
     }
-    $('#cfg-teams').innerHTML = t + '</tbody>';
+    $('#stats-cfg-teams').innerHTML = t + '</tbody>';
   }
 
   // Обновить только плейсхолдеры/источники, не перерисовывая поля (чтобы не терять фокус)
   function refreshSettingsHints(){
     const R = state.res.R;
-    document.querySelectorAll('#cfg-levels input[data-lv]').forEach(inp=>{
+    root.querySelectorAll('#stats-cfg-levels input[data-lv]').forEach(inp=>{
       const L = R.levels.find(x=>x.name===inp.dataset.lv); if(!L) return;
       const f = inp.dataset.f, thr = L.kind==='through';
       const ph = {dur:L.autoDur, h1:L.autoH1, h2:L.autoH2, add:L.autoAdd}[f];
@@ -419,19 +420,19 @@ document.addEventListener('DOMContentLoaded', function(){
   async function recompute(opts={}){
     const version = ++requestVersion;
     pendingController?.abort(); pendingController = new AbortController();
-    $('#btn-export').disabled = true;
+    $('#stats-btn-export').disabled = true;
     try{
       const report = hydrate(await requestReport(state.file, state.cfg, '', pendingController.signal));
       if(version!==requestVersion) return;
       state.game = report.game; state.res = report.res;
-      $('#error').style.display = 'none';
+      $('#stats-error').style.display = 'none';
       renderBoard(); renderNotes(); renderDetails();
       if(opts.settings) renderSettings(); else refreshSettingsHints();
     }catch(err){ if(err.name!=='AbortError') showError(err.message || String(err)); }
-    finally{ if(version===requestVersion) $('#btn-export').disabled = false; }
+    finally{ if(version===requestVersion) $('#stats-btn-export').disabled = false; }
   }
   function showError(msg){
-    const el = $('#error'); el.textContent = msg; el.style.display = 'block';
+    const el = $('#stats-error'); el.textContent = msg; el.style.display = 'block';
   }
 
   // ---------------------------------------------------------------
@@ -440,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function(){
   async function readFile(file){
     const version = ++requestVersion;
     pendingController?.abort(); pendingController = new AbortController();
-    document.querySelectorAll('[data-needs-log]').forEach(el => el.disabled = true);
+    root.querySelectorAll('[data-needs-log]').forEach(el => el.disabled = true);
     try{
       let report = await requestReport(file, null, '', pendingController.signal);
       if(version!==requestVersion) return;
@@ -452,24 +453,24 @@ document.addEventListener('DOMContentLoaded', function(){
       hydrate(report);
       state.file = file; state.source = {name:file.name}; state.storeKey = report.key;
       state.defaultCfg = defaults; state.cfg = report.cfg; state.game = report.game; state.res = report.res; state.sel = null;
-      $('#file-name').textContent = file.name;
-      $('#file-meta').textContent = report.game.nRows.toLocaleString('ru-RU')+' строк · '+report.game.teams.length+' команд · '+fmtDT(report.game.startAt)+' — '+fmtDT(report.game.endAt);
-      $('#error').style.display = 'none';
+      $('#stats-file-name').textContent = file.name;
+      $('#stats-file-meta').textContent = report.game.nRows.toLocaleString('ru-RU')+' строк · '+report.game.teams.length+' команд · '+fmtDT(report.game.startAt)+' — '+fmtDT(report.game.endAt);
+      $('#stats-error').style.display = 'none';
       renderBoard(); renderNotes(); renderDetails(); renderSettings();
     }catch(err){ if(err.name!=='AbortError') showError(err.message || String(err)); }
-    finally{ if(version===requestVersion) document.querySelectorAll('[data-needs-log]').forEach(el => el.disabled = !state.res); }
+    finally{ if(version===requestVersion) root.querySelectorAll('[data-needs-log]').forEach(el => el.disabled = !state.res); }
   }
 
   async function exportXlsx(){
     if(!state.file) return;
-    $('#btn-export').disabled = true;
+    $('#stats-btn-export').disabled = true;
     try{
       const blob = await requestReport(state.file, state.cfg, 'xlsx');
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = state.file.name.replace(/\.[^.]+$/, '')+'-статистика.xlsx'; a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href),2000);
     }catch(err){ showError(err.message || String(err)); }
-    finally{ $('#btn-export').disabled = false; }
+    finally{ $('#stats-btn-export').disabled = false; }
   }
 
   // ---------------------------------------------------------------
@@ -477,25 +478,25 @@ document.addEventListener('DOMContentLoaded', function(){
   // ---------------------------------------------------------------
   state.showLevels = true; state.showStubs = true;
 
-  $('#btn-upload').addEventListener('click', ()=>$('#file-input').click());
-  $('#file-input').addEventListener('change', e=>{
+  $('#stats-btn-upload').addEventListener('click', ()=>$('#stats-file-input').click());
+  $('#stats-file-input').addEventListener('change', e=>{
     const f = e.target.files[0]; if(!f) return;
     readFile(f).catch(err=>showError(err.message||String(err)));
     e.target.value='';
   });
-  $('#btn-export').addEventListener('click', exportXlsx);
-  $('#toggle-levels').addEventListener('click', e=>{
+  $('#stats-btn-export').addEventListener('click', exportXlsx);
+  $('#stats-toggle-levels').addEventListener('click', e=>{
     state.showLevels = !state.showLevels;
     e.target.textContent = state.showLevels ? 'скрыть результаты уровней' : 'показать результаты уровней';
-    $('#board').classList.toggle('hide-levels', !state.showLevels);
+    $('#stats-board').classList.toggle('hide-levels', !state.showLevels);
   });
-  $('#toggle-stubs').addEventListener('click', e=>{
+  $('#stats-toggle-stubs').addEventListener('click', e=>{
     state.showStubs = !state.showStubs;
     e.target.textContent = state.showStubs ? 'скрыть бонусные уровни' : 'показать бонусные уровни';
-    $('#board').classList.toggle('hide-stubs', !state.showStubs);
+    $('#stats-board').classList.toggle('hide-stubs', !state.showStubs);
   });
 
-  $('#board').addEventListener('click', e=>{
+  $('#stats-board').addEventListener('click', e=>{
     const td = e.target.closest('td.cell');
     const th = e.target.closest('th[data-lvh]');
     const tb = e.target.closest('button[data-teamb]');
@@ -508,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function(){
       state.sel = {type:'team', team:tb.dataset.teamb};
     } else return;
     renderBoard(); renderDetails();
-    if(window.innerWidth < 900) $('#details').scrollIntoView({behavior:'smooth', block:'start'});
+    if(window.innerWidth < 900) $('#stats-details').scrollIntoView({behavior:'smooth', block:'start'});
   });
 
   function onCfgChange(e){
@@ -527,8 +528,8 @@ document.addEventListener('DOMContentLoaded', function(){
     saveCfg();
     recompute({settings: t.tagName==='SELECT' && t.dataset.f==='kind'});
   }
-  $('#settings').addEventListener('change', onCfgChange);
-  $('#btn-reset-cfg').addEventListener('click', ()=>{
+  $('#stats-settings').addEventListener('change', onCfgChange);
+  $('#stats-btn-reset-cfg').addEventListener('click', ()=>{
     if(!state.game) return;
     state.cfg = structuredClone(state.defaultCfg);
     try{ localStorage.removeItem(state.storeKey); }catch(e){}
@@ -537,21 +538,50 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // перетаскивание файла на страницу
   let dragDepth = 0;
-  window.addEventListener('dragenter', e=>{ if([...(e.dataTransfer?.types||[])].includes('Files')){ dragDepth++; document.body.classList.add('dragging'); } });
-  window.addEventListener('dragleave', ()=>{ dragDepth=Math.max(0,dragDepth-1); if(!dragDepth) document.body.classList.remove('dragging'); });
-  window.addEventListener('dragover', e=>e.preventDefault());
-  window.addEventListener('drop', e=>{
-    e.preventDefault(); dragDepth=0; document.body.classList.remove('dragging');
+  root.addEventListener('dragenter', e=>{ if([...(e.dataTransfer?.types||[])].includes('Files')){ dragDepth++; root.classList.add('dragging'); } });
+  root.addEventListener('dragleave', ()=>{ dragDepth=Math.max(0,dragDepth-1); if(!dragDepth) root.classList.remove('dragging'); });
+  root.addEventListener('dragover', e=>e.preventDefault());
+  root.addEventListener('drop', e=>{
+    e.stopPropagation();
+    e.preventDefault(); dragDepth=0; root.classList.remove('dragging');
     const f = e.dataTransfer?.files?.[0];
     if(f) readFile(f).catch(err=>showError(err.message||String(err)));
   });
 
-  if(new URLSearchParams(location.search).has('standalone')) $('#app-link').hidden = true;
-  const initialName = new URLSearchParams(location.search).get('log');
+  if(root === document.body && new URLSearchParams(location.search).has('standalone')) $('#stats-app-link').hidden = true;
+  const initialName = root === document.body ? new URLSearchParams(location.search).get('log') : null;
   if(initialName){
     fetch('/stats-input').then(async response => {
       if(!response.ok) throw new Error('Не удалось загрузить журнал, указанный при запуске.');
       await readFile(new File([await response.blob()], initialName));
     }).catch(err => showError(err.message || String(err)));
   }
-});
+ }
+
+  let mounting;
+  window.dzzzrStats = {
+    mount(root){
+      if(mounting) return mounting;
+      root.setAttribute('aria-busy', 'true');
+      mounting = (async () => {
+        const response = await fetch('stats.html');
+        if(!response.ok) throw new Error('Не удалось открыть статистику. Нажмите «Статистика», чтобы повторить.');
+        const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const content = page.querySelector('.wrap');
+        const drop = page.querySelector('.drop-hint');
+        if(!content || !drop) throw new Error('Страница статистики повреждена.');
+        content.querySelector('#stats-app-link')?.remove();
+        root.replaceChildren(drop, content);
+        initStats(root);
+      })().catch(error => {
+        mounting = null;
+        root.textContent = error.message;
+        throw error;
+      }).finally(() => root.removeAttribute('aria-busy'));
+      return mounting;
+    },
+  };
+  document.addEventListener('DOMContentLoaded', () => {
+    if(document.body.classList.contains('stats-app')) initStats(document.body);
+  });
+})();

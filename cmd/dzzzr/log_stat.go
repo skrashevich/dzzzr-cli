@@ -18,7 +18,7 @@ import (
 
 func init() {
 	register(command{
-		Name: "log-stat", Usage: "log-stat [ФАЙЛ.xlsx|ФАЙЛ.csv] [-json] [-web-addr АДРЕС]",
+		Name: "log-stat", Usage: "log-stat [ФАЙЛ.xlsx|ФАЙЛ.json|ФАЙЛ.csv] [-json] [-web-addr АДРЕС]",
 		Help: "Построить статистику игры по журналу в браузере, без входа в движок",
 		Auth: authNone, Run: cmdLogStat,
 	})
@@ -26,7 +26,7 @@ func init() {
 
 func cmdLogStat(ctx context.Context, cfg *config, _ *dzzzr.Client, args []string) error {
 	if len(args) > 1 {
-		return fatal("использование: log-stat [ФАЙЛ.xlsx|ФАЙЛ.csv]")
+		return fatal("использование: log-stat [ФАЙЛ.xlsx|ФАЙЛ.json|ФАЙЛ.csv]")
 	}
 	var data []byte
 	var name string
