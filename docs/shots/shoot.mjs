@@ -156,7 +156,7 @@ await setTheme('light');
 
 // 10: pasting a sheet of codes in one block, the reason an author would pick
 // this screen over dictating the level to the agent.
-await page.click('.editor-field-codes .editor-bulk summary');
+await page.locator('.editor-field-codes').getByRole('button', { name: 'Вставить списком', exact: true }).click();
 await page.fill(
   '.editor-field-codes .editor-bulk-area',
   '(112)D45R92#Д45 | 2 | 1\n(113)K21M08 | 3 | 2\n(114)B77X01#Б77 | 1+ | 2',
