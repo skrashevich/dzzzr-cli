@@ -37,7 +37,45 @@ window.dzzzrStatsOffline={
 function page(name){for(const b of document.querySelectorAll('[data-page]'))b.setAttribute('aria-pressed',String(b.dataset.page===name));q('body > .wrap').hidden=name!=='stats';for(const el of document.querySelectorAll('.browser-panel'))el.hidden=el.id!=='browser-'+name;if(name==='stats')window.dzzzrStats?.reload();}
 async function refreshFiles(){const names=await call({action:'files'});q('#file-list').replaceChildren();for(const name of names){const li=document.createElement('li');li.textContent=name;const b=document.createElement('button');b.textContent='Скачать';b.onclick=async()=>{try{const r=await call({action:'download',name});download(name,new Blob([decode(r.data)]))}catch(e){showError(e)}};li.append(b);q('#file-list').append(li)}for(const [selector,filter] of [['#pdf-file',n=>/\.pdf$/i.test(n)],['#scenario-file',n=>/\.json$/i.test(n)]]){const select=q(selector),old=select.value;select.replaceChildren();for(const n of names.filter(filter)){select.add(new Option(n,n))}if(names.includes(old))select.value=old}}
 async function search(){if(!active)throw new Error('Сначала загрузите журнал');const r=await call({action:'tool',name:'stats_search',args:{log_id:active.id,...searchArgs,offset:next||0,limit:30}});q('#search-result').textContent=JSON.stringify(r,null,2);next=r.next_offset??null;q('#search-next').hidden=next===null}
-function message(role,text){const el=document.createElement('div');el.className='browser-message '+role;el.textContent=text;q('#agent-transcript').append(el)}
+function inlineAnswer(parent, text){
+ const tokens=/\*\*([^*]+)\*\*|`([^`]+)`/g;
+ let at=0,match;
+ while((match=tokens.exec(text))){
+  parent.append(document.createTextNode(text.slice(at,match.index)));
+  const node=document.createElement(match[1]?'strong':'code');
+  node.textContent=match[1]||match[2];
+  parent.append(node);
+  at=tokens.lastIndex;
+ }
+ parent.append(document.createTextNode(text.slice(at)));
+}
+function formatAnswer(parent,text){
+ let list=null,code=null;
+ for(const line of text.replace(/\r\n/g,'\n').split('\n')){
+  if(/^```/.test(line)){
+   if(code){code=null}else{const pre=document.createElement('pre');code=document.createElement('code');pre.append(code);parent.append(pre)}
+   list=null;continue;
+  }
+  if(code){code.textContent+=line+'\n';continue}
+  if(!line.trim()){list=null;continue}
+  const bullet=line.match(/^\s*[-*]\s+(.+)$/);
+  if(bullet){
+   if(!list){list=document.createElement('ul');parent.append(list)}
+   const item=document.createElement('li');inlineAnswer(item,bullet[1]);list.append(item);continue;
+  }
+  list=null;
+  const heading=line.match(/^#{1,3}\s+(.+)$/);
+  const block=document.createElement(heading?'h3':'p');
+  inlineAnswer(block,heading?heading[1]:line);
+  parent.append(block);
+ }
+}
+function message(role,text){
+ const el=document.createElement('div');
+ el.className='browser-message '+role;
+ if(role==='assistant')formatAnswer(el,text);else el.textContent=text;
+ const transcript=q('#agent-transcript');transcript.append(el);transcript.scrollTop=transcript.scrollHeight;
+}
 document.addEventListener('DOMContentLoaded',()=>{
  q('#stats-app-link')?.remove();q('.casebar p').textContent='Загрузите XLSX, JSON или CSV: расчёт выполняется здесь в Go. Статистика и поиск доступны агенту в этой вкладке. Экспорт HTML сохраняет независимый офлайн-отчёт.';
  for(const b of document.querySelectorAll('[data-page]'))b.onclick=()=>page(b.dataset.page);

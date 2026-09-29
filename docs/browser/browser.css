@@ -1,1 +1,306 @@
-.browser-header,.browser-panel{box-sizing:border-box;max-width:1800px;margin:auto;padding:20px 28px}.browser-header{border-bottom:1px solid #dcd6cc;background:#fff}.browser-header strong{font-size:26px}.browser-header span,.browser-muted{color:#625d55}.browser-header nav{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.browser-header button,.browser-panel button{border:1px solid #c9c2b7;border-radius:6px;padding:9px 14px;background:#fff;color:#24201a;cursor:pointer}.browser-header button[aria-pressed=true],.browser-panel button[type=submit]{background:#c4640c;color:white;border-color:#c4640c}.browser-panel[hidden]{display:none}.browser-form{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:18px 0}.browser-form label{display:grid;gap:6px;min-width:150px}.browser-panel input,.browser-panel select,.browser-panel textarea{box-sizing:border-box;background:#fff;color:#24201a;border:1px solid #c9c2b7;border-radius:6px;padding:9px;font:inherit}.browser-block{display:grid;gap:8px;margin:16px 0}.browser-panel textarea{width:100%;font-family:ui-monospace,monospace}.browser-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:65vh;overflow:auto;padding:16px;background:#fff;border:1px solid #ddd7cd}.browser-panel button:disabled{opacity:.5;cursor:default}.browser-message{white-space:pre-wrap;border:1px solid #ddd7cd;background:#fff;padding:14px;margin:12px 0}.browser-message.user{border-left:4px solid #c4640c}.browser-panel #file-list li{margin:10px 0}.browser-panel #file-list button{margin-left:10px}body.browser-page>.wrap[hidden]{display:none}body.browser-page{margin:0}@media(max-width:600px){.browser-header,.browser-panel{padding:16px}.browser-header nav button{flex:1}.browser-form label{width:100%}}
+/* The browser workspace uses the same light/dark palette as the statistics view. */
+body.browser-page {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.browser-page .browser-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.browser-page .browser-header-inner,
+.browser-page .browser-panel {
+  width: min(100%, 1400px);
+  margin: 0 auto;
+  padding: 24px 28px;
+}
+
+.browser-page .browser-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--text);
+}
+
+.browser-page .browser-brand strong {
+  font-size: 27px;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+.browser-page .browser-brand span,
+.browser-page .browser-muted {
+  color: var(--text-dim);
+}
+
+.browser-page .browser-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 22px 0 12px;
+}
+
+.browser-page .browser-header button,
+.browser-page .browser-panel button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.browser-page .browser-header button:hover,
+.browser-page .browser-panel button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.browser-page .browser-header button[aria-pressed="true"],
+.browser-page .browser-panel button.browser-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #1d1204;
+}
+
+.browser-page .browser-header button:focus-visible,
+.browser-page .browser-panel button:focus-visible,
+.browser-page .browser-panel summary:focus-visible,
+.browser-page .browser-panel input:focus-visible,
+.browser-page .browser-panel textarea:focus-visible,
+.browser-page .browser-panel select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.browser-page .browser-header-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.browser-page #browser-status {
+  margin: 0;
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.browser-page .browser-muted {
+  margin: 0;
+  max-width: 90ch;
+}
+
+.browser-page .browser-panel[hidden],
+body.browser-page > .wrap[hidden] {
+  display: none;
+}
+
+.browser-page .browser-panel h1 {
+  margin: 0 0 8px;
+  font-size: clamp(27px, 3vw, 36px);
+  line-height: 1.15;
+  letter-spacing: -.035em;
+}
+
+.browser-page .browser-panel > p {
+  margin: 0 0 22px;
+  max-width: 76ch;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.browser-page .browser-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  align-items: end;
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.browser-page .browser-form label,
+.browser-page .browser-block {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.browser-page .browser-panel input,
+.browser-page .browser-panel select,
+.browser-page .browser-panel textarea {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.browser-page .browser-panel input::placeholder,
+.browser-page .browser-panel textarea::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
+
+.browser-page .browser-panel pre {
+  max-height: 65vh;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.browser-page .browser-panel button:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.browser-page .browser-panel #file-list li { margin: 10px 0; }
+.browser-page .browser-panel #file-list button { margin-left: 10px; }
+.browser-page .browser-block { margin: 16px 0; }
+.browser-page .browser-panel textarea { resize: vertical; }
+.browser-page #scenario-json { font-family: ui-monospace, SFMono-Regular, monospace; }
+
+/* The agent is a focused reading and writing desk, not a full-width form. */
+.browser-page #browser-agent {
+  width: min(100%, 980px);
+  padding-top: 34px;
+  padding-bottom: 80px;
+}
+
+.browser-page #browser-agent details {
+  margin: 22px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.browser-page #browser-agent summary {
+  padding: 13px 16px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.browser-page #browser-agent details[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.browser-page #browser-agent details .browser-form {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr);
+  margin: 0;
+  padding: 18px;
+}
+
+.browser-page #agent-transcript {
+  min-height: 220px;
+  max-height: min(56vh, 700px);
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.browser-page #agent-transcript:empty::before {
+  content: 'Задайте вопрос о загруженном журнале или файлах.';
+  color: var(--text-dim);
+}
+
+.browser-page .browser-message {
+  width: fit-content;
+  max-width: min(88%, 78ch);
+  margin: 0 0 12px;
+  padding: 13px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.browser-page .browser-message:last-child { margin-bottom: 0; }
+.browser-page .browser-message::before {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+}
+.browser-page .browser-message.assistant::before { content: 'Агент'; }
+.browser-page .browser-message.user {
+  margin-left: auto;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.browser-page .browser-message.user::before {
+  content: 'Вы';
+  color: var(--accent-text);
+}
+
+.browser-page #agent-form {
+  margin-top: 16px;
+}
+
+.browser-page #agent-form .browser-block {
+  margin: 0;
+}
+
+.browser-page #agent-form textarea {
+  min-height: 98px;
+  max-height: 40vh;
+  line-height: 1.5;
+}
+
+.browser-page .browser-agent-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.browser-page #agent-status {
+  margin: 12px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .browser-page .browser-header-inner,
+  .browser-page .browser-panel { padding: 18px 16px; }
+  .browser-page .browser-header nav button { flex: 1 1 auto; }
+  .browser-page #browser-agent { padding-top: 24px; }
+  .browser-page #browser-agent details .browser-form { grid-template-columns: 1fr; }
+  .browser-page #agent-transcript { min-height: 180px; max-height: 50vh; }
+  .browser-page .browser-message { max-width: 95%; }
+}
+
+.browser-page .browser-message.assistant { white-space: normal; }
+.browser-page .browser-message p { margin: 0 0 9px; }
+.browser-page .browser-message p:last-child { margin-bottom: 0; }
+.browser-page .browser-message h3 { margin: 12px 0 7px; font-size: 15px; }
+.browser-page .browser-message h3:first-child { margin-top: 0; }
+.browser-page .browser-message ul { margin: 6px 0 10px; padding-left: 20px; }
+.browser-page .browser-message li { margin: 4px 0; }
+.browser-page .browser-message code {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: .9em;
+}
+.browser-page .browser-message pre { margin: 8px 0; max-height: none; }
+.browser-page .browser-message pre code { padding: 0; background: transparent; }
