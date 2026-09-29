@@ -207,7 +207,7 @@
     const old = el('editor-level-list').querySelectorAll('[data-draft-document]');
     for (const node of old) node.remove();
     if (!drafts.draft) return;
-    for (const doc of Object.values(drafts.draft.documents)) {
+    for (const doc of Object.values(drafts.draft.documents).sort((a,b) => (a.order ?? 0) - (b.order ?? 0))) {
       if (doc.kind !== 'level' || doc.level_id) continue;
       const li = document.createElement('li');
       li.dataset.draftDocument = doc.id;

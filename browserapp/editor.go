@@ -46,6 +46,7 @@ type Draft struct {
 }
 type Document struct {
 	ID       string         `json:"id"`
+	Order    int            `json:"order"`
 	Kind     string         `json:"kind"`
 	LevelID  int            `json:"level_id"`
 	Revision int            `json:"revision"`
@@ -181,6 +182,8 @@ func (w *Workspace) Restore(raw any) error {
 		}
 	}
 	for id, d := range state.Drafts {
+		n, _ := strconv.Atoi(strings.TrimPrefix(id, "draft-"))
+		maxID = max(maxID, n)
 		if d == nil || d.ID != id || d.Documents == nil {
 			return fmt.Errorf("повреждён черновик")
 		}
@@ -188,6 +191,11 @@ func (w *Workspace) Restore(raw any) error {
 			return fmt.Errorf("игра черновика отсутствует")
 		}
 		for key, doc := range d.Documents {
+			n, _ := strconv.Atoi(strings.TrimPrefix(key, "doc-"))
+			maxID = max(maxID, n)
+			if doc != nil && doc.Order == 0 {
+				doc.Order = n
+			}
 			if doc == nil || doc.ID != key || doc.Revision < 1 {
 				return fmt.Errorf("повреждён документ")
 			}
@@ -267,7 +275,7 @@ func (w *Workspace) open(b map[string]any) (*Draft, error) {
 		if err != nil {
 			return nil, err
 		}
-		doc = &Document{ID: fmt.Sprintf("doc-%d", w.id()), Kind: kind, LevelID: lid, Revision: 1, Params: values, Base: clone(values)}
+		doc = &Document{ID: fmt.Sprintf("doc-%d", w.id()), Order: w.State.Next, Kind: kind, LevelID: lid, Revision: 1, Params: values, Base: clone(values)}
 		d.Documents[doc.ID] = doc
 	}
 	d.Active = doc.ID
@@ -505,7 +513,16 @@ func (w *Workspace) api(method, path string, p []string, b map[string]any) (any,
 					for k := range d.Documents {
 						keys = append(keys, k)
 					}
-					slices.Sort(keys)
+					slices.SortFunc(keys, func(a, b string) int {
+						left, right := d.Documents[a].Order, d.Documents[b].Order
+						if left < right {
+							return -1
+						}
+						if left > right {
+							return 1
+						}
+						return strings.Compare(a, b)
+					})
 					for _, k := range keys {
 						doc := d.Documents[k]
 						params, _ := completeParams(doc.Kind, doc.Params)

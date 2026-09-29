@@ -165,3 +165,24 @@ func TestEditorCopyMoveDelete(t *testing.T) {
 		t.Fatal("deletion not retained")
 	}
 }
+
+func TestEditorExportsUnpublishedLevelsInCreationOrder(t *testing.T) {
+	var w Workspace
+	d := createGame(t, &w)
+	for i := range 12 {
+		editorCall(t, &w, "POST", "/admin/drafts/open", map[string]any{"draft_id": d.ID, "game_id": d.GameID, "kind": "level", "params": map[string]any{"title": fmt.Sprintf("Уровень %d", i+1), "question": "Текст"}})
+	}
+	raw, _ := json.Marshal(editorCall(t, &w, "GET", fmt.Sprintf("/admin/games/%d/scenario", d.GameID), nil))
+	s, err := gamesource.DecodeScenario(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Levels) != 12 {
+		t.Fatal("unpublished levels lost")
+	}
+	for i, l := range s.Levels {
+		if l.Params["title"] != fmt.Sprintf("Уровень %d", i+1) {
+			t.Fatalf("wrong draft order: %v", l.Params["title"])
+		}
+	}
+}
