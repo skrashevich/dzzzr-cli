@@ -304,3 +304,22 @@ body.browser-page > .wrap[hidden] {
 }
 .browser-page .browser-message pre { margin: 8px 0; max-height: none; }
 .browser-page .browser-message pre code { padding: 0; background: transparent; }
+
+.browser-page .browser-editor-panel {width:100%;max-width:none;padding:0}
+.browser-editor-heading {display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+.browser-editor-heading p {margin:0;flex:1;color:var(--text-dim)}
+#editor-frame {display:block;width:100%;height:calc(100dvh - 220px);min-height:640px;border:0;background:var(--bg)}
+.browser-backup-label {display:flex;gap:8px;align-items:center}
+.browser-backup-label input {max-width:180px}
+#agent-approval {border:1px solid var(--accent);padding:18px;margin:16px 0;background:var(--surface)}
+#agent-trace details {border-bottom:1px solid var(--border);padding:6px 0}
+#agent-trace pre,#agent-report {white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto}
+@media(max-width:650px){#editor-frame{height:calc(100dvh - 280px);min-height:620px}.browser-editor-heading{padding:10px}.browser-editor-heading p{flex-basis:100%}}
+@media(max-width:650px){
+ body[data-browser-page="editor"] .browser-header nav {grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px}
+ body[data-browser-page="editor"] .browser-header nav button {font-size:12px;padding:9px 4px;white-space:nowrap}
+ body[data-browser-page="editor"] .browser-muted,.browser-editor-heading p {display:none}
+ .browser-editor-heading {gap:8px}
+ .browser-backup-label {font-size:12px}
+ .browser-backup-label input {max-width:145px}
+}

@@ -1,0 +1,13 @@
+/* Native forms live in an isolated frame and keep their own theme tokens. */
+.chat-only, .stats-only, #view-chat, #view-stats, .sessions, .sidebar-foot,
+.mode-switch-wrap, #btn-onboarding-open, #onboarding, #onboarding-dialog { display:none !important; }
+body { --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.app {height:100dvh;min-height:0}
+.sidebar-brand {padding-block:14px}
+.editor-sheet {max-width:1100px}
+@media (max-width:720px){.app{display:flex;flex-direction:column}.sidebar{width:100%;flex:none;max-height:30dvh}.sidebar-brand{display:none}.editor-nav{display:flex;flex-direction:row;gap:12px;overflow:auto}.editor-nav-block{min-width:180px}.main{min-height:0;flex:1}}
+
+[hidden] {display:none !important}
+
+:root,html[data-theme="light"] {--amber:#c65f08;--amber-hover:#af5000;--amber-deep:#a44d00;--amber-text:#c65f08;--amber-glow:rgba(198,95,8,.12);--border-strong:rgba(198,95,8,.35)}
+html[data-theme="light"] {--bg-void:#faf8f4;--bg-deep:#fff;--bg-panel:#fff;--text-faint:#766f66}

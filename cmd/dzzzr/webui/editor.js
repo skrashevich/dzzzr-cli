@@ -1451,6 +1451,13 @@
         }
       }
     }
+    if (window.dzzzrLocalEditor) {
+      for (const [tag, attr] of RICH_URL_ATTRS) for (const node of doc.body.querySelectorAll(tag)) {
+        const raw = node.getAttribute(attr);
+        const resolved = window.dzzzrLocalEditor.resolveAsset(raw);
+        if (resolved && resolved !== raw) {node.setAttribute(`data-dzzzr-${attr}`, raw);node.setAttribute(attr, resolved)}
+      }
+    }
     if (!base) return { html: doc.body.innerHTML, stripped };
     for (const [tag, attr] of RICH_URL_ATTRS) {
       for (const node of doc.body.querySelectorAll(tag)) {
@@ -2249,6 +2256,7 @@
   // has an answer the author can take right there.
   async function exportScenario(linked) {
     if (ed.gameID == null) return;
+    await drafts.flush();
     const query = linked ? '?linked=1' : '';
     try {
       const res = await fetch(`/api/v1/admin/games/${ed.gameID}/scenario${query}`);
@@ -2381,11 +2389,11 @@
         return;
       }
     }
-    if (!window.confirm('Залить сценарий в движок? Отката у движка нет.')) return;
+    if (!window.dzzzrLocalEditor && !window.confirm('Залить сценарий в движок? Отката у движка нет.')) return;
     try {
       const res = await api('/admin/scenario/import', { method: 'POST', body });
       setIssues(el('import-issues'), [`Готово: игра ${res.game_id}, уровней ${Object.keys(res.level_ids ?? {}).length}.`], 'ok');
-      toast('Сценарий залит');
+      toast(window.dzzzrLocalEditor ? 'Сценарий открыт локально' : 'Сценарий залит');
       await loadGames();
       if (res.game_id) await selectGame(res.game_id);
     } catch (e) {
@@ -2496,7 +2504,10 @@
     el('editor-form').addEventListener('input', () => markDirty(true));
   }
 
-  window.dzzzrEditor = { flushDraft: () => drafts.flush(), setMode, openScenarioFromChatFile, parseBulk, humanizeIssue, refreshAdmin: loadAdminStatus };
+  window.dzzzrEditor = { flushDraft: () => drafts.flush(), setMode, openScenarioFromChatFile, parseBulk, humanizeIssue, refreshAdmin: loadAdminStatus,
+    openLocalDraft: async (id) => {await setMode('editor');await openDraftSelection(id);await loadGames();await loadLevels()},
+    openLocalGame: async (id) => {await setMode('editor');await loadGames();await selectGame(id)},
+  };
 
   setInterval(() => {
     if (ed.mode === 'editor' && drafts.doc && document.visibilityState === 'visible') {

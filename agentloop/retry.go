@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/sipeed/picoclaw/pkg/providers"
+	providers "github.com/skrashevich/dzzzr-cli/agentprotocol"
 )
 
 var errEmptyModelResponse = errors.New("провайдер вернул пустой ответ без текста и вызовов инструментов; задача не завершена")

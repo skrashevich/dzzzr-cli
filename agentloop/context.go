@@ -6,7 +6,7 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/sipeed/picoclaw/pkg/providers"
+	providers "github.com/skrashevich/dzzzr-cli/agentprotocol"
 )
 
 // Source documents must remain complete for cross-page interpretation. This

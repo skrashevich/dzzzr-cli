@@ -218,7 +218,7 @@ func TestRunReportsToolArgumentsAsJSON(t *testing.T) {
 	}
 }
 
-// PicoClaw validates a tool call against the declared schema before the tool
+// The shared loop validates a tool call against the declared schema before the tool
 // runs, so a call the model got wrong comes back as an error result instead of
 // reaching the engine.
 func TestRunRejectsToolCallThatDoesNotMatchSchema(t *testing.T) {
@@ -445,5 +445,24 @@ func TestFetchPricingCachesTheAbsenceOfAPriceList(t *testing.T) {
 	pricingMu.Unlock()
 	if !cached || value != nil {
 		t.Errorf("отсутствие тарифов не закэшировано: cached=%v value=%+v", cached, value)
+	}
+}
+
+func TestRunPreservesFunctionSignatureAndGeneratedCallID(t *testing.T) {
+	phase := 0
+	p := &pdfImportProvider{chat: func(messages []providers.Message, _ []providers.ToolDefinition) (*providers.LLMResponse, error) {
+		phase++
+		if phase == 1 {
+			return &providers.LLMResponse{FinishReason: "tool_calls", ToolCalls: []providers.ToolCall{{Function: &providers.FunctionCall{Name: "echo", Arguments: `{"text":"hello"}`, ThoughtSignature: "opaque-provider-signature"}}}}, nil
+		}
+		assistant := messages[len(messages)-2]
+		tool := messages[len(messages)-1]
+		if len(assistant.ToolCalls) != 1 || assistant.ToolCalls[0].ID == "" || assistant.ToolCalls[0].ID != tool.ToolCallID || assistant.ToolCalls[0].Function.ThoughtSignature != "opaque-provider-signature" {
+			t.Fatalf("invalid tool history: %+v %+v", assistant, tool)
+		}
+		return &providers.LLMResponse{Content: "done", FinishReason: "stop"}, nil
+	}}
+	if _, err := Run(t.Context(), Config{Model: "test", Provider: p}, &RunInput{Extra: []Tool{&echoTool{}}}, Callbacks{}); err != nil {
+		t.Fatal(err)
 	}
 }

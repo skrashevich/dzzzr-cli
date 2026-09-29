@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/skrashevich/dzzzr-cli/internal/statsoffline"
@@ -33,10 +34,26 @@ func build(out string) error {
 			return err
 		}
 	}
-	for _, name := range []string{"browser.js", "browser.css"} {
+	for _, name := range []string{"browser.js", "browser.css", "editor-bridge.js", "editor-local.css"} {
 		if err := copyFile("docs/browser/"+name, filepath.Join(out, name)); err != nil {
 			return err
 		}
+	}
+	for _, name := range []string{"style.css", "editor.css", "editor.js", "drafts.js"} {
+		if err := copyFile("cmd/dzzzr/webui/"+name, filepath.Join(out, name)); err != nil {
+			return err
+		}
+	}
+	editor, err := os.ReadFile("cmd/dzzzr/webui/index.html")
+	if err != nil {
+		return err
+	}
+	editorHTML := regexp.MustCompile(`<script[^>]*>.*?</script>`).ReplaceAllString(string(editor), "")
+	editorHTML = regexp.MustCompile(`(?m)^.*<link[^>]*(?:fonts\.google|stats\.css|onboarding\.css)[^>]*>.*$`).ReplaceAllString(editorHTML, "")
+	editorHTML = strings.Replace(editorHTML, "</head>", `<link rel="stylesheet" href="editor-local.css"></head>`, 1)
+	editorHTML = strings.Replace(editorHTML, "</body>", `<script src="editor-bridge.js"></script><script src="drafts.js"></script><script src="editor.js"></script></body>`, 1)
+	if err = os.WriteFile(filepath.Join(out, "editor.html"), []byte(editorHTML), 0644); err != nil {
+		return err
 	}
 	if err := copyFile("internal/statsoffline/wasm_exec.js", filepath.Join(out, "wasm_exec.js")); err != nil {
 		return err
@@ -100,7 +117,7 @@ func build(out string) error {
 	if err = os.WriteFile(filepath.Join(out, "THIRD_PARTY_LICENSES.txt"), []byte(licenses.String()), 0644); err != nil {
 		return err
 	}
-	files := []string{"index.html", "browser.js", "browser.css", "stats.js", "stats.css", "stats-offline.js", "stats-template.html", "wasm_exec.js", "GO-LICENSE", "offline.wasm", "browser.wasm", "THIRD_PARTY_LICENSES.txt"}
+	files := []string{"index.html", "browser.js", "browser.css", "stats.js", "stats.css", "stats-offline.js", "stats-template.html", "wasm_exec.js", "GO-LICENSE", "offline.wasm", "browser.wasm", "THIRD_PARTY_LICENSES.txt", "editor.html", "editor-bridge.js", "editor-local.css", "style.css", "editor.css", "editor.js", "drafts.js"}
 	hash := sha256.New()
 	for _, f := range files {
 		b, e := os.ReadFile(filepath.Join(out, f))

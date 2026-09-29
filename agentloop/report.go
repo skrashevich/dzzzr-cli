@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sipeed/picoclaw/pkg/providers"
+	providers "github.com/skrashevich/dzzzr-cli/agentprotocol"
 )
 
-// stats accumulates what a run cost. PicoClaw calls tools from several
-// goroutines, so every field is written under the mutex.
+// stats accumulates what a run cost. Progress callbacks can run concurrently,
+// so every field is written under the mutex.
 type stats struct {
 	mu               sync.Mutex
 	llmDuration      time.Duration

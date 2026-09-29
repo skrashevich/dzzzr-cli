@@ -397,3 +397,8 @@ func httpURL(raw string) (*url.URL, error) {
 	}
 	return u, nil
 }
+
+// CompleteGameParams and CompleteLevelParams materialize explicit zero values
+// for editable scenario documents, using the same export representation as CLI.
+func CompleteGameParams(p dzzzr.GameParams) map[string]any   { return snapshotParams(p) }
+func CompleteLevelParams(p dzzzr.LevelParams) map[string]any { return snapshotParams(p) }

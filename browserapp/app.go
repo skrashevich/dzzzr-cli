@@ -16,9 +16,11 @@ import (
 )
 
 type App struct {
-	Store statstore.Memory
-	mu    sync.Mutex
-	files map[string][]byte
+	Store   statstore.Memory
+	Editor  Workspace
+	Approve func(context.Context, string, map[string]any) error
+	mu      sync.Mutex
+	files   map[string][]byte
 }
 type Request struct {
 	Action   string            `json:"action"`
@@ -28,6 +30,9 @@ type Request struct {
 	LogID    string            `json:"log_id"`
 	Config   *gamestats.Config `json:"cfg"`
 	Revision int               `json:"revision"`
+	Path     string            `json:"path"`
+	Method   string            `json:"method"`
+	Body     map[string]any    `json:"body"`
 }
 
 func (a *App) read(name string) ([]byte, error) {
@@ -53,6 +58,12 @@ func (a *App) put(name string, data []byte) error {
 }
 func (a *App) Dispatch(ctx context.Context, r Request) (any, error) {
 	switch r.Action {
+	case "editor_api":
+		return a.Editor.API(r.Method, r.Path, r.Body)
+	case "workspace_export":
+		return a.Editor.Snapshot(), nil
+	case "workspace_restore":
+		return map[string]any{"ok": true}, a.Editor.Restore(r.Args)
 	case "upload":
 		if err := a.put(r.Name, r.Data); err != nil {
 			return nil, err

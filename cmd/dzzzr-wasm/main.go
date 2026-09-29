@@ -6,10 +6,13 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json/v2"
+	"errors"
 	"fmt"
 	"sync"
 	"syscall/js"
 	"time"
+
+	"github.com/skrashevich/dzzzr-cli/agentloop"
 
 	"github.com/skrashevich/dzzzr-cli/browserapp"
 	"github.com/skrashevich/dzzzr-cli/gamestats"
@@ -28,7 +31,11 @@ func main() {
 				value, err := dispatch(raw)
 				out := map[string]any{"result": value}
 				if err != nil {
-					out = map[string]any{"error": err.Error()}
+					out = map[string]any{"error": err.Error(), "result": value}
+					var apiErr *browserapp.APIError
+					if errors.As(err, &apiErr) {
+						out["status"] = apiErr.Status
+					}
 				}
 				b, e := json.Marshal(out)
 				if e != nil {
@@ -100,6 +107,10 @@ func dispatch(raw string) (value any, err error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	if r.Action == "chat" {
+		cancel()
+		ctx, cancel = context.WithCancel(context.Background())
+	}
 	defer cancel()
 	if r.Action == "chat" {
 		cancelMu.Lock()
@@ -110,10 +121,44 @@ func dispatch(raw string) (value any, err error) {
 		chatCancel = cancel
 		cancelMu.Unlock()
 		defer func() { cancelMu.Lock(); chatCancel = nil; cancelMu.Unlock() }()
-		return app.Chat(ctx, r.LLM, r.Messages, func(s string) {
-			if fn := js.Global().Get("dzzzrBrowserStatus"); fn.Type() == js.TypeFunction {
-				fn.Invoke(s)
+		app.Approve = func(ctx context.Context, name string, args map[string]any) error {
+			fn := js.Global().Get("dzzzrBrowserApprove")
+			if fn.Type() != js.TypeFunction {
+				return fmt.Errorf("подтверждение недоступно")
 			}
+			raw, _ := json.Marshal(args)
+			done := make(chan bool, 1)
+			callback := js.FuncOf(func(_ js.Value, a []js.Value) any {
+				select {
+				case done <- a[0].Bool():
+				default:
+				}
+				return nil
+			})
+			defer callback.Release()
+			fn.Invoke(name, string(raw), callback)
+			select {
+			case yes := <-done:
+				if !yes {
+					return fmt.Errorf("пользователь отклонил изменение")
+				}
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+		return app.ChatWithEvents(ctx, r.LLM, r.Messages, agentloop.Callbacks{
+			OnStatus: func(_, s string) {
+				if fn := js.Global().Get("dzzzrBrowserStatus"); fn.Type() == js.TypeFunction {
+					fn.Invoke(s)
+				}
+			},
+			OnEvent: func(e agentloop.Event) {
+				if fn := js.Global().Get("dzzzrBrowserEvent"); fn.Type() == js.TypeFunction {
+					raw, _ := json.Marshal(map[string]any{"type": e.Type, "name": e.ToolName, "args": e.ToolArgs, "result": e.ToolResult, "error": e.ToolError, "report": e.Report, "message": e.Message})
+					fn.Invoke(string(raw))
+				}
+			},
 		})
 	}
 	return app.Dispatch(ctx, r.Request)

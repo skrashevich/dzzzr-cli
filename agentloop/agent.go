@@ -8,9 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sipeed/picoclaw/pkg/logger"
-	"github.com/sipeed/picoclaw/pkg/providers"
-	"github.com/sipeed/picoclaw/pkg/tools"
+	providers "github.com/skrashevich/dzzzr-cli/agentprotocol"
 	"github.com/skrashevich/dzzzr-cli/agenttools"
 )
 
@@ -57,9 +55,8 @@ type Config struct {
 
 // Message is one turn of the conversation as it is kept between runs.
 //
-// Only the text is kept. PicoClaw owns the tool calls of a run and does not
-// hand its expanded conversation back, so a later run continues from what was
-// said, not from the tool results that led there.
+// Only conversation text is kept between runs; tool results remain in the
+// context of the active run. Later turns read current documents through tools.
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -117,7 +114,7 @@ func Run(ctx context.Context, cfg Config, in *RunInput, cb Callbacks) (Result, e
 		return Result{Messages: in.Messages}, err
 	}
 
-	quietPicoClaw.Do(logger.DisableConsole)
+	quietPicoClaw.Do(disableProviderLogging)
 
 	// The clock starts before the price lookup, so the reported total is the
 	// time the user actually waited rather than the loop's share of it.
@@ -131,12 +128,9 @@ func Run(ctx context.Context, cfg Config, in *RunInput, cb Callbacks) (Result, e
 		maxTurns = DefaultMaxTurns
 	}
 
-	loop, err := tools.RunToolLoop(ctx, tools.ToolLoopConfig{
-		Provider:      &observer{delegate: newProvider(cfg), cb: cb, stats: st, sourceContextBytes: cfg.SourceContextBytes, requestTimeout: cfg.RequestTimeout},
-		Model:         cfg.Model,
-		Tools:         registry,
-		MaxIterations: maxTurns,
-	}, picoMessages(in.SystemPrompt, in.Messages), "dzzzr", "agent")
+	loop, err := runToolLoop(ctx,
+		&observer{delegate: newProvider(cfg), cb: cb, stats: st, sourceContextBytes: cfg.SourceContextBytes, requestTimeout: cfg.RequestTimeout},
+		cfg.Model, registry, maxTurns, picoMessages(in.SystemPrompt, in.Messages))
 	if err != nil {
 		cb.emit(Event{Type: EventError, Err: err, Message: err.Error()})
 		return Result{Messages: in.Messages}, err
@@ -157,34 +151,6 @@ func Run(ctx context.Context, cfg Config, in *RunInput, cb Callbacks) (Result, e
 	cb.emit(Event{Type: EventReport, Report: out.Report})
 	cb.emit(Event{Type: EventDone})
 	return out, nil
-}
-
-// newProvider builds the provider the run talks to.
-func newProvider(cfg Config) providers.LLMProvider {
-	if cfg.Provider != nil {
-		return cfg.Provider
-	}
-	userAgent := cfg.UserAgent
-	if userAgent == "" {
-		userAgent = "dzzzr-cli"
-	}
-	timeout := cfg.RequestTimeout
-	if timeout <= 0 {
-		timeout = DefaultRequestTimeout
-	}
-	p := providers.NewHTTPProviderWithMaxTokensFieldAndRequestTimeout(
-		cfg.APIKey,
-		strings.TrimRight(cfg.BaseURL, "/"),
-		"", "",
-		userAgent,
-		int((timeout+time.Second-1)/time.Second),
-		cfg.ExtraBody, nil,
-	)
-	// OpenRouter needs to be recognized by name for its own request fields.
-	if strings.Contains(strings.ToLower(cfg.BaseURL), "openrouter.ai") {
-		p.SetProviderName("openrouter")
-	}
-	return p
 }
 
 // picoMessages converts the stored conversation into PicoClaw's form.
