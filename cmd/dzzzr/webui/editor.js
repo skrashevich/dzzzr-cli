@@ -244,7 +244,7 @@
     }
     syncRoute();
     if (ed.mode === 'stats') {
-      await window.dzzzrStats.mount(el('view-stats')).catch(error => toast(error.message, true));
+      await window.dzzzrStats.mount(el('view-stats')).then(() => window.dzzzrStats.refresh()).catch(error => toast(error.message, true));
       return;
     }
     // The caller may need the editor to be usable before it acts on it; a mode

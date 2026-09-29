@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json/v2"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/skrashevich/dzzzr-cli/agentloop"
@@ -119,10 +120,20 @@ func (h *webHub) turn(ctx context.Context, chatID string, policy agenttools.Poli
 
 // catalog builds the toolset for one turn under that chat's own policy.
 func (h *webHub) catalog(chatID string, policy agenttools.Policy) (*agenttools.Catalog, error) {
+	stats, err := h.statisticsStore()
+	if err != nil {
+		return nil, err
+	}
+	uploads, err := chatUploadsRoot()
+	if err != nil {
+		return nil, err
+	}
 	opts := agenttools.Options{
-		Policy:       policy,
-		ReadCacheTTL: readCacheTTL,
-		IncludeAdmin: h.client.HasAdminCredentials(),
+		StatsStore:     stats,
+		StatsReadRoots: []string{filepath.Join(uploads, chatID)},
+		Policy:         policy,
+		ReadCacheTTL:   readCacheTTL,
+		IncludeAdmin:   h.client.HasAdminCredentials(),
 	}
 	if policy == agenttools.PolicyApprove {
 		opts.Confirmer = &webConfirmer{hub: h, chatID: chatID}

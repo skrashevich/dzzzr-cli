@@ -110,3 +110,29 @@ func TestLogStatisticsCommandAndAssets(t *testing.T) {
 		}
 	}
 }
+
+func TestStatisticsHTMLExport(t *testing.T) {
+	r := statsRequest(t, logStatHandler("", nil), "/api/v1/log-stat?format=html", `{"teams":{"A":{"penalty":"2"}}}`, "")
+	if r.Code != 200 || !strings.HasPrefix(r.Header().Get("Content-Type"), "text/html") {
+		t.Fatalf("HTML export: %d", r.Code)
+	}
+	html := r.Body.String()
+	for _, want := range []string{`id="stats-static-board"`, `00:18:00`, `id="stats-offline-wasm"`, `id="stats-offline-data"`, `"penalty":"2"`, "dzzzrOfflineCalculate", "Sergey"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("missing %s", want)
+		}
+	}
+	for _, external := range []string{`src="stats.js"`, `href="stats.css"`} {
+		if strings.Contains(html, external) {
+			t.Errorf("external asset: %s", external)
+		}
+	}
+	cfg := gamestats.Config{Teams: map[string]map[string]any{"</script><script>alert(1)</script>": {"penalty": "1"}}}
+	out, err := exportStatsHTML("</script><script>alert(2)</script>.csv", []byte(statsCSV), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(out), "<script>alert(") {
+		t.Fatal("unescaped data in exported HTML")
+	}
+}

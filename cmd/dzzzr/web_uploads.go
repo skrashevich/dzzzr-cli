@@ -135,6 +135,9 @@ func appendUploadedFilesNote(content string, files []uploadedFileRef) string {
 			name = filepath.Base(f.Path)
 		}
 		tool := "read_local_file"
+		if ext := strings.ToLower(filepath.Ext(f.Path)); ext == ".xlsx" || ext == ".xlsm" || ext == ".json" || ext == ".csv" || ext == ".tsv" {
+			tool = "stats_load, если это журнал игры; иначе read_local_file"
+		}
 		if strings.EqualFold(filepath.Ext(f.Path), ".pdf") {
 			tool = "read_pdf"
 		}

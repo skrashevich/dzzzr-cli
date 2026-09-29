@@ -121,6 +121,18 @@ func httpLogStat(w http.ResponseWriter, r *http.Request) {
 		webError(w, http.StatusBadRequest, "%v", err)
 		return
 	}
+	if r.URL.Query().Get("format") == "html" {
+		out, err := exportStatsHTML(header.Filename, data, report.Config)
+		if err != nil {
+			webError(w, http.StatusInternalServerError, "экспорт HTML: %v", err)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Disposition", `attachment; filename="dozor-statistics.html"`)
+		w.Header().Set("Cache-Control", "no-store")
+		_, _ = w.Write(out)
+		return
+	}
 	if r.URL.Query().Get("format") == "xlsx" {
 		out, err := gamestats.ExportXLSX(report)
 		if err != nil {

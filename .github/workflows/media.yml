@@ -7,6 +7,18 @@ on:
       - "docs/vhs/**"
       - "docs/shots/**"
       - "docs/pages/**"
+      - "docs/browser/**"
+      - "browserapp/**"
+      - "gamestats/**"
+      - "statstore/**"
+      - "agenttools/**"
+      - "gamesource/**"
+      - "pdfsource/**"
+      - "internal/statsoffline/**"
+      - "cmd/dzzzr-wasm/**"
+      - "cmd/build-browser/**"
+      - "go.mod"
+      - "go.sum"
       - "cmd/dzzzr/**"
       - "cmd/dzzzr-mock/**"
       - ".github/workflows/media.yml"
@@ -15,6 +27,18 @@ on:
       - "docs/vhs/**"
       - "docs/shots/**"
       - "docs/pages/**"
+      - "docs/browser/**"
+      - "browserapp/**"
+      - "gamestats/**"
+      - "statstore/**"
+      - "agenttools/**"
+      - "gamesource/**"
+      - "pdfsource/**"
+      - "internal/statsoffline/**"
+      - "cmd/dzzzr-wasm/**"
+      - "cmd/build-browser/**"
+      - "go.mod"
+      - "go.sum"
       - "cmd/dzzzr/**"
       - "cmd/dzzzr-mock/**"
       - ".github/workflows/media.yml"
@@ -92,8 +116,13 @@ jobs:
         with:
           name: screenshots
           path: _site/screenshots
-      - name: Assemble site
-        run: cp docs/pages/index.html _site/index.html
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Assemble site and browser application
+        run: |
+          cp docs/pages/index.html _site/index.html
+          go run ./cmd/build-browser -out _site/app
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

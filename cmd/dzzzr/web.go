@@ -22,6 +22,7 @@ import (
 	"github.com/skrashevich/dzzzr-cli/agentfiles"
 	"github.com/skrashevich/dzzzr-cli/agenttools"
 	"github.com/skrashevich/dzzzr-cli/dzzzr"
+	"github.com/skrashevich/dzzzr-cli/statstore"
 )
 
 //go:embed webui/*
@@ -64,6 +65,10 @@ type webRunTurnFn func(ctx context.Context, hub *webHub, chatID string)
 // webHub ties the HTTP handlers to the one client, the chat store and the
 // event streams.
 type webHub struct {
+	statsOnce  sync.Once
+	statsStore *statstore.Store
+	statsErr   error
+
 	cfg    *config
 	client *dzzzr.Client
 	store  *chatStore
@@ -148,6 +153,11 @@ func webReadJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 func (h *webHub) newMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/log-stat", httpLogStat)
+	mux.HandleFunc("POST /api/v1/statistics", h.httpImportStatistics)
+	mux.HandleFunc("GET /api/v1/statistics/{log}", h.httpStatistics)
+	mux.HandleFunc("PUT /api/v1/statistics/{log}", h.httpUpdateStatistics)
+	mux.HandleFunc("GET /api/v1/statistics/{log}/source", h.httpStatisticsSource)
+	mux.HandleFunc("POST /api/v1/statistics/{log}/chat", h.httpStatisticsChat)
 	mux.HandleFunc("GET /api/v1/chats", h.httpListChats)
 	mux.HandleFunc("POST /api/v1/chats", h.httpCreateChat)
 	mux.HandleFunc("GET /api/v1/chats/{id}", h.httpGetChat)

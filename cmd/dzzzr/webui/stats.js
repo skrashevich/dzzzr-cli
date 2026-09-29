@@ -1,6 +1,7 @@
 // Statistics display adapted from dozor_stats.html.
 // Original algorithm author: Sergey <sergey@luberg.me> Luberg.
 (function(){
+let controller;
 function initStats(root){
   'use strict';
 
@@ -407,7 +408,45 @@ function initStats(root){
     for(const row of report.res.rows) for(const c of Object.values(row.cells)) if(c.rec) record(c.rec);
     return report;
   }
+  let shared = null;
+  const isShared = !!window.dzzzrChat && !window.dzzzrStatsOffline;
+  async function sharedResponse(response, target){
+    const payload = await response.json();
+    if(!response.ok) throw new Error(payload.error || 'Не удалось открыть журнал');
+    if(target !== shared) throw new DOMException('Загрузка отменена','AbortError');
+    shared.id = payload.log_id; shared.revision = payload.revision;
+    payload.report.defaults = payload.defaults;
+    const url = new URL(location.href); url.searchParams.set('stats',shared.id);
+    history.replaceState(null,'',url);
+    return payload.report;
+  }
+  async function openShared(id){
+    if(!/^[a-f0-9]{32}$/.test(id)) throw new Error('Неверный ID журнала');
+    if(shared?.id !== id){
+      const info = await window.dzzzrChat.api('/statistics/'+id);
+      const response = await fetch('/api/v1/statistics/'+id+'/source');
+      if(!response.ok) throw new Error('Не удалось прочитать исходный журнал');
+      shared = {id, revision:info.revision, file:new File([await response.blob()],info.name)};
+    }
+    await readFile(shared.file);
+  }
+  async function refreshShared(){
+    const id = new URL(location.href).searchParams.get('stats') || shared?.id;
+    if(isShared && id) await openShared(id);
+  }
   async function requestReport(file, cfg, format, signal){
+    if(window.dzzzrStatsOffline) return window.dzzzrStatsOffline.request(file, cfg, format);
+    if(isShared && !format){
+      if(!shared || shared.file !== file){
+        const body = new FormData(); body.append('file',file);
+        const target = shared = {file};
+        return sharedResponse(await fetch('/api/v1/statistics',{method:'POST',body,signal}), target);
+      }
+      const target = shared;
+      return sharedResponse(await fetch('/api/v1/statistics/'+target.id, cfg ? {
+        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({revision:shared.revision,cfg}), signal
+      } : {signal}), target);
+    }
     const body = new FormData(); body.append('file', file);
     if(cfg) body.append('cfg', JSON.stringify(cfg));
     const response = await fetch('/api/v1/log-stat'+(format?'?format='+format:''), {method:'POST', body, signal});
@@ -433,22 +472,24 @@ function initStats(root){
   }
   function showError(msg){
     const el = $('#stats-error'); el.textContent = msg; el.style.display = 'block';
+    const fallback = document.getElementById('stats-static-status');
+    if(fallback) fallback.textContent = 'Интерактивный режим недоступен: '+msg+' Ниже сохранённый расчёт. Для пересчёта откройте файл в полноценном браузере.';
   }
 
   // ---------------------------------------------------------------
   // 7. ЗАГРУЗКА ФАЙЛОВ
   // ---------------------------------------------------------------
-  async function readFile(file){
+  async function readFile(file, initialCfg){
     const version = ++requestVersion;
     pendingController?.abort(); pendingController = new AbortController();
     root.querySelectorAll('[data-needs-log]').forEach(el => el.disabled = true);
     try{
       let report = await requestReport(file, null, '', pendingController.signal);
       if(version!==requestVersion) return;
-      const defaults = structuredClone(report.cfg);
+      const defaults = structuredClone(report.defaults || report.cfg);
       let saved;
-      try{ saved = JSON.parse(localStorage.getItem(report.key)); }catch(e){}
-      if(saved) report = await requestReport(file, saved, '', pendingController.signal);
+      try{ if(!isShared && !window.dzzzrBrowserWorkspace) saved = JSON.parse(localStorage.getItem(report.key)); }catch(e){}
+      if(initialCfg || saved) report = await requestReport(file, initialCfg || saved, '', pendingController.signal);
       if(version!==requestVersion) return;
       hydrate(report);
       state.file = file; state.source = {name:file.name}; state.storeKey = report.key;
@@ -457,20 +498,22 @@ function initStats(root){
       $('#stats-file-meta').textContent = report.game.nRows.toLocaleString('ru-RU')+' строк · '+report.game.teams.length+' команд · '+fmtDT(report.game.startAt)+' — '+fmtDT(report.game.endAt);
       $('#stats-error').style.display = 'none';
       renderBoard(); renderNotes(); renderDetails(); renderSettings();
+      if(window.dzzzrStatsOffline) document.body.classList.add('stats-interactive');
     }catch(err){ if(err.name!=='AbortError') showError(err.message || String(err)); }
     finally{ if(version===requestVersion) root.querySelectorAll('[data-needs-log]').forEach(el => el.disabled = !state.res); }
   }
 
-  async function exportXlsx(){
+  async function exportFile(format){
     if(!state.file) return;
-    $('#stats-btn-export').disabled = true;
+    const button = $(format === 'html' ? '#stats-btn-export-html' : '#stats-btn-export');
+    button.disabled = true;
     try{
-      const blob = await requestReport(state.file, state.cfg, 'xlsx');
+      const blob = await requestReport(state.file, state.cfg, format);
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = state.file.name.replace(/\.[^.]+$/, '')+'-статистика.xlsx'; a.click();
+      a.download = state.file.name.replace(/\.[^.]+$/, '')+'-статистика.'+format; a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href),2000);
     }catch(err){ showError(err.message || String(err)); }
-    finally{ $('#stats-btn-export').disabled = false; }
+    finally{ button.disabled = false; }
   }
 
   // ---------------------------------------------------------------
@@ -484,7 +527,21 @@ function initStats(root){
     readFile(f).catch(err=>showError(err.message||String(err)));
     e.target.value='';
   });
-  $('#stats-btn-export').addEventListener('click', exportXlsx);
+  if(isShared){
+    $('.casebar p').textContent += ' Журнал и параметры сохраняются локально и доступны агенту через «Обсудить с агентом».';
+    $('#stats-btn-agent').hidden = false;
+    $('#stats-btn-refresh').hidden = false;
+    $('#stats-btn-refresh').addEventListener('click',()=>refreshShared().catch(e=>showError(e.message)));
+    $('#stats-btn-agent').addEventListener('click',async()=>{
+      const button=$('#stats-btn-agent');button.disabled=true;
+      try{
+        const chat=await window.dzzzrChat.api('/statistics/'+shared.id+'/chat',{method:'POST',body:{}});
+        await window.dzzzrChat.openChat(chat.chat_id);
+      }catch(e){showError(e.message)}finally{button.disabled=false}
+    });
+  }
+  $('#stats-btn-export').addEventListener('click', () => exportFile('xlsx'));
+  $('#stats-btn-export-html').addEventListener('click', () => exportFile('html'));
   $('#stats-toggle-levels').addEventListener('click', e=>{
     state.showLevels = !state.showLevels;
     e.target.textContent = state.showLevels ? 'скрыть результаты уровней' : 'показать результаты уровней';
@@ -550,16 +607,25 @@ function initStats(root){
 
   if(root === document.body && new URLSearchParams(location.search).has('standalone')) $('#stats-app-link').hidden = true;
   const initialName = root === document.body ? new URLSearchParams(location.search).get('log') : null;
-  if(initialName){
+  if(window.dzzzrStatsOffline?.initialFile){
+    $('#stats-app-link')?.remove();
+    $('.casebar p').textContent = 'Офлайн-отчёт. Нажимайте на команду, уровень или время для детализации; меняйте лимиты, бонусы и штрафы в параметрах подсчёта. Все расчёты выполняются в этом файле, без интернета. Скачайте HTML повторно, чтобы сохранить выбранные параметры. Файл содержит полный журнал игры.';
+    $('#stats-file-name').textContent = 'Запуск офлайн-расчёта…';
+    if(window.dzzzrStatsOffline.initialFile) readFile(window.dzzzrStatsOffline.initialFile, window.dzzzrStatsOffline.initialConfig);
+  } else if(initialName){
     fetch('/stats-input').then(async response => {
       if(!response.ok) throw new Error('Не удалось загрузить журнал, указанный при запуске.');
       await readFile(new File([await response.blob()], initialName));
     }).catch(err => showError(err.message || String(err)));
   }
+  return {load:readFile, refresh:refreshShared, reload:()=>state.file ? readFile(state.file) : Promise.resolve()};
  }
 
   let mounting;
   window.dzzzrStats = {
+    refresh: () => controller?.refresh(),
+    reload: () => controller?.reload(),
+    load: file => controller?.load(file),
     mount(root){
       if(mounting) return mounting;
       root.setAttribute('aria-busy', 'true');
@@ -572,7 +638,7 @@ function initStats(root){
         if(!content || !drop) throw new Error('Страница статистики повреждена.');
         content.querySelector('#stats-app-link')?.remove();
         root.replaceChildren(drop, content);
-        initStats(root);
+        controller = initStats(root);
       })().catch(error => {
         mounting = null;
         root.textContent = error.message;
@@ -582,6 +648,6 @@ function initStats(root){
     },
   };
   document.addEventListener('DOMContentLoaded', () => {
-    if(document.body.classList.contains('stats-app')) initStats(document.body);
+    if(document.body.classList.contains('stats-app')) controller = initStats(document.body);
   });
 })();

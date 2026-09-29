@@ -131,7 +131,8 @@ await selectChat(HERO_CHAT);
 await page.request.post(WEB_URL + '/api/v1/auth/logout', { data: {} });
 await page.reload({ waitUntil: 'load' });
 await page.waitForFunction(() => typeof state !== 'undefined' && document.body.classList.contains('is-ready'));
-await page.waitForSelector('#login-form:not(.is-collapsed)');
+await page.click('#btn-login-toggle');
+await page.waitForSelector('#player-auth-pop:not([hidden]) #login-form');
 await settle(600);
 await shot('login');
 

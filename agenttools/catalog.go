@@ -4,12 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/skrashevich/dzzzr-cli/statstore"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
 // Options configures a catalog.
 type Options struct {
+	StatsStore     statstore.Repository
+	StatsReadRoots []string
+
 	// Policy decides what the agent may do. Empty means DefaultPolicy.
 	Policy Policy
 	// Confirmer authorizes mutating calls under PolicyApprove.
@@ -56,6 +61,11 @@ func NewCatalog(engine Engine, opts Options) (*Catalog, error) {
 	if err != nil {
 		return nil, err
 	}
+	stats := opts.StatsStore
+	if stats == nil {
+		stats = &statstore.Store{Root: filepath.Join(root, ".dzzzr-statistics")}
+	}
+	c.add(statisticsTools(engine, g, root, opts.StatsReadRoots, stats, nil)...)
 	c.add(fetchTool(g))
 	c.add(pdfReadTool(g, root))
 	c.add(pdfMappingTools(g, root)...)
@@ -134,6 +144,7 @@ func (c *Catalog) SystemPromptAddendum() string {
 	case PolicyFull:
 		b.WriteString("You may act without asking, so be conservative: submitting a wrong code counts against the team's attempt limit.\n")
 	}
+	b.WriteString(statisticsInstructions)
 	b.WriteString(pdfScenarioInstructions)
 	b.WriteString(pdfMappingInstructions)
 	return b.String()

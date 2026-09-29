@@ -52,3 +52,6 @@ dist/
 # Scratch space for local runs.
 *.tmp
 .tmp/
+
+# Local game-log analysis workspace
+.dzzzr-statistics/

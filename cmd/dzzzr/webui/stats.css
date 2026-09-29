@@ -301,3 +301,19 @@ body[data-mode="stats"] .tool-chip-tooltip { display: none; }
   #view-stats .wrap { padding: 20px 12px 40px; }
   #view-stats .casebar h1 { font-size: 24px; }
 }
+
+/* Exported files start with a readable snapshot, even when scripts are blocked. */
+.stats-offline:not(.stats-interactive) > .wrap { display:none; }
+.stats-offline.stats-interactive > #stats-static { display:none; }
+.stats-snapshot { margin:0 auto; padding:20px; max-width:1800px; }
+.stats-snapshot .card { margin:12px 0; }
+.stats-snapshot article { border-top:1px solid var(--border); padding:12px 0; }
+.stats-snapshot table.board td a { color:inherit; text-decoration:none; display:block; }
+.stats-snapshot table.board th a { color:inherit; }
+.stats-snapshot pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+.stats-snapshot .snapshot-warning { color:var(--warn); }
+.stats-snapshot summary { cursor:pointer; }
+@media print {
+  body.stats-offline > .wrap { display:none !important; }
+  body.stats-offline > #stats-static { display:block !important; }
+}
