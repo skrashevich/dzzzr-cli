@@ -147,6 +147,7 @@ func webReadJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 // against writes from other sites.
 func (h *webHub) newMux() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("POST /api/v1/log-stat", httpLogStat)
 	mux.HandleFunc("GET /api/v1/chats", h.httpListChats)
 	mux.HandleFunc("POST /api/v1/chats", h.httpCreateChat)
 	mux.HandleFunc("GET /api/v1/chats/{id}", h.httpGetChat)
@@ -334,16 +335,21 @@ func webAuthorize(ctx context.Context, cfg *config, c *dzzzr.Client) error {
 // serveWeb runs the HTTP server until ctx is canceled, announcing the address
 // and opening a browser on it; page is the fragment the browser opens on.
 func serveWeb(ctx context.Context, hub *webHub, addr, page string) error {
+	return serveWebHandler(ctx, hub.cfg, hub.newMux(), addr, page)
+}
+
+// serveWebHandler also serves the local log calculator without a game session.
+func serveWebHandler(ctx context.Context, cfg *config, handler http.Handler, addr, page string) error {
 	if strings.TrimSpace(addr) == "" {
 		addr = defaultWebAddr
 	}
-	srv := &http.Server{Addr: addr, Handler: hub.newMux()}
+	srv := &http.Server{Addr: addr, Handler: handler}
 
 	url := "http://" + addr + "/" + page
-	_, _ = fmt.Fprintf(hub.cfg.stderr, "dzzzr web: %s (Ctrl+C — выход)\n", url)
+	_, _ = fmt.Fprintf(cfg.stderr, "dzzzr web: %s (Ctrl+C — выход)\n", url)
 	if os.Getenv(noBrowserEnv) == "" {
 		if err := openBrowser(url); err != nil {
-			hub.cfg.debugf("браузер не открыт: %v", err)
+			cfg.debugf("браузер не открыт: %v", err)
 		}
 	}
 
