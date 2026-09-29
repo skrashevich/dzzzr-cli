@@ -11,8 +11,6 @@ import (
 	"github.com/skrashevich/dzzzr-cli/gamesource"
 )
 
-type webFormField = editorform.Field
-type webFormGroup = editorform.Group
 type webFormSpec = editorform.Spec
 
 var webFieldType = editorform.FieldType
