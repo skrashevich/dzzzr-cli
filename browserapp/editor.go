@@ -479,6 +479,8 @@ func (w *Workspace) api(method, path string, p []string, b map[string]any) (any,
 		}
 		if len(p) == 4 {
 			switch p[3] {
+			case "assets":
+				return map[string]any{"assets": g.Scenario.Assets}, nil
 			case "files":
 				raw, err := base64.StdEncoding.DecodeString(str(b, "data"))
 				if err != nil {

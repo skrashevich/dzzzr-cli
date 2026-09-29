@@ -18,10 +18,10 @@ async function api(path,options={}) {
  const match=path.match(/^\/admin\/games\/(\d+)$/);
  const game=match?Number(match[1]):result?.game_id;
  if (game && game!==assetsGame && (!options.method || options.method==='GET' || path==='/admin/drafts/open')) {
-  const scenario=await local.api(`/admin/games/${game}/scenario`);assets=scenario.assets||{};assetsGame=game;
+  const scenario=await local.api(`/admin/games/${game}/assets`);assets=scenario.assets||{};assetsGame=game;
  }
  if (path.endsWith('/files')) {
-  const base=path.slice(0,-6);const scenario=await local.api(base+'/scenario');assets=scenario.assets||{};
+  const base=path.slice(0,-6);const scenario=await local.api(base+'/assets');assets=scenario.assets||{};
  }
  return result;
 }

@@ -186,3 +186,13 @@ func TestEditorExportsUnpublishedLevelsInCreationOrder(t *testing.T) {
 		}
 	}
 }
+
+func TestEditorAssetsRemainReadableDuringInvalidDraft(t *testing.T) {
+	var w Workspace
+	d := createGame(t, &w)
+	editorCall(t, &w, "POST", "/admin/drafts/open", map[string]any{"draft_id": d.ID, "game_id": d.GameID, "kind": "level", "params": map[string]any{"title": "Незавершённый", "code_count": -1}})
+	if _, err := w.API("GET", fmt.Sprintf("/admin/games/%d/scenario", d.GameID), nil); err == nil {
+		t.Fatal("invalid draft exported")
+	}
+	editorCall(t, &w, "GET", fmt.Sprintf("/admin/games/%d/assets", d.GameID), nil)
+}
