@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/textproto"
+	"net/url"
 	"strconv"
 	"strings"
 	"unicode"
@@ -120,6 +121,27 @@ func (c *Client) AdminUploadFile(ctx context.Context, gameID int, filename strin
 	if err := adminFileStatus(status); err != nil {
 		return nil, err
 	}
+	// A newly created game has no file-manager directory yet. The native
+	// UI creates folders separately; uploads do not create them implicitly.
+	if st, _ := adminUploadResult(response); st == "RW_ERROR" {
+		created, folderErr := c.ensureAdminUploadDirectory(ctx, gameID, jar)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if folderErr == nil && created {
+			if err := c.paceAdmin(ctx); err != nil {
+				return nil, err
+			}
+			req.Body = io.NopCloser(bytes.NewReader(body.Bytes()))
+			status, _, response, err = c.do(req)
+			if err != nil {
+				return nil, err
+			}
+			if err := adminFileStatus(status); err != nil {
+				return nil, err
+			}
+		}
+	}
 	exists := bytes.Contains(response, []byte("#error.file_exists"))
 	success := bytes.Contains(response, []byte("#message.upload_ok"))
 	if exists == success {
@@ -190,4 +212,83 @@ func adminFileStatus(status int) error {
 		return &HTTPError{StatusCode: status, Context: "admin file upload"}
 	}
 	return nil
+}
+
+// ensureAdminUploadDirectory only retries an upload after proving that a missing
+// destination directory was created. Existing-directory write failures are not retried.
+func (c *Client) ensureAdminUploadDirectory(ctx context.Context, gameID int, jar http.CookieJar) (bool, error) {
+	rpc := func(method string, params map[string]string) (map[string]json.RawMessage, error) {
+		payload, err := json.Marshal(map[string]any{"method": method, "params": []any{params}, "id": "c0"})
+		if err != nil {
+			return nil, err
+		}
+		req, err := c.newRequest(ctx, http.MethodPost, "admin/tinymce/jscripts/tiny_mce/plugins/filemanager/rpc/index.php", nil, url.Values{"json_data": {string(payload)}}, requestOptions{admin: true, requireAuth: true})
+		if err != nil {
+			return nil, err
+		}
+		for _, cookie := range jar.Cookies(req.URL) {
+			req.AddCookie(cookie)
+		}
+		if err := c.paceAdmin(ctx); err != nil {
+			return nil, err
+		}
+		status, _, body, err := c.do(req)
+		if err != nil {
+			return nil, err
+		}
+		if err = adminFileStatus(status); err != nil {
+			return nil, err
+		}
+		var reply struct {
+			Result map[string]json.RawMessage `json:"result"`
+			Error  json.RawMessage            `json:"error"`
+		}
+		if err = json.Unmarshal(body, &reply); err != nil {
+			return nil, err
+		}
+		if len(reply.Error) > 0 && string(reply.Error) != "null" {
+			return nil, fmt.Errorf("dzzzr: file manager RPC refused: %s", reply.Error)
+		}
+		return reply.Result, nil
+	}
+	exists := func(path string) (bool, error) {
+		r, e := rpc("fm.listFiles", map[string]string{"path": path})
+		if e != nil {
+			return false, e
+		}
+		var h struct {
+			Path string `json:"path"`
+		}
+		if e = json.Unmarshal(r["header"], &h); e != nil {
+			return false, e
+		}
+		return h.Path == path, nil
+	}
+	target := "{0}/games/" + strconv.Itoa(gameID)
+	present, err := exists(target)
+	if err != nil || present {
+		return false, err
+	}
+	parent := "{0}"
+	for _, name := range []string{"games", strconv.Itoa(gameID)} {
+		path := parent + "/" + name
+		ok, err := exists(path)
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			if _, err := rpc("fm.createDirs", map[string]string{"path": parent, "name0": name, "template0": ""}); err != nil {
+				return false, err
+			}
+			ok, err = exists(path)
+			if err != nil {
+				return false, err
+			}
+			if !ok {
+				return false, fmt.Errorf("dzzzr: file manager did not create %s", path)
+			}
+		}
+		parent = path
+	}
+	return true, nil
 }

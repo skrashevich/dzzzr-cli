@@ -87,6 +87,17 @@ func TestGetGameLogSitePageIsReportedAsRefusal(t *testing.T) {
 	}
 }
 
+func TestGetGameLogPlainTextRefusal(t *testing.T) {
+	const refusal = "Только капитану команды доступен лог игры."
+	var seen *http.Request
+	c := logClient(t, refusal, &seen)
+	_, err := c.GetGameLog(context.Background(), 900001)
+	var e *dzzzr.EngineError
+	if !asErr(err, &e) || e.Code != dzzzr.ErrNoPermission || e.Text != refusal {
+		t.Fatalf("expected engine permission refusal, got %v", err)
+	}
+}
+
 func TestGetGameLogWithoutSessionFails(t *testing.T) {
 	var seen *http.Request
 	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

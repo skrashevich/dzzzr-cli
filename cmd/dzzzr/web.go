@@ -712,11 +712,5 @@ type authStatus struct {
 // status reports who the client is signed in as. The caller must hold
 // clientMu.
 func (h *webHub) status() authStatus {
-	out := authStatus{City: h.cfg.city, Login: h.client.LoginName()}
-	if path, err := sessionPath(h.cfg.city); err == nil {
-		if _, statErr := os.Stat(path); statErr == nil {
-			out.HasSession = true
-		}
-	}
-	return out
+	return authStatus{City: h.cfg.city, Login: h.client.LoginName(), HasSession: h.client.Session() != ""}
 }

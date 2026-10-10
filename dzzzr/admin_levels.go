@@ -129,13 +129,16 @@ func (c *Client) AdminListLevels(ctx context.Context, gameID int) ([]AdminLevel,
 	if err != nil {
 		return nil, err
 	}
+	return adminLevelsFromDoc(doc), nil
+}
+
+func adminLevelsFromDoc(doc *htmlDoc) []AdminLevel {
 	selectedID, selectedOrder := 0, 0
 	selectedPublished := true
 	if f := doc.formWithAction("update_zadanie"); f != nil {
 		selectedID, _ = strconv.Atoi(f.Fields.Get("id"))
-		// The list prints "0." for the level open in the editor, but the
-		// editor's own form states the real position, and AdminGetLevel
-		// already reads a level's order from exactly this field.
+		// Some lists print "0." for the selected level. Prefer the
+		// editor's explicit position when its form includes order_p.
 		selectedOrder, _ = strconv.Atoi(f.Fields.Get("order_p"))
 		if v, ok := f.Checkboxes["publish"]; ok {
 			selectedPublished = v
@@ -172,7 +175,7 @@ func (c *Client) AdminListLevels(ctx context.Context, gameID int) ([]AdminLevel,
 			out[i].Order = 1
 		}
 	}
-	return out, nil
+	return out
 }
 
 var hintTimingsRe = regexp.MustCompile(`^\d+:\d+:\d+$`)
@@ -280,6 +283,9 @@ func splitCodeCell(cell string) (codes, bonus, fake []string) {
 
 // AdminGetLevel returns a level's full form.
 func (c *Client) AdminGetLevel(ctx context.Context, gameID, levelID int) (*AdminLevelInfo, error) {
+	if gameID <= 0 || levelID <= 0 {
+		return nil, fmt.Errorf("dzzzr: game and level IDs must be positive")
+	}
 	doc, err := c.adminPage(ctx, "zadanie", url.Values{"categoryValue": {strconv.Itoa(gameID)}, "id": {strconv.Itoa(levelID)}})
 	if err != nil {
 		return nil, err
@@ -291,7 +297,20 @@ func (c *Client) AdminGetLevel(ctx context.Context, gameID, levelID int) (*Admin
 	info := &AdminLevelInfo{Fields: f.Fields}
 	info.ID, _ = strconv.Atoi(f.Fields.Get("id"))
 	info.GameID, _ = strconv.Atoi(f.Fields.Get("categoryValue"))
+	if info.ID != levelID || info.GameID != gameID {
+		return nil, fmt.Errorf("dzzzr: admin level form returned a different game or level")
+	}
 	info.Order, _ = strconv.Atoi(f.Fields.Get("order_p"))
+	if info.Order == 0 {
+		// Some native forms omit order_p; the same response includes the
+		// level list, whose selected-row fallback already resolves its order.
+		for _, level := range adminLevelsFromDoc(doc) {
+			if level.ID == levelID {
+				info.Order = level.Order
+				break
+			}
+		}
+	}
 	info.Params = levelParamsFromForm(f)
 	return info, nil
 }
@@ -582,7 +601,7 @@ func (c *Client) AdminCreateLevel(ctx context.Context, gameID int, p LevelParams
 	if page != "" {
 		if doc, err := parseHTML(page); err == nil {
 			if f := doc.formWithAction("update_zadanie"); f != nil {
-				if id, err := strconv.Atoi(f.Fields.Get("id")); err == nil {
+				if id, err := strconv.Atoi(f.Fields.Get("id")); err == nil && id > 0 {
 					return id, nil
 				}
 			}
@@ -590,7 +609,7 @@ func (c *Client) AdminCreateLevel(ctx context.Context, gameID int, p LevelParams
 	}
 	// add_zadanie redirects to "addnew=1" (no id) when goto=0; with goto=1 it
 	// lands on the list where the new level is selected.
-	if strings.Contains(loc, "action=zadanie") {
+	if strings.Contains(loc, "action=zadanie") && !linkQuery(loc).Has("id") {
 		levels, err := c.AdminListLevels(ctx, gameID)
 		if err == nil && len(levels) > 0 {
 			return levels[len(levels)-1].ID, nil

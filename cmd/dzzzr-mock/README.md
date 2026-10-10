@@ -148,7 +148,7 @@ go test ./cmd/dzzzr-mock/ -count=1
 | `?action=games` | список игр и форма настроек (`update_game`, `add_game`, `del_games`, `copy_game`) |
 | `?action=zadanie&categoryValue=` | список уровней и форма уровня (`add_zadanie`, `update_zadanie`, `del_zadanie`, `copy_zadanie`) |
 | `?action=teams&categoryValue=` | команды игры и форма заявки (`updateTeam`, `acceptAllApplications`, `GeneratePinCodes`, `addTeamToGame`, `del_application`, `newTeam`) |
-| `gmAdmin.php?finished=` | экран мониторинга и вмешательства организатора |
+| `gmstat1.php?finished=` | экран мониторинга и вмешательства организатора |
 | `lookLog.php?gmid=&lastTime=` | свежие события, упакованные в параметр `opt` мета-обновления |
 | `gmcht.php?gm=` | переписка организатора с командами |
 
@@ -157,7 +157,7 @@ go test ./cmd/dzzzr-mock/ -count=1
 остаётся прежним, как и на боевом движке, — меняется только номер. Клиент,
 перепутавший их, сломается тут так же, как сломался бы на движке.
 
-Вмешательства на `gmAdmin.php`: `newlevel`, `acceptLevel`,
+Вмешательства на `gmstat1.php`: `newlevel`, `acceptLevel`,
 `newLevelAndAccept`, `code`, `delLevel`, `removeLevel`, `delstat`, `bonus`,
 `delBonus`, `stop`, `start`, `switchRobot`, `finishGame`, `chtime`.
 

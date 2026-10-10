@@ -4,21 +4,26 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
-// The live game screen is admin/gmAdmin.php: a matrix of teams by levels
-// that the engine fills over xajax, plus a POST endpoint (gmPost1.php,
-// included by gmAdmin.php) for the organizer's interventions. Fresh events
+// The live game screen is admin/gmstat1.php, which includes gmstatPost.php
+// for organizer interventions. gmAdmin.php is a separate xajax planner and
+// does not process these POST actions. Fresh events
 // are polled from admin/lookLog.php, which returns them packed into the
 // "opt" parameter of a meta-refresh URL as
 // "team-level-event-comment-HH:MM:SS|..." records.
 
 const (
-	monitorPath = adminPath + "gmAdmin.php"
+	monitorPath = adminPath + "gmstat1.php"
 	lookLogPath = adminPath + "lookLog.php"
 )
+
+var monitorLevelMenu = regexp.MustCompile(`(?i)\bshowMenu\s*\(\s*([0-9]+)\s*,\s*0\s*\)`)
 
 // Game log event codes as written by the engine into gameLog.
 const (
@@ -77,7 +82,23 @@ func (c *Client) AdminMonitor(ctx context.Context, gameID int) (*MonitorState, e
 		return nil, &UndecodableResponseError{StatusCode: 200, Context: "admin monitor", Err: err}
 	}
 	st := &MonitorState{GameID: gameID}
-	st.EngineStopped = strings.Contains(page, "включить движок") || strings.Contains(page, "Движок остановлен")
+	stateKnown := false
+	walk(doc.root, func(n *html.Node) bool {
+		if n.Type != html.ElementNode || n.Data != "input" || !strings.EqualFold(attr(n, "type"), "submit") {
+			return true
+		}
+		switch strings.ToLower(strings.TrimSpace(attr(n, "value"))) {
+		case "остановить робота", "остановить движок":
+			stateKnown = true
+		case "запустить робота", "включить робота", "включить движок":
+			stateKnown, st.EngineStopped = true, true
+		}
+		return true
+	})
+	if !stateKnown {
+		return nil, fmt.Errorf("dzzzr: admin monitor: engine control is missing or unrecognized")
+	}
+	teamsSeen, levelsSeen := map[int]bool{}, map[int]bool{}
 	for _, f := range doc.forms() {
 		for name, opts := range f.Selects {
 			switch name {
@@ -90,21 +111,43 @@ func (c *Client) AdminMonitor(ctx context.Context, gameID int) (*MonitorState, e
 			case "team":
 				for _, o := range opts {
 					id, err := strconv.Atoi(o.Value)
-					if err != nil || id == 0 {
+					if err != nil || id <= 0 || teamsSeen[id] {
 						continue
 					}
+					teamsSeen[id] = true
 					st.Teams = append(st.Teams, MonitorTeam{ID: id, Name: o.Text})
 				}
 			case "level", "MenuLevel":
 				for _, o := range opts {
 					n, err := strconv.Atoi(o.Value)
-					if err != nil || n <= 0 {
+					if err != nil || n <= 0 || levelsSeen[n] {
 						continue
 					}
+					levelsSeen[n] = true
 					st.Levels = append(st.Levels, MonitorLevel{Order: n, Title: o.Text})
 				}
 			}
 		}
+	}
+	if len(st.Levels) == 0 {
+		// Classic renders level columns as clickable table headers and keeps
+		// MenuLevel in a hidden input, rather than a select of level choices.
+		seen := map[int]bool{}
+		walk(doc.root, func(n *html.Node) bool {
+			if n.Type != html.ElementNode || n.Data != "th" {
+				return true
+			}
+			match := monitorLevelMenu.FindStringSubmatch(attr(n, "onclick"))
+			if len(match) == 0 {
+				return true
+			}
+			order, err := strconv.Atoi(match[1])
+			if err == nil && order > 0 && !seen[order] {
+				st.Levels = append(st.Levels, MonitorLevel{Order: order, Title: text(n)})
+				seen[order] = true
+			}
+			return true
+		})
 	}
 	if len(st.Teams) == 0 {
 		// The matrix itself lists teams as rows with id="team<N>".
@@ -186,8 +229,42 @@ func parseLookLogRefresh(page string) (lastTime, opt string) {
 func (c *Client) monitorPost(ctx context.Context, gameID int, form url.Values) error {
 	form.Set("Project", "")
 	form.Set("finished", strconv.Itoa(gameID))
-	_, _, err := c.adminPost(ctx, monitorPath, form)
-	return err
+	// The native handler selects the game from GET before processing POST.
+	// Sending finished only in the form silently leaves interventions unapplied.
+	location, _, err := c.adminPostQuery(ctx, monitorPath, url.Values{"finished": {strconv.Itoa(gameID)}, "Project": {""}}, form)
+	if err != nil {
+		return err
+	}
+	if code := linkQuery(location).Get("err"); code != "" && code != "0" {
+		message := monitorErrors[code]
+		if message == "" {
+			message = "движок отклонил операцию"
+		}
+		return fmt.Errorf("dzzzr: admin %s: %s (err=%s)", form.Get("action"), message, code)
+	}
+	return nil
+}
+
+// gmstat1.php exposes intervention failures through the redirect query.
+// Some codes describe partial application, so callers must not retry blindly.
+var monitorErrors = map[string]string{
+	"1":  "указано время ранее начала игры",
+	"2":  "указано время ранее завершения предыдущего задания",
+	"3":  "указано время позднее выполнения этого задания",
+	"4":  "указано время позднее начала следующего задания",
+	"5":  "этот уровень уже выдан команде",
+	"6":  "нельзя засчитать невыданный уровень",
+	"7":  "получается отрицательный интервал времени",
+	"8":  "время больше отведённого на выполнение задания",
+	"9":  "неверный формат даты",
+	"10": "уровень выдан не всем командам: уже получившим его сохранено прежнее время выдачи",
+	"11": "время позже окончания игры командой",
+	"12": "нельзя снять текущий уровень: сначала выдайте следующий",
+	"13": "нельзя выдавать и планировать часть цепочки заданий",
+	"14": "нельзя использовать линейную выдачу при наличии цепочек",
+	"15": "нельзя удалить из линейки часть цепочки заданий",
+	"17": "при засчитывании уровня произошли ошибки: уровень засчитан не всем командам",
+	"18": "нельзя скопировать линейку, если команда уже начала игру",
 }
 
 // AdminGiveLevel issues a level to a team. at is an optional
@@ -259,7 +336,7 @@ func (c *Client) AdminUnplanLevel(ctx context.Context, gameID, teamID, order int
 // AdminAddCorrection grants bonus (kind "bonus") or penalty (kind
 // "penalty") minutes to a team with a comment shown in the results.
 func (c *Client) AdminAddCorrection(ctx context.Context, gameID, teamID int, kind string, minutes int, comment string) error {
-	// gmPost1.php stores mins = -1 * type * abs(mins): type 1 gives a bonus
+	// gmstatPost.php stores mins = -1 * type * abs(mins): type 1 gives a bonus
 	// (negative minutes reduce the result), type -1 a penalty.
 	var typ string
 	switch strings.ToLower(kind) {
@@ -274,7 +351,7 @@ func (c *Client) AdminAddCorrection(ctx context.Context, gameID, teamID int, kin
 		minutes = -minutes
 	}
 	return c.monitorPost(ctx, gameID, url.Values{
-		"action": {"bonus"}, "team": {strconv.Itoa(teamID)}, "game": {strconv.Itoa(gameID)},
+		"action": {"bonus"}, "team[]": {strconv.Itoa(teamID)}, "game": {strconv.Itoa(gameID)},
 		"type": {typ}, "mins": {strconv.Itoa(minutes)}, "comment": {comment},
 	})
 }
@@ -299,7 +376,7 @@ func (c *Client) AdminDeleteCorrections(ctx context.Context, gameID, teamID int,
 // AdminBlockTeam stops a team's game (the engine answers its requests with
 // "игра приостановлена").
 func (c *Client) AdminBlockTeam(ctx context.Context, gameID, teamID int) error {
-	return c.monitorPost(ctx, gameID, url.Values{"action": {"stop"}, "team": {strconv.Itoa(teamID)}})
+	return c.monitorPost(ctx, gameID, url.Values{"action": {"stop"}, "team[]": {strconv.Itoa(teamID)}})
 }
 
 // AdminUnblockTeam resumes a blocked team.
@@ -310,7 +387,7 @@ func (c *Client) AdminUnblockTeam(ctx context.Context, gameID, teamID int) error
 // AdminToggleEngine flips the engine between running and stopped for every
 // team of the project.
 //
-// The engine offers no way to set the state: admin/gmPost1.php's switchRobot
+// The engine offers no way to set the state: admin/gmstatPost.php's switchRobot
 // case reads no parameter at all, it deletes the botStoped option when it is
 // set and inserts it otherwise. Callers that know which state they want
 // should use AdminSetEngine, which reads the current one first.

@@ -59,8 +59,8 @@ type ApplicationParams struct {
 // TeamPlayer is one member of a team's roster as the card lists it.
 type TeamPlayer struct {
 	Login string `json:"login"`
-	// OnTeam is the checkbox the engine ticks for a player who counts as
-	// part of the team; it leaves the box clear for the rest.
+	// OnTeam reports active roster membership. The engine's checkbox marks
+	// reserve players, so an unchecked box means the player is active.
 	OnTeam bool `json:"on_team"`
 }
 
@@ -259,8 +259,8 @@ func (c *Client) AdminGetTeam(ctx context.Context, gameID, teamID int) (*AdminTe
 }
 
 // rosterFromForm reads the card's "Полный состав команды" block: the engine
-// prints one checkbox per member, named pl[<login>], ticked for a player who
-// counts as part of the team. Measured against classic.dzzzr.ru on
+// prints one checkbox per member, named pl[<login>], ticked for a reserve
+// player. Measured against classic.dzzzr.ru on
 // 2026-09-10: team 31 of game 1383 carries 184 of them.
 //
 // The engine also prints one nameless pl[] box at the head of the block, for
@@ -280,7 +280,7 @@ func rosterFromForm(f *htmlForm) []TeamPlayer {
 	slices.Sort(logins)
 	out := make([]TeamPlayer, 0, len(logins))
 	for _, login := range logins {
-		out = append(out, TeamPlayer{Login: login, OnTeam: f.Checkboxes["pl["+login+"]"]})
+		out = append(out, TeamPlayer{Login: login, OnTeam: !f.Checkboxes["pl["+login+"]"]})
 	}
 	return out
 }

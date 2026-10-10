@@ -440,6 +440,14 @@
     renderAdminAuth();
   }
 
+  async function refreshAdmin() {
+    await loadAdminStatus();
+    ed.adminError = '';
+    await loadGames();
+    renderAdminAuth();
+    if (ed.admin?.has_admin && ed.pendingRoute) await applyRoute(ed.pendingRoute);
+  }
+
   function renderAdminAuth() {
     const row = el('organizer-session');
     const status = el('admin-auth-status');
@@ -2504,7 +2512,7 @@
     el('editor-form').addEventListener('input', () => markDirty(true));
   }
 
-  window.dzzzrEditor = { flushDraft: () => drafts.flush(), setMode, openScenarioFromChatFile, parseBulk, humanizeIssue, refreshAdmin: loadAdminStatus,
+  window.dzzzrEditor = { flushDraft: () => drafts.flush(), setMode, openScenarioFromChatFile, parseBulk, humanizeIssue, refreshAdmin,
     openLocalDraft: async (id) => {await setMode('editor');await openDraftSelection(id);await loadGames();await loadLevels()},
     openLocalGame: async (id) => {await setMode('editor');await loadGames();await selectGame(id)},
   };

@@ -30,6 +30,7 @@ func init() {
 	adminMounts = append(adminMounts, func(s *server, mux *http.ServeMux, prefix string) {
 		mux.HandleFunc(prefix+"admin/", s.handleAdmin)
 		mux.HandleFunc(prefix+"admin/gmAdmin.php", s.handleAdminMonitor)
+		mux.HandleFunc(prefix+"admin/gmstat1.php", s.handleAdminMonitor)
 		mux.HandleFunc(prefix+"admin/lookLog.php", s.handleAdminLog)
 		mux.HandleFunc(prefix+"admin/gmcht.php", s.handleAdminChat)
 	})
@@ -659,7 +660,7 @@ func (s *server) teamsPage(_ url.Values) string {
 	b.WriteString(`<b class=news>Полный состав команды</b><br><input type=checkbox name=pl[]>`)
 	for _, p := range g.Roster {
 		_, _ = fmt.Fprintf(&b, `<input type=checkbox name=pl[%s]%s><a href=?action=users&edit=1&login=%s>%s</a><br />`,
-			esc(p.Login), map[bool]string{true: " checked", false: ""}[p.OnTeam], esc(p.Login), esc(p.Login))
+			esc(p.Login), map[bool]string{true: " checked", false: ""}[!p.OnTeam], esc(p.Login), esc(p.Login))
 	}
 	b.WriteString(checkbox("blocked", g.Blocked))
 	b.WriteString(checkbox("autoApplication", true))
@@ -693,9 +694,13 @@ func (s *server) handleAdminMonitor(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		s.monitorWrite(form)
-		adminRedirect(w, r, fmt.Sprintf("gmAdmin.php?finished=%s&Project=", form.Get("finished")))
-		return
+		// The classic planner does not handle interventions; gmstat1.php
+		// additionally needs the selected game in the URL before reading POST.
+		if strings.HasSuffix(r.URL.Path, "/gmstat1.php") && r.URL.Query().Get("finished") == form.Get("finished") && form.Get("finished") != "" {
+			s.monitorWrite(form)
+			adminRedirect(w, r, fmt.Sprintf("gmstat1.php?finished=%s&Project=", form.Get("finished")))
+			return
+		}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -783,6 +788,9 @@ func (s *server) monitorWrite(form url.Values) {
 		g.Issued = nil
 		g.Current = 0
 	case "bonus":
+		if form.Get("team[]") != strconv.Itoa(g.TeamID) {
+			return
+		}
 		minutes := parseInt(form.Get("mins"))
 		if minutes < 0 {
 			minutes = -minutes
@@ -800,11 +808,17 @@ func (s *server) monitorWrite(form url.Values) {
 			g.PenaltyMin = 0
 		}
 	case "stop":
+		if form.Get("team[]") != strconv.Itoa(g.TeamID) {
+			return
+		}
 		g.Blocked = true
 	case "start":
+		if form.Get("team") != strconv.Itoa(g.TeamID) {
+			return
+		}
 		g.Blocked = false
 	case "switchRobot":
-		// gmPost1.php reads no parameter here: the option is deleted when it
+		// gmstatPost.php reads no parameter here: the option is deleted when it
 		// is set and inserted otherwise, so the button is a plain toggle.
 		g.EngineStopped = !g.EngineStopped
 	case "finishGame":

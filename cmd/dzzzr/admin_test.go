@@ -62,7 +62,7 @@ var adminFixtures = map[string]string{
 	"games":            "admin_games_list.html",
 	"zadanie":          "admin_levels_list.html",
 	"teams":            "admin_teams_list.html",
-	"path:gmAdmin.php": "admin_gm.html",
+	"path:gmstat1.php": "admin_gm.html",
 	"path:lookLog.php": "admin_looklog.html",
 	"path:gmcht.php":   "admin_gmcht.html",
 }
@@ -107,6 +107,10 @@ func newAdminEngine(t *testing.T) (*adminEngine, string) {
 		e.mu.Lock()
 		e.gets = append(e.gets, r.URL.Query())
 		e.mu.Unlock()
+		if r.URL.Query().Get("action") == "games" && r.URL.Query().Get("addnew") == "1" {
+			_, _ = w.Write([]byte(`<form><input name=action value=add_game><input name=seasonYear value=2026><input name=clueMin value=30><input name=penalty value=15></form>`))
+			return
+		}
 		key := r.URL.Query().Get("action")
 		if file, ok := strings.CutPrefix(r.URL.Path, "/moscow/admin/"); ok && file != "" {
 			key = "path:" + file
@@ -540,7 +544,7 @@ func TestAdminTeamPrintsRoster(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("код=%d stderr=%q", code, errOut)
 	}
-	for _, want := range []string{"Стальные Яйца", "Kamrad_anin", "высшая лига", "Состав: 2 в команде из 3", "+ 4r2na", "  zoya_O"} {
+	for _, want := range []string{"Стальные Яйца", "Kamrad_anin", "высшая лига", "Состав: 1 в команде из 3", "  4r2na", "+ zoya_O"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("вывод не содержит %q:\n%s", want, out)
 		}
@@ -559,7 +563,7 @@ func TestAdminTeamPrintsRoster(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &info); err != nil {
 		t.Fatalf("вывод не JSON: %v", err)
 	}
-	if len(info.Roster) != 3 || info.Roster[0].Login != "4r2na" || !info.Roster[0].OnTeam {
+	if len(info.Roster) != 3 || info.Roster[0].Login != "4r2na" || info.Roster[0].OnTeam {
 		t.Fatalf("состав в JSON = %+v", info.Roster)
 	}
 }

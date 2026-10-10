@@ -158,3 +158,56 @@ test('statistics deep link does not require model setup or engine login', async 
   await run('initOnboarding()');
   assert.equal(run('opened'), 1);
 });
+
+function setupEditorRefresh(signedIn) {
+  const requests = [];
+  const routes = [];
+  const context = vm.createContext({
+    window: {
+      createDraftSync: () => ({}),
+      dzzzrChat: {
+        toast() {},
+        api: async url => {
+          requests.push(url);
+          if (url === '/admin/status') return {has_admin: signedIn, login: 'organizer'};
+          if (url === '/admin/games') return {games: [{id: 42, name: 'Newly available game'}]};
+          throw new Error(`Unexpected request ${url}`);
+        },
+      },
+    },
+    routes,
+  });
+  let source = fs.readFileSync(path.join(__dirname, '../webui/editor.js'), 'utf8');
+  // Keep the actual editor state, API readers and public API; omit browser
+  // startup and replace rendering/navigation so the login refresh is isolated.
+  source = source.slice(0, source.indexOf('  setInterval(() => {')) + `
+    renderAdminAuth = () => {};
+    renderGameList = () => {};
+    applyRoute = async route => { routes.push(route); ed.pendingRoute = null; };
+    ed.adminError = 'Previous failed login';
+    ed.games = [{id: 1}];
+    ed.pendingRoute = {mode: 'editor', game: 42};
+    window.editorState = ed;
+  })();`;
+  vm.runInContext(source, context, {filename: 'editor.js'});
+  return {context, requests, routes};
+}
+
+test('editor refresh after organizer onboarding loads games and resumes the requested game', async () => {
+  const {context, requests, routes} = setupEditorRefresh(true);
+  await context.window.dzzzrEditor.refreshAdmin();
+  assert.deepEqual(requests, ['/admin/status', '/admin/games']);
+  assert.equal(context.window.editorState.games[0].id, 42);
+  assert.equal(context.window.editorState.adminError, '');
+  assert.equal(routes[0].game, 42);
+  assert.equal(context.window.editorState.pendingRoute, null);
+});
+
+test('editor refresh without organizer credentials clears old games and preserves the pending route', async () => {
+  const {context, requests, routes} = setupEditorRefresh(false);
+  await context.window.dzzzrEditor.refreshAdmin();
+  assert.deepEqual(requests, ['/admin/status']);
+  assert.equal(context.window.editorState.games.length, 0);
+  assert.equal(routes.length, 0);
+  assert.equal(context.window.editorState.pendingRoute.game, 42);
+});

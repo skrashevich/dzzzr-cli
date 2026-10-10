@@ -4,12 +4,66 @@ import (
 	"context"
 	"io"
 	"log"
+	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/skrashevich/dzzzr-cli/dzzzr"
 )
+
+func TestMonitorInterventionsRequireNativePageAndGameQuery(t *testing.T) {
+	for _, tc := range []struct {
+		path           string
+		query, changed bool
+	}{
+		{"gmAdmin.php", true, false},
+		{"gmstat1.php", false, false},
+		{"gmstat1.php", true, true},
+	} {
+		t.Run(tc.path+strconv.FormatBool(tc.query), func(t *testing.T) {
+			s := newServer("moscow", log.New(io.Discard, "", 0))
+			game := strconv.Itoa(s.state.GameID)
+			path := "/moscow/admin/" + tc.path
+			if tc.query {
+				path += "?finished=" + game
+			}
+			form := url.Values{"finished": {game}, "action": {"switchRobot"}}
+			r := httptest.NewRequest(http.MethodPost, path, strings.NewReader(form.Encode()))
+			r.SetBasicAuth(adminLogin, adminPassword)
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			before := s.state.EngineStopped
+			s.Handler().ServeHTTP(httptest.NewRecorder(), r)
+			if (s.state.EngineStopped != before) != tc.changed {
+				t.Fatalf("wrong intervention result: changed=%v", s.state.EngineStopped != before)
+			}
+		})
+	}
+}
+
+func TestMonitorTeamBlockUsesNativeFieldNames(t *testing.T) {
+	for _, tc := range []struct {
+		action, field string
+		changed       bool
+	}{
+		{"stop", "team", false},
+		{"stop", "team[]", true},
+		{"start", "team[]", false},
+		{"start", "team", true},
+	} {
+		t.Run(tc.action+tc.field, func(t *testing.T) {
+			s := newServer("moscow", log.New(io.Discard, "", 0))
+			s.state.Blocked = tc.action == "start"
+			before := s.state.Blocked
+			s.monitorWrite(url.Values{"action": {tc.action}, tc.field: {strconv.Itoa(s.state.TeamID)}})
+			if (s.state.Blocked != before) != tc.changed {
+				t.Fatalf("wrong block result: changed=%v", s.state.Blocked != before)
+			}
+		})
+	}
+}
 
 // adminClient starts a mock and returns a client with organizer credentials,
 // so the tests exercise the real scraper against the real pages.

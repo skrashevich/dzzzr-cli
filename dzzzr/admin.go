@@ -78,14 +78,18 @@ func checkAdminScope(page, section string) error {
 // read ids out of it. A 200 with a page is accepted as well, since some
 // handlers render instead of redirecting.
 func (c *Client) adminPost(ctx context.Context, path string, form url.Values) (location string, page string, err error) {
+	return c.adminPostQuery(ctx, path, nil, form)
+}
+
+func (c *Client) adminPostQuery(ctx context.Context, path string, query, form url.Values) (location string, page string, err error) {
 	if err := c.paceAdmin(ctx); err != nil {
 		return "", "", err
 	}
-	req, err := c.newRequest(ctx, http.MethodPost, path, nil, form, requestOptions{admin: true, requireAuth: true, cp1251Form: true})
+	req, err := c.newRequest(ctx, http.MethodPost, path, query, form, requestOptions{admin: true, requireAuth: true, cp1251Form: true})
 	if err != nil {
 		return "", "", err
 	}
-	req.Header.Set("Referer", c.resolve(path, nil))
+	req.Header.Set("Referer", c.resolve(path, query))
 	status, hdr, body, err := c.do(req)
 	if err != nil {
 		return "", "", err
@@ -204,7 +208,7 @@ func idFromLocation(loc string) (int, bool) {
 		return 0, false
 	}
 	n, err := strconv.Atoi(v)
-	if err != nil {
+	if err != nil || n <= 0 {
 		return 0, false
 	}
 	return n, true
@@ -377,6 +381,9 @@ func firstLine(s string) string {
 
 // AdminGetGame returns the settings form of a game.
 func (c *Client) AdminGetGame(ctx context.Context, gameID int) (*AdminGameInfo, error) {
+	if gameID <= 0 {
+		return nil, fmt.Errorf("dzzzr: game ID must be positive")
+	}
 	doc, err := c.adminPage(ctx, "games", url.Values{"id": {strconv.Itoa(gameID)}})
 	if err != nil {
 		return nil, err
@@ -387,6 +394,9 @@ func (c *Client) AdminGetGame(ctx context.Context, gameID int) (*AdminGameInfo, 
 	}
 	info := &AdminGameInfo{Fields: f.Fields}
 	info.ID, _ = strconv.Atoi(f.Fields.Get("id"))
+	if info.ID != gameID {
+		return nil, fmt.Errorf("dzzzr: admin game form returned game %d instead of %d", info.ID, gameID)
+	}
 	info.Params = gameParamsFromForm(f)
 	return info, nil
 }
@@ -503,11 +513,21 @@ func (c *Client) AdminCreateGame(ctx context.Context, p GameParams) (int, error)
 			return 0, fmt.Errorf("dzzzr: admin create game: %s is required and cannot be cleared", name)
 		}
 	}
-	form := url.Values{
-		"action": {"add_game"}, "Project": {""}, "ofset": {"0"}, "id": {""},
-		"clueMin": {"30"}, "clueMin2": {"30"}, "clueMin3": {"30"}, "oldClueMin": {"30"},
-		"league": {"1"}, "season": {"0"}, "dateAutoStop": {"00.00.0000"}, "timeAutoStop": {"00:00"},
+	// Creation needs the engine's current defaults (including seasonYear).
+	// A minimal synthetic form can fail on legacy SQL and redirect with id=0.
+	page, err := c.adminGet(ctx, adminPath, url.Values{"action": {"games"}, "addnew": {"1"}, "Project": {""}})
+	if err != nil {
+		return 0, err
 	}
+	doc, err := parseHTML(page)
+	if err != nil {
+		return 0, err
+	}
+	f := doc.formWithAction("add_game")
+	if f == nil {
+		return 0, fmt.Errorf("dzzzr: admin create game: no add_game form")
+	}
+	form := cloneValues(f.Fields)
 	applyGameParams(form, p)
 	loc, page, err := c.adminPost(ctx, adminPath, form)
 	if err != nil {
@@ -519,7 +539,7 @@ func (c *Client) AdminCreateGame(ctx context.Context, p GameParams) (int, error)
 	if page != "" {
 		if doc, err := parseHTML(page); err == nil {
 			if f := doc.formWithAction("update_game"); f != nil {
-				if id, err := strconv.Atoi(f.Fields.Get("id")); err == nil {
+				if id, err := strconv.Atoi(f.Fields.Get("id")); err == nil && id > 0 {
 					return id, nil
 				}
 			}

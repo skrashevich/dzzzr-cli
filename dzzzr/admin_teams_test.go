@@ -169,11 +169,12 @@ func TestAdminTeamsOrganizerPage(t *testing.T) {
 		t.Errorf("поля карточки = %+v", info)
 	}
 	// The roster: the nameless pl[] box the engine puts at the head of the
-	// block is not a member.
+	// block is not a member. Checked players are in reserve; unchecked
+	// players belong to the active roster and can submit codes.
 	if len(info.Roster) != 3 {
 		t.Fatalf("состав = %+v", info.Roster)
 	}
-	want := map[string]bool{"4r2na": true, "Ballbot2": true, "zoya_O": false}
+	want := map[string]bool{"4r2na": false, "Ballbot2": false, "zoya_O": true}
 	for _, p := range info.Roster {
 		on, known := want[p.Login]
 		if !known {

@@ -3,7 +3,9 @@ package dzzzr
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -235,5 +237,89 @@ func TestAdminUploadFileValidationAndCancellation(t *testing.T) {
 	}
 	if requests.Load() != 1 {
 		t.Errorf("pacing should perform GET only; got %d requests", requests.Load())
+	}
+}
+
+func TestAdminUploadCreatesMissingGameDirectory(t *testing.T) {
+	for _, existing := range []bool{false, true} {
+		t.Run(fmt.Sprint(existing), func(t *testing.T) {
+			dirs := map[string]bool{"{0}": true}
+			if existing {
+				dirs["{0}/games"] = true
+				dirs["{0}/games/42"] = true
+			}
+			uploads, creates := 0, 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == http.MethodGet {
+					http.SetCookie(w, &http.Cookie{Name: "session", Value: "test", Path: "/"})
+					return
+				}
+				if strings.HasSuffix(r.URL.Path, "/rpc/index.php") {
+					if c, e := r.Cookie("session"); e != nil || c.Value != "test" {
+						t.Error("missing RPC session cookie")
+					}
+					if err := r.ParseForm(); err != nil {
+						t.Fatal(err)
+					}
+					var call struct {
+						Method string              `json:"method"`
+						Params []map[string]string `json:"params"`
+					}
+					if err := json.Unmarshal([]byte(r.Form.Get("json_data")), &call); err != nil {
+						t.Fatal(err)
+					}
+					p := call.Params[0]
+					switch call.Method {
+					case "fm.listFiles":
+						path := p["path"]
+						if !dirs[path] {
+							path = "{0}"
+						}
+						fmt.Fprintf(w, `{"result":{"header":{"path":%q}},"error":null}`, path)
+					case "fm.createDirs":
+						if !dirs[p["path"]] {
+							t.Fatal("missing parent")
+						}
+						dirs[p["path"]+"/"+p["name0"]] = true
+						creates++
+						io.WriteString(w, `{"result":{},"error":null}`)
+					default:
+						t.Fatalf("unexpected RPC %s", call.Method)
+					}
+					return
+				}
+				uploads++
+				if uploads == 1 {
+					io.WriteString(w, `{"data":[["RW_ERROR","x","{#error.upload_failed}"]]}`)
+					return
+				}
+				if !dirs["{0}/games/42"] {
+					t.Fatal("retried upload before directory exists")
+				}
+				if err := r.ParseMultipartForm(1024); err != nil {
+					t.Fatal(err)
+				}
+				f, _, err := r.FormFile("file0")
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer f.Close()
+				b, _ := io.ReadAll(f)
+				if string(b) != "payload" {
+					t.Fatalf("retry body %q", b)
+				}
+				io.WriteString(w, "#message.upload_ok")
+			}))
+			defer server.Close()
+			c := New("moscow", WithBaseURL(server.URL+"/moscow/"), WithAdminCredentials("a", "b"), WithAdminDelay(0))
+			_, err := c.AdminUploadFile(t.Context(), 42, "qa.txt", []byte("payload"))
+			if existing {
+				if err == nil || uploads != 1 || creates != 0 {
+					t.Fatalf("existing folder failure retried: %v uploads=%d creates=%d", err, uploads, creates)
+				}
+			} else if err != nil || uploads != 2 || creates != 2 {
+				t.Fatalf("missing directories not repaired: %v uploads=%d creates=%d", err, uploads, creates)
+			}
+		})
 	}
 }

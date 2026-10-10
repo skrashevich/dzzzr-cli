@@ -330,6 +330,25 @@ func TestWebAuthStatusShape(t *testing.T) {
 	}
 }
 
+func TestWebAuthStatusDistinguishesOrganizerAndPlayerSessions(t *testing.T) {
+	hub := newTestHub(t, nil)
+	hub.client.SetAdminCredentials("organizer", "password")
+	if _, err := saveSession(hub.cfg, hub.client); err != nil {
+		t.Fatal(err)
+	}
+	if hub.status().HasSession {
+		t.Fatal("organizer-only saved credentials appeared as a player session")
+	}
+	hub.client.SetSession("player-session")
+	if !hub.status().HasSession {
+		t.Fatal("active player session was not reported")
+	}
+	hub.client.Logout()
+	if hub.status().HasSession {
+		t.Fatal("saved credentials appeared as a player session after logout")
+	}
+}
+
 func TestWebAgentConfigReportsMissingModel(t *testing.T) {
 	hub := newTestHub(t, nil)
 	srv := httptest.NewServer(hub.newMux())

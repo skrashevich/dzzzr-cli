@@ -69,6 +69,11 @@ func (c *Client) GetGameLog(ctx context.Context, gameID int) (*GameLog, error) {
 			Text: fmt.Sprintf("движок не отдал лог игры %d: смотреть его может капитан, замкапитана или начштаба команды, недавно игравшей в этом городе", gameID),
 		}
 	}
+	// The restored Classic handler can answer with this plain-text refusal
+	// instead of an empty body. It is an access decision, not malformed JSON.
+	if text := strings.TrimSpace(decodeWindows1251IfNeeded(body)); text == "Только капитану команды доступен лог игры." {
+		return nil, &EngineError{Code: ErrNoPermission, Text: text}
+	}
 	if looksLikeHTML(body) {
 		// A signed-out visitor is answered with the site's own page instead.
 		if err := siteAccessError(siteContent(decodeWindows1251IfNeeded(body))); err != nil {

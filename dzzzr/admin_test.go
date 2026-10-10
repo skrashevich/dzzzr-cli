@@ -68,6 +68,10 @@ func newAdminServer(t *testing.T, fixtures map[string]string) *adminServer {
 			return
 		}
 		s.gets = append(s.gets, r.URL.Query())
+		if r.URL.Query().Get("addnew") == "1" && r.URL.Query().Get("action") == "games" {
+			_, _ = w.Write([]byte(`<form><input name=action value=add_game><input name=clueMin value=30><input name=seasonYear value=2026><input name=penalty value=15></form>`))
+			return
+		}
 		key := r.URL.Query().Get("action")
 		if r.URL.Path != "/moscow/admin/" {
 			key = "path:" + strings.TrimPrefix(r.URL.Path, "/moscow/admin/")
@@ -216,7 +220,7 @@ func TestAdminCreateGame(t *testing.T) {
 		t.Errorf("id = %d", id)
 	}
 	f := s.lastPost()
-	if f.Get("action") != "add_game" || f.Get("name") != "Новая" || f.Get("date") != "10.09.2026" || f.Get("time") != "21:00" || f.Get("league") != "2" || f.Get("publish") != "on" || f.Get("clueMin") != "30" || f.Get("clueMin2") != "25" {
+	if f.Get("seasonYear") != "2026" || f.Get("penalty") != "15" || f.Get("action") != "add_game" || f.Get("name") != "Новая" || f.Get("date") != "10.09.2026" || f.Get("time") != "21:00" || f.Get("league") != "2" || f.Get("publish") != "on" || f.Get("clueMin") != "30" || f.Get("clueMin2") != "25" {
 		t.Errorf("form = %v", f)
 	}
 	if _, err := s.client.AdminCreateGame(context.Background(), dzzzr.GameParams{Name: "x"}); err == nil {
@@ -281,5 +285,27 @@ func TestAdminWindows1251Page(t *testing.T) {
 	}
 	if len(games) != 3 || games[1].Name != "Ночной дозор: Осень" {
 		t.Errorf("games = %+v", games)
+	}
+}
+
+func TestAdminCreateGameRejectsZeroID(t *testing.T) {
+	s := newAdminServer(t, map[string]string{})
+	s.redirect = func(url.Values) string { return "?action=games&edit=1&id=0" }
+	id, err := s.client.AdminCreateGame(context.Background(), dzzzr.GameParams{Name: "QA", Date: "10.10.2026", Time: "12:00"})
+	if err == nil || id != 0 {
+		t.Fatalf("failed creation reported success: id=%d err=%v", id, err)
+	}
+}
+
+func TestAdminUpdateGameRejectsFallbackSelection(t *testing.T) {
+	s := newAdminServer(t, map[string]string{"games": "admin_games_list.html"})
+	if err := s.client.AdminUpdateGame(context.Background(), 9999, dzzzr.GameParams{Name: "wrong game"}); err == nil {
+		t.Fatal("accepted another game's form")
+	}
+	if len(s.posts) != 0 {
+		t.Fatal("posted mismatched game form")
+	}
+	if _, err := s.client.AdminGetGame(context.Background(), 0); err == nil {
+		t.Fatal("accepted zero game id")
 	}
 }

@@ -335,3 +335,49 @@ func TestAdminGetLevelWithZeroSectorIndex(t *testing.T) {
 		t.Errorf("sector names = %v", info.Params.SectorNames)
 	}
 }
+
+func TestAdminUpdateLevelRejectsFallbackSelection(t *testing.T) {
+	s := newAdminServer(t, map[string]string{"zadanie": "admin_levels_list.html"})
+	if err := s.client.AdminUpdateLevel(context.Background(), 4242, 9999, dzzzr.LevelParams{Title: "wrong level"}); err == nil {
+		t.Fatal("accepted another level's form")
+	}
+	if len(s.posts) != 0 {
+		t.Fatal("posted mismatched level form")
+	}
+	if _, err := s.client.AdminGetLevel(context.Background(), 4242, 0); err == nil {
+		t.Fatal("accepted zero level id")
+	}
+}
+
+func TestAdminCreateLevelRejectsZeroID(t *testing.T) {
+	s := newAdminServer(t, map[string]string{"zadanie": "admin_levels_list.html"})
+	s.redirect = func(url.Values) string { return "?action=zadanie&edit=1&id=0" }
+	id, err := s.client.AdminCreateLevel(context.Background(), 4242, dzzzr.LevelParams{Title: "QA"})
+	if err == nil || id != 0 {
+		t.Fatalf("failed creation resolved to an existing level: id=%d err=%v", id, err)
+	}
+}
+
+func TestAdminGetLevelOrderWithoutHiddenField(t *testing.T) {
+	for _, tc := range []struct {
+		fixture string
+		order   int
+	}{
+		{"admin_levels_selected_no_order.html", 1},
+		{"admin_levels_selected_order_p.html", 42},
+	} {
+		t.Run(tc.fixture, func(t *testing.T) {
+			s := newAdminServer(t, map[string]string{"zadanie": tc.fixture})
+			info, err := s.client.AdminGetLevel(t.Context(), 4242, 901)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Order != tc.order {
+				t.Fatalf("order=%d want%d", info.Order, tc.order)
+			}
+			if len(s.gets) != 1 {
+				t.Fatalf("order fallback made %d requests", len(s.gets))
+			}
+		})
+	}
+}

@@ -3,6 +3,9 @@ package dzzzr_test
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/skrashevich/dzzzr-cli/dzzzr"
@@ -11,7 +14,7 @@ import (
 func monitorServer(t *testing.T) *adminServer {
 	t.Helper()
 	return newAdminServer(t, map[string]string{
-		"path:gmAdmin.php": "admin_gm.html",
+		"path:gmstat1.php": "admin_gm.html",
 		"path:lookLog.php": "admin_looklog.html",
 		"path:gmcht.php":   "admin_gmcht.html",
 	})
@@ -23,7 +26,7 @@ func TestAdminMonitor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.paths[0] != "/moscow/admin/gmAdmin.php" || s.gets[0].Get("finished") != "4242" {
+	if s.paths[0] != "/moscow/admin/gmstat1.php" || s.gets[0].Get("finished") != "4242" {
 		t.Errorf("request = %s %v", s.paths[0], s.gets[0])
 	}
 	if st.GameID != 4242 || st.GameName == "" {
@@ -37,6 +40,104 @@ func TestAdminMonitor(t *testing.T) {
 	}
 	if st.EngineStopped {
 		t.Error("engine must be running when the button offers to stop it")
+	}
+}
+
+func TestAdminMonitorClickableLevelHeaders(t *testing.T) {
+	s := newAdminServer(t, map[string]string{"path:gmstat1.php": "admin_gm_headers.html"})
+	st, err := s.client.AdminMonitor(t.Context(), 4242)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Levels) != 2 || st.Levels[0].Order != 1 || st.Levels[0].Title != "Audit B" || st.Levels[1].Order != 3 || st.Levels[1].Title != "Audit A" {
+		t.Fatalf("levels = %+v", st.Levels)
+	}
+	if len(st.Teams) != 1 || st.Teams[0].ID != 5150 {
+		t.Fatalf("teams = %+v", st.Teams)
+	}
+}
+
+func TestAdminMonitorNativeControls(t *testing.T) {
+	for _, tc := range []struct {
+		button             string
+		stopped, wantError bool
+	}{
+		{"Остановить робота", false, false},
+		{"Включить робота", true, false},
+		{"включить движок", true, false},
+		{"Неизвестная кнопка", false, true},
+	} {
+		t.Run(tc.button, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				_, _ = w.Write([]byte(`<form><input type=submit value="` + tc.button + `"><select name=level><option value=1>Level A</select><select name=team><option value=7>Team A</select></form><form><select name=level><option value=1>Level A<option value=3>Level B</select><select name=team><option value=7>Team A</select></form>`))
+			}))
+			defer srv.Close()
+			c := dzzzr.New("moscow", dzzzr.WithBaseURL(srv.URL+"/moscow/"), dzzzr.WithAdminCredentials("org", "secret"))
+			st, err := c.AdminMonitor(t.Context(), 4242)
+			if tc.wantError {
+				if err == nil {
+					t.Fatal("unknown robot state accepted as running")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if st.EngineStopped != tc.stopped || len(st.Levels) != 2 || len(st.Teams) != 1 {
+				t.Fatalf("monitor = %+v", st)
+			}
+		})
+	}
+}
+
+func TestAdminInterventionSelectsGameInURL(t *testing.T) {
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		if r.Method != http.MethodPost || r.URL.Path != "/moscow/admin/gmstat1.php" || r.URL.Query().Get("finished") != "4242" || !r.URL.Query().Has("Project") {
+			t.Errorf("intervention URL/method = %s %s", r.Method, r.URL)
+		}
+		if !strings.Contains(r.Header.Get("Referer"), "finished=4242") {
+			t.Error("referer lost selected game")
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Fatal(err)
+		}
+		if r.PostForm.Get("action") != "newlevel" || r.PostForm.Get("finished") != "4242" {
+			t.Errorf("form = %v", r.PostForm)
+		}
+		http.Redirect(w, r, "/moscow/admin/gmstat1.php?finished=4242", http.StatusFound)
+	}))
+	defer srv.Close()
+	c := dzzzr.New("moscow", dzzzr.WithBaseURL(srv.URL+"/moscow/"), dzzzr.WithAdminCredentials("org", "secret"))
+	if err := c.AdminGiveLevel(t.Context(), 4242, 7, 1, ""); err != nil {
+		t.Fatal(err)
+	}
+	if !called {
+		t.Fatal("no intervention sent")
+	}
+}
+
+func TestAdminInterventionReportsNativeRefusal(t *testing.T) {
+	for _, code := range []string{"", "0", "6", "10", "17", "99"} {
+		t.Run(code, func(t *testing.T) {
+			s := monitorServer(t)
+			s.redirect = func(form url.Values) string { return "gmstat1.php?finished=4242&err=" + code }
+			err := s.client.AdminAcceptLevel(t.Context(), 4242, 5150, 1, "")
+			if code == "" || code == "0" {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), "err="+code) || !strings.Contains(err.Error(), "acceptLevel") {
+				t.Fatalf("refusal %q reported as %v", code, err)
+			}
+			if len(s.posts) != 1 {
+				t.Fatal("refused mutation retried")
+			}
+		})
 	}
 }
 
@@ -107,15 +208,15 @@ func TestAdminMonitorActions(t *testing.T) {
 		{"bonus", func(c *dzzzr.Client) error {
 			return c.AdminAddCorrection(ctx, 4242, 5150, "bonus", 10, "за красоту")
 		},
-			map[string]string{"action": "bonus", "type": "1", "mins": "10", "comment": "за красоту", "game": "4242"}},
+			map[string]string{"action": "bonus", "team[]": "5150", "type": "1", "mins": "10", "comment": "за красоту", "game": "4242"}},
 		{"penalty", func(c *dzzzr.Client) error {
 			return c.AdminAddCorrection(ctx, 4242, 5150, "penalty", -15, "опоздание")
 		},
-			map[string]string{"action": "bonus", "type": "-1", "mins": "15"}},
+			map[string]string{"action": "bonus", "team[]": "5150", "type": "-1", "mins": "15"}},
 		{"delete corrections", func(c *dzzzr.Client) error { return c.AdminDeleteCorrections(ctx, 4242, 5150, "bonus") },
 			map[string]string{"action": "delBonus", "type": "1"}},
 		{"block", func(c *dzzzr.Client) error { return c.AdminBlockTeam(ctx, 4242, 5150) },
-			map[string]string{"action": "stop", "team": "5150"}},
+			map[string]string{"action": "stop", "team[]": "5150"}},
 		{"unblock", func(c *dzzzr.Client) error { return c.AdminUnblockTeam(ctx, 4242, 5150) },
 			map[string]string{"action": "start", "team": "5150"}},
 		{"engine toggle", func(c *dzzzr.Client) error { return c.AdminToggleEngine(ctx, 4242) },
@@ -133,7 +234,7 @@ func TestAdminMonitorActions(t *testing.T) {
 			if err := tc.call(s.client); err != nil {
 				t.Fatal(err)
 			}
-			if s.paths[0] != "/moscow/admin/gmAdmin.php" {
+			if s.paths[0] != "/moscow/admin/gmstat1.php" {
 				t.Errorf("path = %s", s.paths[0])
 			}
 			f := s.lastPost()
